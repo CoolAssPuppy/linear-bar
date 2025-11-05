@@ -20,7 +20,7 @@ struct SettingsView: View {
 
                 PreferencesTab()
                     .tabItem {
-                        Label("Preferences", systemImage: "gearshape")
+                        Label("Setup", systemImage: "gearshape")
                     }
                     .tag(1)
 
@@ -273,6 +273,13 @@ struct PreferencesTab: View {
                         sectionHeader(icon: "line.3.horizontal.decrease.circle.fill", title: "Filters", gradient: [.blue, .cyan])
                     }
 
+                    // SORT ORDER
+                    Section {
+                        sortOrderPicker
+                    } header: {
+                        sectionHeader(icon: "arrow.up.arrow.down.circle.fill", title: "Sort Order", gradient: [.indigo, .purple])
+                    }
+
                     // REFRESH
                     Section {
                         refreshIntervalPicker
@@ -378,6 +385,26 @@ struct PreferencesTab: View {
             Toggle("Show canceled items", isOn: $settings.showCanceledItems)
 
             Text("Display items that have been canceled")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Sort Order Section
+
+    private var sortOrderPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Sort items by:")
+                .font(.body)
+
+            Picker("", selection: $settings.sortOrder) {
+                ForEach(SortOrder.allCases) { order in
+                    Text(order.rawValue).tag(order)
+                }
+            }
+            .pickerStyle(.menu)
+
+            Text("How to order items in Favorites and Recent tabs")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

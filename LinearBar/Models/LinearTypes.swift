@@ -6,6 +6,7 @@ protocol LinearItem: Identifiable, Hashable {
     var id: String { get }
     var title: String { get }
     var url: String { get }
+    var createdAt: Date? { get }
     var updatedAt: Date? { get }
     var itemType: LinearItemType { get }
 }
@@ -23,6 +24,7 @@ struct Issue: LinearItem, Codable {
     let identifier: String
     let title: String
     let url: String
+    let createdAt: Date?
     let updatedAt: Date?
     let state: IssueState?
     let priority: Int?
@@ -65,6 +67,7 @@ struct Project: LinearItem, Codable {
     let id: String
     let name: String
     let url: String
+    let createdAt: Date?
     let updatedAt: Date?
     let state: String
     let progress: Double?
@@ -94,6 +97,7 @@ struct Initiative: LinearItem, Codable {
     let id: String
     let name: String
     let url: String
+    let createdAt: Date?
     let updatedAt: Date?
     let progress: Double?
     let icon: String?

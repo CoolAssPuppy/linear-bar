@@ -9,9 +9,10 @@ struct RecentlyUpdatedView: View {
     @State private var items: [any LinearItem] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var hasLoadedInitialView = false
 
     private var filteredItems: [any LinearItem] {
-        items.filter { item in
+        let filtered = items.filter { item in
             // Filter issues by state type
             if let issue = item as? Issue {
                 if let stateType = issue.state?.type {
@@ -43,6 +44,28 @@ struct RecentlyUpdatedView: View {
 
             return true
         }
+
+        // Apply sort order
+        return filtered.sorted { item1, item2 in
+            switch settings.sortOrder {
+            case .createdNewest:
+                let date1 = item1.createdAt ?? Date.distantPast
+                let date2 = item2.createdAt ?? Date.distantPast
+                return date1 > date2
+            case .createdOldest:
+                let date1 = item1.createdAt ?? Date.distantPast
+                let date2 = item2.createdAt ?? Date.distantPast
+                return date1 < date2
+            case .updatedNewest:
+                let date1 = item1.updatedAt ?? Date.distantPast
+                let date2 = item2.updatedAt ?? Date.distantPast
+                return date1 > date2
+            case .updatedOldest:
+                let date1 = item1.updatedAt ?? Date.distantPast
+                let date2 = item2.updatedAt ?? Date.distantPast
+                return date1 < date2
+            }
+        }
     }
 
     var body: some View {
@@ -64,7 +87,13 @@ struct RecentlyUpdatedView: View {
             }
         }
         .onAppear {
-            selectedMode = settings.defaultViewMode
+            if !hasLoadedInitialView {
+                selectedMode = settings.defaultViewMode
+                hasLoadedInitialView = true
+            }
+            loadData()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
         }
     }

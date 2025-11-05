@@ -10,7 +10,7 @@ struct SearchView: View {
     @State private var searchTask: Task<Void, Never>?
 
     private var filteredResults: [any LinearItem] {
-        searchResults.filter { item in
+        let filtered = searchResults.filter { item in
             // Filter issues by state type
             if let issue = item as? Issue {
                 if let stateType = issue.state?.type {
@@ -41,6 +41,28 @@ struct SearchView: View {
             }
 
             return true
+        }
+
+        // Apply sort order
+        return filtered.sorted { item1, item2 in
+            switch settings.sortOrder {
+            case .createdNewest:
+                let date1 = item1.createdAt ?? Date.distantPast
+                let date2 = item2.createdAt ?? Date.distantPast
+                return date1 > date2
+            case .createdOldest:
+                let date1 = item1.createdAt ?? Date.distantPast
+                let date2 = item2.createdAt ?? Date.distantPast
+                return date1 < date2
+            case .updatedNewest:
+                let date1 = item1.updatedAt ?? Date.distantPast
+                let date2 = item2.updatedAt ?? Date.distantPast
+                return date1 > date2
+            case .updatedOldest:
+                let date1 = item1.updatedAt ?? Date.distantPast
+                let date2 = item2.updatedAt ?? Date.distantPast
+                return date1 < date2
+            }
         }
     }
 

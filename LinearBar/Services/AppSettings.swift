@@ -20,37 +20,60 @@ class AppSettings: ObservableObject {
 
     @Published var defaultViewMode: ViewMode {
         didSet {
-            saveSetting(defaultViewMode.rawValue, forKey: "defaultViewMode")
+            DispatchQueue.main.async { [weak self] in
+                self?.saveSetting(self?.defaultViewMode.rawValue ?? "", forKey: "defaultViewMode")
+            }
         }
     }
 
     @Published var refreshInterval: RefreshInterval {
         didSet {
-            saveSetting(refreshInterval.rawValue, forKey: "refreshInterval")
+            DispatchQueue.main.async { [weak self] in
+                self?.saveSetting(self?.refreshInterval.rawValue ?? "", forKey: "refreshInterval")
+            }
         }
     }
 
     @Published var launchAtLogin: Bool {
         didSet {
-            saveSetting(launchAtLogin, forKey: "launchAtLogin")
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.saveSetting(self.launchAtLogin, forKey: "launchAtLogin")
+            }
         }
     }
 
     @Published var defaultTab: DefaultTab {
         didSet {
-            saveSetting(defaultTab.rawValue, forKey: "defaultTab")
+            DispatchQueue.main.async { [weak self] in
+                self?.saveSetting(self?.defaultTab.rawValue ?? "", forKey: "defaultTab")
+            }
         }
     }
 
     @Published var showCompletedItems: Bool {
         didSet {
-            saveSetting(showCompletedItems, forKey: "showCompletedItems")
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.saveSetting(self.showCompletedItems, forKey: "showCompletedItems")
+            }
         }
     }
 
     @Published var showCanceledItems: Bool {
         didSet {
-            saveSetting(showCanceledItems, forKey: "showCanceledItems")
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.saveSetting(self.showCanceledItems, forKey: "showCanceledItems")
+            }
+        }
+    }
+
+    @Published var sortOrder: SortOrder {
+        didSet {
+            DispatchQueue.main.async { [weak self] in
+                self?.saveSetting(self?.sortOrder.rawValue ?? "", forKey: "sortOrder")
+            }
         }
     }
 
@@ -89,6 +112,11 @@ class AppSettings: ObservableObject {
         self.showCanceledItems = iCloudStore.object(forKey: "showCanceledItems") as? Bool
             ?? UserDefaults.standard.object(forKey: "showCanceledItems") as? Bool
             ?? false
+
+        let sortOrderRaw = iCloudStore.string(forKey: "sortOrder")
+            ?? UserDefaults.standard.string(forKey: "sortOrder")
+            ?? SortOrder.updatedNewest.rawValue
+        self.sortOrder = SortOrder(rawValue: sortOrderRaw) ?? .updatedNewest
 
         loadAccounts()
         syncAllSettingsFromiCloudToUserDefaults()
@@ -235,6 +263,10 @@ class AppSettings: ObservableObject {
             if keys.contains("showCanceledItems") {
                 self.showCanceledItems = UserDefaults.standard.bool(forKey: "showCanceledItems")
             }
+            if keys.contains("sortOrder") {
+                let sortRaw = UserDefaults.standard.string(forKey: "sortOrder") ?? SortOrder.updatedNewest.rawValue
+                self.sortOrder = SortOrder(rawValue: sortRaw) ?? .updatedNewest
+            }
         }
     }
 }
@@ -282,9 +314,19 @@ enum DefaultTab: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum SortOrder: String, CaseIterable, Identifiable {
+    case createdNewest = "Created Date, Newest First"
+    case createdOldest = "Created Date, Oldest First"
+    case updatedNewest = "Updated Date, Newest First"
+    case updatedOldest = "Updated Date, Oldest First"
+
+    var id: String { rawValue }
+}
+
 // MARK: - Notification Names
 
 extension Notification.Name {
     static let accountsDidUpdate = Notification.Name("accountsDidUpdate")
     static let settingsRequested = Notification.Name("settingsRequested")
+    static let refreshAllData = Notification.Name("refreshAllData")
 }

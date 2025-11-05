@@ -62,6 +62,7 @@ class LinearAPI {
                 identifier
                 title
                 url
+                createdAt
                 updatedAt
                 state {
                   name
@@ -82,6 +83,7 @@ class LinearAPI {
                 id
                 name
                 url
+                createdAt
                 updatedAt
                 state
                 progress
@@ -94,6 +96,7 @@ class LinearAPI {
                 id
                 name
                 url
+                createdAt
                 updatedAt
                 icon
                 status
@@ -169,6 +172,7 @@ class LinearAPI {
                 identifier
                 title
                 url
+                createdAt
                 updatedAt
                 state {
                   name
@@ -278,6 +282,7 @@ class LinearAPI {
                 identifier
                 title
                 url
+                createdAt
                 updatedAt
                 state {
                   name
@@ -326,6 +331,7 @@ class LinearAPI {
                 identifier
                 title
                 url
+                createdAt
                 updatedAt
                 state {
                   name
@@ -377,6 +383,7 @@ class LinearAPI {
                 identifier
                 title
                 url
+                createdAt
                 updatedAt
                 state {
                   name
@@ -445,6 +452,7 @@ class LinearAPI {
               id
               name
               url
+              createdAt
               updatedAt
               state
               progress
@@ -488,6 +496,7 @@ class LinearAPI {
               id
               name
               url
+              createdAt
               updatedAt
               icon
               status
@@ -522,6 +531,8 @@ class LinearAPI {
               identifier
               title
               url
+              createdAt
+              updatedAt
               state {
                 name
                 type
@@ -568,6 +579,8 @@ class LinearAPI {
               id
               name
               url
+              createdAt
+              updatedAt
               state
               progress
               icon

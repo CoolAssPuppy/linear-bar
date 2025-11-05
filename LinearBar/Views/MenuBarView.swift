@@ -113,6 +113,13 @@ struct MenuBarView: View {
 
     private var footerBar: some View {
         HStack {
+            Button(action: refreshAllViews) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(.borderless)
+            .help("Refresh all data")
+
             Spacer()
 
             Button(action: quitApp) {
@@ -154,6 +161,10 @@ struct MenuBarView: View {
         if let url = url {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    private func refreshAllViews() {
+        NotificationCenter.default.post(name: .refreshAllData, object: nil)
     }
 
     private func quitApp() {

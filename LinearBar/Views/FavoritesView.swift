@@ -8,7 +8,7 @@ struct FavoritesView: View {
     @State private var errorMessage: String?
 
     private var nonFolderFavorites: [Favorite] {
-        favorites.filter { favorite in
+        let filtered = favorites.filter { favorite in
             // Filter out folders
             guard !isFolder(favorite) else { return false }
 
@@ -43,6 +43,31 @@ struct FavoritesView: View {
 
             return true
         }
+
+        // Apply sort order
+        return filtered.sorted { fav1, fav2 in
+            let item1 = getLinearItem(from: fav1)
+            let item2 = getLinearItem(from: fav2)
+
+            switch settings.sortOrder {
+            case .createdNewest:
+                let date1 = item1?.createdAt ?? Date.distantPast
+                let date2 = item2?.createdAt ?? Date.distantPast
+                return date1 > date2
+            case .createdOldest:
+                let date1 = item1?.createdAt ?? Date.distantPast
+                let date2 = item2?.createdAt ?? Date.distantPast
+                return date1 < date2
+            case .updatedNewest:
+                let date1 = item1?.updatedAt ?? Date.distantPast
+                let date2 = item2?.updatedAt ?? Date.distantPast
+                return date1 > date2
+            case .updatedOldest:
+                let date1 = item1?.updatedAt ?? Date.distantPast
+                let date2 = item2?.updatedAt ?? Date.distantPast
+                return date1 < date2
+            }
+        }
     }
 
     var body: some View {
@@ -58,6 +83,9 @@ struct FavoritesView: View {
             }
         }
         .onAppear {
+            loadFavorites()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadFavorites()
         }
     }
@@ -414,5 +442,16 @@ extension FavoritesView {
         // In multi-account setup, you would determine which account owns this item
         // For now, return the first account's color
         return AppSettings.shared.accounts.first?.color
+    }
+
+    private func getLinearItem(from favorite: Favorite) -> (any LinearItem)? {
+        if let issue = favorite.issue {
+            return issue
+        } else if let project = favorite.project {
+            return project
+        } else if let initiative = favorite.initiative {
+            return initiative
+        }
+        return nil
     }
 }
