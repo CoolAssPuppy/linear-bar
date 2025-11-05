@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjectiveC
 
 /// Settings view for managing accounts and preferences
 struct SettingsView: View {
@@ -78,11 +79,27 @@ struct AccountsTab: View {
         } message: { account in
             Text("Are you sure you want to remove \(account.email)? This will stop syncing your Linear data.")
         }
-        .sheet(isPresented: $showingColorPicker) {
-            if let account = selectedAccount {
-                ColorPickerView(account: account)
+        .onChange(of: showingColorPicker) { isShowing in
+            if isShowing, let account = selectedAccount {
+                presentColorPicker(for: account)
             }
         }
+    }
+
+    private func presentColorPicker(for account: LinearAccount) {
+        let colorPickerView = ColorPickerView(account: account, isPresented: $showingColorPicker)
+        let hostingController = NSHostingController(rootView: colorPickerView)
+
+        let window = NSWindow(contentViewController: hostingController)
+        window.styleMask = [.titled, .closable]
+        window.title = "Choose Color"
+        window.setContentSize(NSSize(width: 340, height: 360))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.level = .floating
+
+        // Store reference to prevent deallocation
+        objc_setAssociatedObject(self, "colorPickerWindow", window, .OBJC_ASSOCIATION_RETAIN)
     }
 
     private var emptyStateView: some View {
@@ -541,7 +558,9 @@ struct AboutTab: View {
 
 struct ColorPickerView: View {
     let account: LinearAccount
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
+    @State private var hexInput: String = ""
+    @State private var showInvalidHexError: Bool = false
 
     private let availableColors: [String] = [
         "#5E6AD2", // Linear purple
@@ -549,13 +568,13 @@ struct ColorPickerView: View {
         "#F59E0B", // orange
         "#EF4444", // red
         "#3B82F6", // blue
-        "#8B5CF6", // purple
+        "#000000", // black
         "#EC4899", // pink
-        "#14B8A6"  // teal
+        "#8B4513"  // brown
     ]
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Text("Choose Account Color")
                 .font(.headline)
                 .padding(.top, 8)
@@ -575,20 +594,50 @@ struct ColorPickerView: View {
             }
             .padding(.horizontal, 16)
 
+            Divider()
+                .padding(.horizontal, 16)
+
+            VStack(spacing: 8) {
+                Text("Or enter a hex code:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 8) {
+                    TextField("#5E6AD2", text: $hexInput)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(.body, design: .monospaced))
+                        .frame(width: 140)
+                        .onSubmit {
+                            applyCustomHex()
+                        }
+
+                    Button("Apply") {
+                        applyCustomHex()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                if showInvalidHexError {
+                    Text("Invalid hex code")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            }
+
             Button("Cancel") {
-                dismiss()
+                closeWindow()
             }
             .buttonStyle(.bordered)
             .padding(.bottom, 8)
         }
-        .frame(width: 320, height: 280)
+        .frame(width: 340, height: 360)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private func colorButton(_ colorHex: String) -> some View {
         Button(action: {
             AppSettings.shared.setAccountColor(colorHex, forAccount: account.email)
-            dismiss()
+            closeWindow()
         }) {
             Circle()
                 .fill(Color(hex: colorHex))
@@ -599,5 +648,32 @@ struct ColorPickerView: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+
+    private func applyCustomHex() {
+        var cleanedHex = hexInput.trimmingCharacters(in: .whitespaces).uppercased()
+
+        // Add # if missing
+        if !cleanedHex.hasPrefix("#") {
+            cleanedHex = "#" + cleanedHex
+        }
+
+        // Validate hex format
+        let hexPattern = "^#[0-9A-F]{6}$"
+        let regex = try? NSRegularExpression(pattern: hexPattern)
+        let range = NSRange(location: 0, length: cleanedHex.utf16.count)
+
+        if regex?.firstMatch(in: cleanedHex, range: range) != nil {
+            AppSettings.shared.setAccountColor(cleanedHex, forAccount: account.email)
+            showInvalidHexError = false
+            closeWindow()
+        } else {
+            showInvalidHexError = true
+        }
+    }
+
+    private func closeWindow() {
+        isPresented = false
+        NSApplication.shared.keyWindow?.close()
     }
 }
