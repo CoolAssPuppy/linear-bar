@@ -1,0 +1,309 @@
+# frozen_string_literal: true
+
+# CRITICAL: Load environment variables BEFORE default_platform
+# Without this, ENV variables won't be available and auth will fail
+require 'dotenv'
+env_file = File.expand_path('../.env', __dir__)
+Dotenv.load(env_file) if File.exist?(env_file)
+
+default_platform(:mac)
+
+# Configuration constants
+APP_IDENTIFIER = "com.strategicnerds.LinearBar"
+SCHEME = "LinearBar"
+XCODEPROJ = "../LinearBar.xcodeproj"
+INFO_PLIST = "../LinearBar/Resources/Info.plist"
+
+platform :mac do
+  # ============================================================================
+  # PRE-FLIGHT CHECKS
+  # ============================================================================
+
+  desc "Run pre-flight checks before deployment"
+  lane :prep do
+    UI.header "Running Pre-Flight Checks"
+
+    # Verify we're in the correct directory
+    UI.message "Working directory: #{Dir.pwd}"
+    UI.message "Project root: #{File.expand_path('..', __dir__)}"
+
+    # Check environment variables
+    required_env_vars = [
+      "FASTLANE_USER",
+      "FASTLANE_TEAM_ID",
+      "APP_STORE_CONNECT_API_KEY_ID",
+      "APP_STORE_CONNECT_API_ISSUER_ID"
+    ]
+
+    missing_vars = required_env_vars.select { |var| ENV[var].nil? || ENV[var].empty? }
+    unless missing_vars.empty?
+      UI.user_error!("Missing environment variables: #{missing_vars.join(', ')}")
+      UI.message "Please check your .env file"
+    end
+
+    UI.success "Environment variables: OK"
+
+    # Check for API key file
+    api_key_path = File.expand_path("app_store_connect_api_key.p8", __dir__)
+    unless File.exist?(api_key_path)
+      UI.user_error!("API key file not found at: #{api_key_path}")
+    end
+    UI.success "API key file: OK"
+
+    # Check code signing identities
+    UI.message "Checking code signing certificates..."
+    sh("security find-identity -v -p codesigning | grep 'Apple Distribution'")
+    UI.success "Apple Distribution certificate: OK"
+
+    begin
+      sh("security find-identity -v -p codesigning | grep 'Mac Installer Distribution'")
+      UI.success "Mac Installer Distribution certificate: OK"
+    rescue
+      UI.important "⚠️  Mac Installer Distribution certificate not found"
+      UI.important "This certificate is REQUIRED for Mac App Store submission"
+      UI.important "Create it in Apple Developer portal before deploying to production"
+    end
+
+    # Check git status
+    unless is_ci
+      begin
+        ensure_git_status_clean
+        UI.success "Git working directory: Clean"
+      rescue => ex
+        UI.important "⚠️  You have uncommitted changes"
+        sh("git status --short")
+        UI.important "Commit your changes before deploying to production"
+      end
+    end
+
+    # Verify version numbers using plutil (more reliable than get_info_plist_value)
+    begin
+      version = sh("plutil -extract CFBundleShortVersionString raw #{INFO_PLIST}").strip
+      build = sh("plutil -extract CFBundleVersion raw #{INFO_PLIST}").strip
+      UI.success "Current version: #{version} (build #{build})"
+    rescue => ex
+      UI.error "Could not read version from Info.plist: #{ex.message}"
+      UI.important "Continuing anyway..."
+    end
+
+    UI.success "All pre-flight checks passed! ✅"
+  end
+
+  # ============================================================================
+  # VERSION MANAGEMENT
+  # ============================================================================
+
+  desc "Bump patch version (1.0.0 → 1.0.1)"
+  lane :bump_patch do
+    bump_version_number(bump_type: "patch")
+  end
+
+  desc "Bump minor version (1.0.0 → 1.1.0)"
+  lane :bump_minor do
+    bump_version_number(bump_type: "minor")
+  end
+
+  desc "Bump major version (1.0.0 → 2.0.0)"
+  lane :bump_major do
+    bump_version_number(bump_type: "major")
+  end
+
+  private_lane :bump_version_number do |options|
+    bump_type = options[:bump_type]
+
+    # Get current version using plutil (NOT agvtool - it fails with "Apple Generic Versioning not enabled")
+    current_version = sh("plutil -extract CFBundleShortVersionString raw #{INFO_PLIST}").strip
+
+    # Calculate new version
+    parts = current_version.split('.').map(&:to_i)
+    case bump_type
+    when "patch"
+      new_version = "#{parts[0]}.#{parts[1]}.#{parts[2] + 1}"
+    when "minor"
+      new_version = "#{parts[0]}.#{parts[1] + 1}.0"
+    when "major"
+      new_version = "#{parts[0] + 1}.0.0"
+    end
+
+    # Update Info.plist using plutil
+    sh("plutil -replace CFBundleShortVersionString -string '#{new_version}' #{INFO_PLIST}")
+
+    UI.success "Version bumped: #{current_version} → #{new_version}"
+
+    # Commit and tag
+    git_commit(
+      path: [INFO_PLIST],
+      message: "Bump version to #{new_version}"
+    )
+    add_git_tag(tag: "v#{new_version}")
+
+    UI.success "Created git tag: v#{new_version}"
+    UI.message "Don't forget to push: git push && git push --tags"
+  end
+
+  # ============================================================================
+  # BUILD
+  # ============================================================================
+
+  desc "Build macOS app"
+  lane :build do
+    UI.header "Building #{SCHEME}"
+
+    # Increment build number using plutil
+    current_build = sh("plutil -extract CFBundleVersion raw #{INFO_PLIST}").strip.to_i
+    new_build = current_build + 1
+    sh("plutil -replace CFBundleVersion -string '#{new_build}' #{INFO_PLIST}")
+
+    UI.message "Build number: #{current_build} → #{new_build}"
+
+    # Build for Mac App Store
+    # CRITICAL: Requires both "Apple Distribution" and "Mac Installer Distribution" certificates
+    gym(
+      scheme: SCHEME,
+      workspace: nil,  # We're using .xcodeproj, not .xcworkspace
+      project: XCODEPROJ,
+      output_directory: "./builds",
+      output_name: "#{SCHEME}.pkg",
+      clean: true,
+      export_method: "app-store",
+      # CRITICAL: -allowProvisioningUpdates lets Xcode auto-create provisioning profiles
+      xcargs: "CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=#{ENV['FASTLANE_TEAM_ID']} -allowProvisioningUpdates"
+    )
+
+    UI.success "Build completed successfully!"
+    UI.message "Output: ./builds/#{SCHEME}.pkg"
+  end
+
+  # ============================================================================
+  # TESTFLIGHT DEPLOYMENT
+  # ============================================================================
+
+  desc "Deploy to TestFlight (macOS external testing)"
+  lane :beta do
+    UI.header "Deploying to TestFlight"
+
+    # Run pre-flight checks
+    prep
+
+    # Build the app
+    build
+
+    # Get changelog
+    changelog = ENV["TESTFLIGHT_CHANGELOG"] || "New build from Fastlane"
+
+    # Use App Store Connect API for authentication (no 2FA prompts!)
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_filepath: File.expand_path("app_store_connect_api_key.p8", __dir__)
+    )
+
+    # Upload to App Store Connect
+    # CRITICAL: skip_waiting_for_build_processing saves 5-30 minutes!
+    # Build will still be processed and appear in TestFlight within 10-15 minutes
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      skip_waiting_for_build_processing: true,  # Don't wait for Apple processing (saves time!)
+      skip_submission: true,                     # Don't wait for API confirmation
+      distribute_external: false,                # Only internal testers initially
+      changelog: changelog,
+      notify_external_testers: false
+    )
+
+    UI.success "🚀 Build uploaded to TestFlight!"
+    UI.message "Build will be available for testing in 10-15 minutes"
+    UI.message "Check status at: https://appstoreconnect.apple.com"
+  end
+
+  # ============================================================================
+  # PRODUCTION RELEASE
+  # ============================================================================
+
+  desc "Deploy to Mac App Store"
+  lane :release do
+    UI.header "Deploying to Mac App Store"
+
+    # Safety check
+    unless UI.confirm("Are you sure you want to deploy to PRODUCTION?")
+      UI.user_error!("Deployment cancelled by user")
+    end
+
+    # Ensure git is clean
+    ensure_git_status_clean
+
+    # Run pre-flight checks
+    prep
+
+    # Build the app
+    build
+
+    # Use App Store Connect API
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_filepath: File.expand_path("app_store_connect_api_key.p8", __dir__)
+    )
+
+    # Upload to App Store
+    upload_to_app_store(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: false,  # Manual submission recommended
+      automatic_release: false,
+      precheck_include_in_app_purchases: false
+    )
+
+    UI.success "🎉 Build uploaded to App Store Connect!"
+    UI.message "Next steps:"
+    UI.message "1. Go to App Store Connect"
+    UI.message "2. Fill in version information and What's New"
+    UI.message "3. Submit for review when ready"
+    UI.message "4. Push git tags: git push --tags"
+  end
+
+  # ============================================================================
+  # METADATA MANAGEMENT
+  # ============================================================================
+
+  desc "Update App Store metadata (description, keywords, screenshots)"
+  lane :metadata do
+    UI.header "Updating App Store Metadata"
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_filepath: File.expand_path("app_store_connect_api_key.p8", __dir__)
+    )
+
+    deliver(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      force: true
+    )
+
+    UI.success "Metadata updated successfully!"
+  end
+
+  # ============================================================================
+  # TESTING
+  # ============================================================================
+
+  desc "Run all tests"
+  lane :test do
+    UI.header "Running Tests"
+
+    scan(
+      scheme: SCHEME,
+      project: XCODEPROJ,
+      clean: true,
+      code_coverage: true
+    )
+
+    UI.success "All tests passed! ✅"
+  end
+end

@@ -81,6 +81,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+fastlane/builds
+fastlane/*.p8
+Gemfile.lock
+vendor/bundle
 
 # Code Injection
 #
@@ -125,6 +129,7 @@ mcp.json
 ## Environment and secrets (important!)
 .env
 .env.*
+!.env.default
 !.env.example
 .env.local
 .env.development
@@ -146,6 +151,7 @@ credentials.json
 # Build artifacts
 *.app
 *.xcarchive
+*.pkg
 
 # Testing
 *.coverage
