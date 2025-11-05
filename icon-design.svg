@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners -->
+  <rect width="1024" height="1024" rx="226" fill="#5E6AD2"/>
+
+  <!-- Linear-inspired connection nodes in background (subtle) -->
+  <g opacity="0.3" stroke="white" stroke-width="8" fill="none">
+    <line x1="300" y1="300" x2="500" y2="400"/>
+    <line x1="500" y1="400" x2="700" y2="300"/>
+    <line x1="500" y1="400" x2="500" y2="600"/>
+    <circle cx="300" cy="300" r="20" fill="white"/>
+    <circle cx="500" cy="400" r="20" fill="white"/>
+    <circle cx="700" cy="300" r="20" fill="white"/>
+    <circle cx="500" cy="600" r="20" fill="white"/>
+  </g>
+
+  <!-- Large checkbox in center -->
+  <g transform="translate(312, 312)">
+    <!-- Checkbox square -->
+    <rect x="0" y="0" width="400" height="400" rx="60" fill="white" stroke="none"/>
+
+    <!-- Checkmark -->
+    <path d="M 100 200 L 180 280 L 320 120"
+          stroke="#5E6AD2"
+          stroke-width="50"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"/>
+  </g>
+</svg>

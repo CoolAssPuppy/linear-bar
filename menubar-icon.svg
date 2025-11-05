@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+  <!-- Template icon for menu bar (black, will be inverted for dark mode) -->
+  <!-- Checkbox -->
+  <rect x="6" y="6" width="32" height="32" rx="6" fill="none" stroke="black" stroke-width="3"/>
+
+  <!-- Checkmark -->
+  <path d="M 12 22 L 18 28 L 32 14"
+        stroke="black"
+        stroke-width="3.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"/>
+</svg>
