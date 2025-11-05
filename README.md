@@ -1,307 +1,248 @@
 # LinearBar
 
-A beautiful macOS menu bar app for quick access to your Linear workspace. View favorites, recently updated items, and search across issues, projects, and initiatives without leaving your workflow.
+A native macOS menu bar app for quick access to your Linear workspace. View favorites, recently updated items, and search across issues, projects, and initiatives without leaving your workflow.
+
+![macOS](https://img.shields.io/badge/macOS-13.0+-blue)
+![Swift](https://img.shields.io/badge/Swift-5.9+-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
-- **Quick Access**: Three-panel interface with smooth navigation
-  - Favorites: View your starred items from Linear
-  - Recently Updated: Filter by items you created or team items
-  - Search: Fast, debounced search across your workspace
+- **Three-panel interface** with smooth tab navigation
+  - **Favorites**: Your starred items from Linear
+  - **Recent**: Filter by created, assigned, or team items
+  - **Search**: Fast search across issues, projects, and initiatives
 
-- **Multiple Accounts**: Support for multiple Linear accounts with color coding
-- **OAuth Authentication**: Secure OAuth 2.0 flow with Linear
-- **iCloud Sync**: Settings and account preferences sync across devices
-- **Native macOS**: Built with SwiftUI, follows Apple Human Interface Guidelines
-- **Menu Bar Only**: Lightweight, lives in your menu bar
+- **State-based icons**: Visual indicators matching Linear's design language
+- **Smart filtering**: Hide completed or canceled items
+- **OAuth authentication**: Secure OAuth 2.0 flow with Linear
+- **Multi-account support**: Switch between Linear workspaces (planned)
+- **iCloud sync**: Settings sync across your devices
+- **Native macOS**: Built with SwiftUI, follows Apple HIG
 
-## Requirements
+## Quick Start
 
-- macOS 13.0 (Ventura) or later
-- Xcode 15.0 or later (for building)
-- Linear account
-- Active internet connection
+### 1. Clone the repository
 
-## Installation
+```bash
+git clone https://github.com/yourusername/linear-bar.git
+cd linear-bar
+```
 
-### From Source
+### 2. Get Linear OAuth credentials
 
-1. Clone the repository:
-   ```bash
-   cd /Users/prashant/Developer/linear-bar
-   ```
+1. Go to [Linear Settings → API → OAuth Applications](https://linear.app/settings/api/applications/new)
+2. Click **"Create new OAuth application"**
+3. Fill in the details:
+   - **Name**: LinearBar (or your preferred name)
+   - **Callback URL**: `linearbar://oauth/callback`
+   - **Scopes**: Select `read` (minimum required)
+4. Click **Create**
+5. Copy your **Client ID** and **Client Secret**
 
-2. Open the project in Xcode:
-   ```bash
-   open LinearBar.xcodeproj
-   ```
+### 3. Configure credentials
 
-3. Configure Linear OAuth Application:
-   - Go to Linear Settings → API → OAuth Applications
-   - Create a new OAuth application
-   - Set the redirect URI to: `linearbar://oauth/callback`
-   - Copy the Client ID and Client Secret
+Choose one of two methods:
 
-4. Update OAuth credentials in `LinearBar/Services/LinearAuthService.swift`:
+#### Option A: Doppler (Recommended for teams)
+
+```bash
+# Install Doppler
+brew install dopplerhq/cli/doppler
+
+# Login and setup
+doppler login
+doppler setup
+
+# Add your secrets
+doppler secrets set LINEAR_CLIENT_ID="lin_oauth_xxxxx"
+doppler secrets set LINEAR_CLIENT_SECRET="your_secret_here"
+
+# Run Xcode with Doppler
+doppler run -- open LinearBar.xcodeproj
+```
+
+#### Option B: Local file (Simple for solo dev)
+
+1. Open `LinearBar/Services/LinearAuthSecrets.swift`
+2. Replace the placeholder values:
    ```swift
-   private let clientId = "YOUR_LINEAR_CLIENT_ID"
-   private let clientSecret = "YOUR_LINEAR_CLIENT_SECRET"
+   static let clientId = "YOUR_LINEAR_CLIENT_ID"
+   static let clientSecret = "YOUR_LINEAR_CLIENT_SECRET"
    ```
+3. This file is gitignored, so your secrets are safe
 
-5. Configure code signing:
-   - Select the LinearBar target in Xcode
-   - Go to Signing & Capabilities
-   - Select your development team
-   - Ensure the bundle identifier is unique (e.g., `com.yourname.linearbar`)
+### 4. Build and run
 
-6. Build and run the app (Cmd+R)
+1. Open `LinearBar.xcodeproj` in Xcode
+2. Select your development team in **Signing & Capabilities**
+3. Press **Cmd+R** to build and run
+4. Click the menu bar icon and sign in to Linear
 
-## First Launch Setup
+## Architecture
 
-1. **Sign In to Linear**:
-   - Click the LinearBar icon in your menu bar
-   - The popover will prompt you to add a Linear account
-   - Or open Settings → Accounts → Add Linear Account
-   - Your browser will open for OAuth authorization
-   - Approve the connection
-   - You'll be redirected back to LinearBar
+LinearBar follows MVVM architecture with clean separation of concerns:
 
-2. **Configure Preferences**:
-   - Open Settings (gear icon in popover)
-   - Choose default view mode (My Items or Team Items)
-   - Set refresh interval
-   - Enable launch at login if desired
+```
+LinearBar/
+├── App/
+│   ├── LinearBarApp.swift          # App entry point
+│   └── AppDelegate.swift           # Menu bar lifecycle, URL handling
+│
+├── Models/
+│   ├── LinearTypes.swift           # Issue, Project, Initiative, Team
+│   └── LinearAccount.swift         # Multi-account support
+│
+├── Views/
+│   ├── MenuBarView.swift           # Main popover container
+│   ├── FavoritesView.swift         # Favorites tab
+│   ├── RecentlyUpdatedView.swift   # Recent tab with filters
+│   ├── SearchView.swift            # Search tab with debouncing
+│   ├── SettingsView.swift          # Settings window
+│   └── ItemRow.swift               # Reusable item component
+│
+├── Services/
+│   ├── LinearAPI.swift             # GraphQL API client
+│   ├── LinearAuthService.swift     # OAuth 2.0 flow
+│   ├── KeychainService.swift       # Secure token storage
+│   └── AppSettings.swift           # iCloud-synced settings
+│
+└── Resources/
+    ├── LinearAuthSecrets.swift     # OAuth credentials (gitignored)
+    └── Assets.xcassets/            # App icons
+```
 
-3. **Add Multiple Accounts** (Optional):
-   - Go to Settings → Accounts
-   - Click "Add Linear Account"
-   - Assign unique colors to each account for easy identification
+### Key Components
+
+**LinearAPI**: GraphQL client for fetching issues, projects, initiatives, favorites, and teams. Handles pagination, error handling, and rate limiting.
+
+**LinearAuthService**: OAuth 2.0 flow implementation with custom URL scheme (`linearbar://`). Supports Doppler environment variables for credential management.
+
+**KeychainService**: Stores OAuth tokens securely in macOS Keychain. Tokens never touch disk or iCloud.
+
+**AppSettings**: User preferences with iCloud Key-Value Store sync. Handles default views, filters, and refresh intervals.
 
 ## Usage
 
 ### Main Interface
 
-Click the LinearBar icon in your menu bar to open the popover:
+Click the LinearBar icon in your menu bar:
 
-- **Favorites Tab**: Shows your 10 most recently updated favorite items
-- **Recently Updated Tab**:
-  - Toggle between "Me" (items you created) and "Team" (items from selected team)
-  - Select team from dropdown when in Team mode
-- **Search Tab**:
-  - Type to search across issues, projects, and initiatives
-  - Results appear after 500ms of typing (debounced)
-  - Shows up to 10 combined results
+- **Favorites**: Shows your favorited items from Linear
+- **Recent**: Three sub-tabs for Created, Assigned, or Team items
+- **Search**: Type to search (debounced 500ms)
 
-### Click Any Item
-
-Clicking an item opens it in:
-- Linear desktop app (if installed)
-- Your default browser (if app not installed)
+Click any item to open it in Linear (app or browser).
 
 ### Settings
 
-Access via the gear icon in the popover header:
+Access via the gear icon:
 
-1. **Accounts Tab**:
-   - View connected Linear accounts
-   - Add new accounts
-   - Change account colors (paint palette icon)
-   - Remove accounts
-   - Re-authenticate if needed
+1. **Accounts**: Add/remove Linear accounts, re-authenticate
+2. **Preferences**:
+   - Default view and tab
+   - Show/hide completed and canceled items
+   - Refresh interval
+   - Launch at login
+3. **About**: Version and build info
 
-2. **Preferences Tab**:
-   - Default View: Choose between "My Items" or "Team Items"
-   - Refresh Interval: Manual, 5min, 15min, 30min, or 1 hour
-   - Launch at Login: Start LinearBar when you log in
+### Creating Items
 
-3. **About Tab**:
-   - App version and build information
+Click the **+** button to create:
+- New Issue
+- New Project
+- New Initiative
 
-## Architecture
-
-```
-LinearBar/
-├── App/
-│   ├── LinearBarApp.swift       # App entry point
-│   └── AppDelegate.swift        # Menu bar setup, URL handling
-├── Models/
-│   ├── LinearAccount.swift      # Account model
-│   └── LinearTypes.swift        # Issue, Project, Initiative, Team models
-├── Views/
-│   ├── MenuBarView.swift        # Main popover with tabs
-│   ├── FavoritesView.swift      # Favorites tab
-│   ├── RecentlyUpdatedView.swift # Recently updated tab
-│   ├── SearchView.swift         # Search tab
-│   ├── SettingsView.swift       # Settings window
-│   └── ItemRow.swift            # Reusable item row component
-├── Services/
-│   ├── LinearAPI.swift          # GraphQL API client
-│   ├── LinearAuthService.swift  # OAuth flow
-│   ├── KeychainService.swift    # Secure token storage
-│   └── AppSettings.swift        # Settings with iCloud sync
-└── Resources/
-    ├── Info.plist              # App configuration
-    ├── LinearBar.entitlements  # Sandbox & iCloud entitlements
-    ├── PrivacyInfo.xcprivacy   # Privacy manifest
-    └── Assets.xcassets/        # App icons
-
-## Security
-
-- **OAuth Tokens**: Stored securely in macOS Keychain
-- **App Sandbox**: Runs in Apple's App Sandbox for security
-- **Network Only**: Only requests network access, no file system access
-- **No Analytics**: No tracking or data collection
-- **iCloud Sync**: Settings only (not tokens) sync via iCloud Key-Value Store
-
-## Troubleshooting
-
-### Authentication Issues
-
-**Problem**: "Sign in required" message appears
-
-**Solutions**:
-1. Go to Settings → Accounts
-2. Click "Sign In" next to the affected account
-3. Complete OAuth flow again
-4. If issues persist, remove and re-add the account
-
-### Menu Bar Icon Shows Warning
-
-**Problem**: Triangle warning icon in menu bar
-
-**Solution**: One or more accounts need re-authentication. Open Settings → Accounts to reconnect.
-
-### No Items Appearing
-
-**Problem**: Tabs show "No items" even though you have items in Linear
-
-**Solutions**:
-1. Check authentication in Settings → Accounts
-2. Verify refresh interval isn't set to "Manual Only"
-3. Click the refresh button if available
-4. Check internet connection
-5. Verify items exist in your Linear workspace
-
-### Search Not Working
-
-**Problem**: Search returns no results
-
-**Solutions**:
-1. Try different search terms
-2. Ensure you're authenticated
-3. Check internet connection
-4. Linear API may be rate-limited (wait a few minutes)
-
-### iCloud Sync Issues
-
-**Problem**: Settings not syncing between devices
-
-**Solutions**:
-1. Ensure iCloud Drive is enabled on all devices
-2. Check iCloud storage isn't full
-3. Wait a few minutes for sync to occur
-4. Sign out and back into iCloud
+Opens Linear's creation flow in your browser.
 
 ## Development
 
 ### Prerequisites
 
-- Xcode 15.0+
-- macOS 13.0+
-- Swift 5.9+
+- macOS 13.0 (Ventura) or later
+- Xcode 15.0 or later
+- Swift 5.9 or later
+- Linear account with OAuth app
 
 ### Building
 
 ```bash
-# Clone the repository
+# Clone and open
 git clone <repository-url>
 cd linear-bar
-
-# Open in Xcode
 open LinearBar.xcodeproj
 
-# Build
-xcodebuild -project LinearBar.xcodeproj -scheme LinearBar build
+# Or build from command line
+xcodebuild -scheme LinearBar -configuration Debug build
 ```
 
-### Testing
+### Code Structure
 
-Currently, the app does not include automated tests. Manual testing checklist:
+- **MVVM pattern**: Views observe models via `@ObservedObject` and `@StateObject`
+- **Async/await**: All API calls use modern Swift concurrency
+- **Error handling**: Comprehensive error states and user feedback
+- **Type safety**: Protocols for shared behavior (`LinearItem`)
+- **Reusable components**: Shared row components, icon mapping, state normalization
 
-- [ ] OAuth flow completes successfully
-- [ ] Favorites load correctly
-- [ ] Recently Updated works in both Me and Team modes
-- [ ] Search returns relevant results
-- [ ] Settings persist across app restarts
-- [ ] Multiple accounts work correctly
-- [ ] Account colors display properly
-- [ ] Items open in Linear when clicked
-- [ ] iCloud sync works between devices
+## Security & Privacy
 
-### Code Quality
+- **OAuth tokens**: Stored in macOS Keychain (never in code or iCloud)
+- **App Sandbox**: Runs sandboxed with minimal permissions
+- **No analytics**: Zero tracking or data collection
+- **No third parties**: Only communicates with Linear's API
+- **iCloud**: Only settings sync (not credentials)
+- **Secrets management**: Doppler support for team environments
 
-The codebase follows:
-- Swift API Design Guidelines
-- Apple Human Interface Guidelines
-- MVVM architecture patterns
-- SwiftUI best practices
-- Comprehensive error handling
+## Troubleshooting
 
-## Privacy
+**Authentication fails**: Check that your OAuth callback URL is exactly `linearbar://oauth/callback` in Linear settings.
 
-LinearBar:
-- Accesses your Linear data via OAuth
-- Stores OAuth tokens in Keychain
-- Syncs settings (not tokens) via iCloud
-- Does not collect analytics
-- Does not track usage
-- Does not share data with third parties
+**No items showing**: Verify authentication in Settings → Accounts. Check that you have items in Linear.
 
-See `PrivacyInfo.xcprivacy` for detailed privacy manifest.
+**Search not working**: Ensure you're authenticated and have network connectivity.
+
+**Build errors**: Ensure you've configured `LinearAuthSecrets.swift` with valid credentials.
 
 ## Roadmap
 
-Potential future enhancements:
-- [ ] Create issues from menu bar
-- [ ] Quick actions (mark complete, change status)
-- [ ] Keyboard navigation and shortcuts
-- [ ] Custom filters
-- [ ] Notifications for updates
-- [ ] Multiple workspace support
-- [ ] Sparkle auto-updater
+Future enhancements (v0.2+):
+- Quick actions (mark complete, change assignee)
+- Keyboard shortcuts and navigation
+- Custom filters and views
+- Update notifications
+- Assignee avatars
+- Priority indicators
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions welcome! Please:
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+3. Test thoroughly
+4. Submit a PR with clear description
 
 ## License
 
-[Specify your license here]
+MIT License - see LICENSE file for details
 
 ## Credits
 
 Built with:
 - Swift & SwiftUI
-- Linear GraphQL API
+- [Linear GraphQL API](https://developers.linear.app/docs/graphql/working-with-the-graphql-api)
 - macOS Keychain Services
 - iCloud Key-Value Store
+- [Doppler](https://doppler.com) for secrets management
 
-Inspired by the simplicity and elegance of Linear's own design philosophy.
+Inspired by Linear's elegant design philosophy.
 
 ## Support
 
-For issues, questions, or feature requests:
-- Open an issue on GitHub
-- Check existing issues first
-- Provide detailed steps to reproduce any bugs
+- Open an issue for bugs or feature requests
+- Check existing issues before creating new ones
+- Provide reproduction steps for bugs
 
-## Acknowledgments
+---
 
-- Linear team for their excellent API and documentation
-- Meeting-Notifier app for UI/UX inspiration
-- Apple for SwiftUI and developer tools
+**Version**: 0.1.0
+**Status**: Active development
