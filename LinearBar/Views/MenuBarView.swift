@@ -22,6 +22,21 @@ struct MenuBarView: View {
         }
         .frame(width: 400, height: 500)
         .background(.ultraThinMaterial)
+        .onAppear {
+            loadDefaultTab()
+        }
+    }
+
+    private func loadDefaultTab() {
+        let defaultTab = AppSettings.shared.defaultTab
+        switch defaultTab {
+        case .favorites:
+            selectedTab = .favorites
+        case .recent:
+            selectedTab = .recent
+        case .search:
+            selectedTab = .search
+        }
     }
 
     // MARK: - Header

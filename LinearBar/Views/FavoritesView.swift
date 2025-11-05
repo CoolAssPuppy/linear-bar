@@ -2,10 +2,12 @@ import SwiftUI
 
 /// View displaying user's favorite items from Linear
 struct FavoritesView: View {
-    @ObservedObject private var settings = AppSettings.shared
     @State private var favorites: [Favorite] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showCompletedItems = true
+    @State private var showCanceledItems = false
+    @State private var sortOrder: SortOrder = .updatedNewest
 
     private var nonFolderFavorites: [Favorite] {
         let filtered = favorites.filter { favorite in
@@ -15,10 +17,10 @@ struct FavoritesView: View {
             // Apply state filters for issues
             if let issue = favorite.issue {
                 if let stateType = issue.state?.type {
-                    if stateType == "completed" && !settings.showCompletedItems {
+                    if stateType == "completed" && !showCompletedItems {
                         return false
                     }
-                    if stateType == "canceled" && !settings.showCanceledItems {
+                    if stateType == "canceled" && !showCanceledItems {
                         return false
                     }
                 }
@@ -26,17 +28,17 @@ struct FavoritesView: View {
 
             // Apply state filters for projects
             if let project = favorite.project {
-                if project.state.lowercased() == "completed" && !settings.showCompletedItems {
+                if project.state.lowercased() == "completed" && !showCompletedItems {
                     return false
                 }
-                if project.state.lowercased() == "canceled" && !settings.showCanceledItems {
+                if project.state.lowercased() == "canceled" && !showCanceledItems {
                     return false
                 }
             }
 
             // Apply state filters for initiatives
             if let initiative = favorite.initiative {
-                if initiative.status?.lowercased() == "completed" && !settings.showCompletedItems {
+                if initiative.status?.lowercased() == "completed" && !showCompletedItems {
                     return false
                 }
             }
@@ -49,7 +51,7 @@ struct FavoritesView: View {
             let item1 = getLinearItem(from: fav1)
             let item2 = getLinearItem(from: fav2)
 
-            switch settings.sortOrder {
+            switch sortOrder {
             case .createdNewest:
                 let date1 = item1?.createdAt ?? Date.distantPast
                 let date2 = item2?.createdAt ?? Date.distantPast
@@ -83,11 +85,22 @@ struct FavoritesView: View {
             }
         }
         .onAppear {
+            syncSettingsFromAppSettings()
             loadFavorites()
         }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadFavorites()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            syncSettingsFromAppSettings()
+        }
+    }
+
+    private func syncSettingsFromAppSettings() {
+        let settings = AppSettings.shared
+        showCompletedItems = settings.showCompletedItems
+        showCanceledItems = settings.showCanceledItems
+        sortOrder = settings.sortOrder
     }
 
     // MARK: - Content

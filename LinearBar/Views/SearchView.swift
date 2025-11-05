@@ -2,22 +2,24 @@ import SwiftUI
 
 /// View for searching issues, projects, and initiatives
 struct SearchView: View {
-    @ObservedObject private var settings = AppSettings.shared
     @State private var searchText = ""
     @State private var searchResults: [any LinearItem] = []
     @State private var isSearching = false
     @State private var errorMessage: String?
     @State private var searchTask: Task<Void, Never>?
+    @State private var showCompletedItems = true
+    @State private var showCanceledItems = false
+    @State private var sortOrder: SortOrder = .updatedNewest
 
     private var filteredResults: [any LinearItem] {
         let filtered = searchResults.filter { item in
             // Filter issues by state type
             if let issue = item as? Issue {
                 if let stateType = issue.state?.type {
-                    if stateType == "completed" && !settings.showCompletedItems {
+                    if stateType == "completed" && !showCompletedItems {
                         return false
                     }
-                    if stateType == "canceled" && !settings.showCanceledItems {
+                    if stateType == "canceled" && !showCanceledItems {
                         return false
                     }
                 }
@@ -25,17 +27,17 @@ struct SearchView: View {
 
             // Filter projects by state
             if let project = item as? Project {
-                if project.state.lowercased() == "completed" && !settings.showCompletedItems {
+                if project.state.lowercased() == "completed" && !showCompletedItems {
                     return false
                 }
-                if project.state.lowercased() == "canceled" && !settings.showCanceledItems {
+                if project.state.lowercased() == "canceled" && !showCanceledItems {
                     return false
                 }
             }
 
             // Filter initiatives by status
             if let initiative = item as? Initiative {
-                if initiative.status?.lowercased() == "completed" && !settings.showCompletedItems {
+                if initiative.status?.lowercased() == "completed" && !showCompletedItems {
                     return false
                 }
             }
@@ -45,7 +47,7 @@ struct SearchView: View {
 
         // Apply sort order
         return filtered.sorted { item1, item2 in
-            switch settings.sortOrder {
+            switch sortOrder {
             case .createdNewest:
                 let date1 = item1.createdAt ?? Date.distantPast
                 let date2 = item2.createdAt ?? Date.distantPast
@@ -86,6 +88,19 @@ struct SearchView: View {
                 }
             }
         }
+        .onAppear {
+            syncSettingsFromAppSettings()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            syncSettingsFromAppSettings()
+        }
+    }
+
+    private func syncSettingsFromAppSettings() {
+        let settings = AppSettings.shared
+        showCompletedItems = settings.showCompletedItems
+        showCanceledItems = settings.showCanceledItems
+        sortOrder = settings.sortOrder
     }
 
     // MARK: - Search Field

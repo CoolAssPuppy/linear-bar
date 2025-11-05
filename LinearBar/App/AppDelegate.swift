@@ -108,6 +108,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func showPopover() {
         guard let button = statusItem?.button else { return }
         popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+
+        // Activate the app and make the popover window key to give it focus
+        NSApp.activate(ignoringOtherApps: true)
+        popover?.contentViewController?.view.window?.makeKey()
+
         startMonitoringForClicksOutsidePopover()
     }
 

@@ -120,16 +120,21 @@ struct AccountsTab: View {
     private func accountRow(_ account: LinearAccount) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                // Account color indicator
-                if let colorHex = account.color {
+                // Account color indicator - clickable to change color
+                Button(action: {
+                    selectedAccount = account
+                    showingColorPicker = true
+                }) {
                     Circle()
-                        .fill(Color(hex: colorHex))
-                        .frame(width: 16, height: 16)
-                } else {
-                    Circle()
-                        .fill(Color.gray)
-                        .frame(width: 16, height: 16)
+                        .fill(Color(hex: account.color ?? "#5E6AD2"))
+                        .frame(width: 20, height: 20)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+                        )
                 }
+                .buttonStyle(.plain)
+                .help("Change account color")
 
                 VStack(alignment: .leading, spacing: 4) {
                     if let name = account.name {
@@ -142,15 +147,6 @@ struct AccountsTab: View {
                 }
 
                 Spacer()
-
-                Button(action: {
-                    selectedAccount = account
-                    showingColorPicker = true
-                }) {
-                    Image(systemName: "paintpalette")
-                }
-                .buttonStyle(.borderless)
-                .help("Change account color")
 
                 Button("Remove") {
                     removeAccount(account)
@@ -251,7 +247,41 @@ struct AccountsTab: View {
 // MARK: - Preferences Tab
 
 struct PreferencesTab: View {
-    @ObservedObject private var settings = AppSettings.shared
+    @AppStorage("defaultViewMode") private var defaultViewModeRaw = ViewMode.createdByMe.rawValue
+    @AppStorage("defaultTab") private var defaultTabRaw = DefaultTab.favorites.rawValue
+    @AppStorage("refreshInterval") private var refreshIntervalRaw = RefreshInterval.fifteenMinutes.rawValue
+    @AppStorage("showCompletedItems") private var showCompletedItems = true
+    @AppStorage("showCanceledItems") private var showCanceledItems = false
+    @AppStorage("sortOrder") private var sortOrderRaw = SortOrder.updatedNewest.rawValue
+    @AppStorage("launchAtLogin") private var launchAtLogin = false
+
+    private var defaultViewMode: Binding<ViewMode> {
+        Binding(
+            get: { ViewMode(rawValue: defaultViewModeRaw) ?? .createdByMe },
+            set: { defaultViewModeRaw = $0.rawValue }
+        )
+    }
+
+    private var defaultTab: Binding<DefaultTab> {
+        Binding(
+            get: { DefaultTab(rawValue: defaultTabRaw) ?? .favorites },
+            set: { defaultTabRaw = $0.rawValue }
+        )
+    }
+
+    private var refreshInterval: Binding<RefreshInterval> {
+        Binding(
+            get: { RefreshInterval(rawValue: refreshIntervalRaw) ?? .fifteenMinutes },
+            set: { refreshIntervalRaw = $0.rawValue }
+        )
+    }
+
+    private var sortOrder: Binding<SortOrder> {
+        Binding(
+            get: { SortOrder(rawValue: sortOrderRaw) ?? .updatedNewest },
+            set: { sortOrderRaw = $0.rawValue }
+        )
+    }
 
     var body: some View {
         ScrollView {
@@ -309,6 +339,33 @@ struct PreferencesTab: View {
                 endPoint: .bottomTrailing
             )
         )
+        .onChange(of: defaultViewModeRaw) { newValue in
+            syncToiCloud(newValue, forKey: "defaultViewMode")
+        }
+        .onChange(of: defaultTabRaw) { newValue in
+            syncToiCloud(newValue, forKey: "defaultTab")
+        }
+        .onChange(of: refreshIntervalRaw) { newValue in
+            syncToiCloud(newValue, forKey: "refreshInterval")
+        }
+        .onChange(of: showCompletedItems) { newValue in
+            syncToiCloud(newValue, forKey: "showCompletedItems")
+        }
+        .onChange(of: showCanceledItems) { newValue in
+            syncToiCloud(newValue, forKey: "showCanceledItems")
+        }
+        .onChange(of: sortOrderRaw) { newValue in
+            syncToiCloud(newValue, forKey: "sortOrder")
+        }
+        .onChange(of: launchAtLogin) { newValue in
+            syncToiCloud(newValue, forKey: "launchAtLogin")
+        }
+    }
+
+    private func syncToiCloud<T>(_ value: T, forKey key: String) {
+        let iCloudStore = NSUbiquitousKeyValueStore.default
+        iCloudStore.set(value, forKey: key)
+        iCloudStore.synchronize()
     }
 
     // MARK: - Section Header
@@ -337,7 +394,7 @@ struct PreferencesTab: View {
             Text("Open to tab:")
                 .font(.body)
 
-            Picker("", selection: $settings.defaultTab) {
+            Picker("", selection: defaultTab) {
                 ForEach(DefaultTab.allCases) { tab in
                     Text(tab.rawValue).tag(tab)
                 }
@@ -355,7 +412,7 @@ struct PreferencesTab: View {
             Text("Recent tab default:")
                 .font(.body)
 
-            Picker("", selection: $settings.defaultViewMode) {
+            Picker("", selection: defaultViewMode) {
                 ForEach(ViewMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
@@ -372,7 +429,7 @@ struct PreferencesTab: View {
 
     private var showCompletedToggle: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Show completed items", isOn: $settings.showCompletedItems)
+            Toggle("Show completed items", isOn: $showCompletedItems)
 
             Text("Display items that have been marked as done")
                 .font(.caption)
@@ -382,7 +439,7 @@ struct PreferencesTab: View {
 
     private var showCanceledToggle: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Show canceled items", isOn: $settings.showCanceledItems)
+            Toggle("Show canceled items", isOn: $showCanceledItems)
 
             Text("Display items that have been canceled")
                 .font(.caption)
@@ -397,7 +454,7 @@ struct PreferencesTab: View {
             Text("Sort items by:")
                 .font(.body)
 
-            Picker("", selection: $settings.sortOrder) {
+            Picker("", selection: sortOrder) {
                 ForEach(SortOrder.allCases) { order in
                     Text(order.rawValue).tag(order)
                 }
@@ -417,7 +474,7 @@ struct PreferencesTab: View {
             Text("Refresh interval:")
                 .font(.body)
 
-            Picker("", selection: $settings.refreshInterval) {
+            Picker("", selection: refreshInterval) {
                 ForEach(RefreshInterval.allCases) { interval in
                     Text(interval.rawValue).tag(interval)
                 }
@@ -434,7 +491,7 @@ struct PreferencesTab: View {
 
     private var launchAtLoginToggle: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Launch at login", isOn: $settings.launchAtLogin)
+            Toggle("Launch at login", isOn: $launchAtLogin)
 
             Text("Automatically start LinearBar when you log in")
                 .font(.caption)
@@ -485,7 +542,6 @@ struct AboutTab: View {
 struct ColorPickerView: View {
     let account: LinearAccount
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedColor: Color
 
     private let availableColors: [String] = [
         "#5E6AD2", // Linear purple
@@ -498,37 +554,50 @@ struct ColorPickerView: View {
         "#14B8A6"  // teal
     ]
 
-    init(account: LinearAccount) {
-        self.account = account
-        _selectedColor = State(initialValue: Color(hex: account.color ?? "#5E6AD2"))
-    }
-
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             Text("Choose Account Color")
                 .font(.headline)
+                .padding(.top, 8)
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 50))], spacing: 12) {
-                ForEach(availableColors, id: \.self) { colorHex in
-                    Circle()
-                        .fill(Color(hex: colorHex))
-                        .frame(width: 50, height: 50)
-                        .overlay(
-                            Circle()
-                                .stroke(account.color == colorHex ? Color.primary : Color.clear, lineWidth: 3)
-                        )
-                        .onTapGesture {
-                            AppSettings.shared.setAccountColor(colorHex, forAccount: account.email)
-                            dismiss()
-                        }
+            VStack(spacing: 16) {
+                HStack(spacing: 16) {
+                    ForEach(availableColors.prefix(4), id: \.self) { colorHex in
+                        colorButton(colorHex)
+                    }
+                }
+
+                HStack(spacing: 16) {
+                    ForEach(availableColors.suffix(4), id: \.self) { colorHex in
+                        colorButton(colorHex)
+                    }
                 }
             }
+            .padding(.horizontal, 16)
 
             Button("Cancel") {
                 dismiss()
             }
+            .buttonStyle(.bordered)
+            .padding(.bottom, 8)
         }
-        .padding(30)
-        .frame(width: 300, height: 300)
+        .frame(width: 320, height: 280)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private func colorButton(_ colorHex: String) -> some View {
+        Button(action: {
+            AppSettings.shared.setAccountColor(colorHex, forAccount: account.email)
+            dismiss()
+        }) {
+            Circle()
+                .fill(Color(hex: colorHex))
+                .frame(width: 50, height: 50)
+                .overlay(
+                    Circle()
+                        .stroke(account.color == colorHex ? Color.primary : Color.clear, lineWidth: 3)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

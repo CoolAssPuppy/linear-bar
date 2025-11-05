@@ -20,60 +20,43 @@ class AppSettings: ObservableObject {
 
     @Published var defaultViewMode: ViewMode {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                self?.saveSetting(self?.defaultViewMode.rawValue ?? "", forKey: "defaultViewMode")
-            }
+            saveSetting(defaultViewMode.rawValue, forKey: "defaultViewMode")
         }
     }
 
     @Published var refreshInterval: RefreshInterval {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                self?.saveSetting(self?.refreshInterval.rawValue ?? "", forKey: "refreshInterval")
-            }
+            saveSetting(refreshInterval.rawValue, forKey: "refreshInterval")
         }
     }
 
     @Published var launchAtLogin: Bool {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.saveSetting(self.launchAtLogin, forKey: "launchAtLogin")
-            }
+            saveSetting(launchAtLogin, forKey: "launchAtLogin")
         }
     }
 
     @Published var defaultTab: DefaultTab {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                self?.saveSetting(self?.defaultTab.rawValue ?? "", forKey: "defaultTab")
-            }
+            saveSetting(defaultTab.rawValue, forKey: "defaultTab")
         }
     }
 
     @Published var showCompletedItems: Bool {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.saveSetting(self.showCompletedItems, forKey: "showCompletedItems")
-            }
+            saveSetting(showCompletedItems, forKey: "showCompletedItems")
         }
     }
 
     @Published var showCanceledItems: Bool {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.saveSetting(self.showCanceledItems, forKey: "showCanceledItems")
-            }
+            saveSetting(showCanceledItems, forKey: "showCanceledItems")
         }
     }
 
     @Published var sortOrder: SortOrder {
         didSet {
-            DispatchQueue.main.async { [weak self] in
-                self?.saveSetting(self?.sortOrder.rawValue ?? "", forKey: "sortOrder")
-            }
+            saveSetting(sortOrder.rawValue, forKey: "sortOrder")
         }
     }
 
@@ -203,7 +186,7 @@ class AppSettings: ObservableObject {
     }
 
     private func syncAllSettingsFromiCloudToUserDefaults() {
-        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems"]
+        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder"]
 
         for key in settingsKeys {
             if let value = iCloudStore.object(forKey: key) {

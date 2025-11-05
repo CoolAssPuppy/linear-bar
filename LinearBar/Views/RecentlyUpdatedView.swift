@@ -2,7 +2,6 @@ import SwiftUI
 
 /// View displaying recently updated items, filterable by "Me" or "Team"
 struct RecentlyUpdatedView: View {
-    @ObservedObject private var settings = AppSettings.shared
     @State private var selectedMode: ViewMode = .createdByMe
     @State private var selectedTeam: Team?
     @State private var teams: [Team] = []
@@ -10,16 +9,19 @@ struct RecentlyUpdatedView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedInitialView = false
+    @State private var showCompletedItems = true
+    @State private var showCanceledItems = false
+    @State private var sortOrder: SortOrder = .updatedNewest
 
     private var filteredItems: [any LinearItem] {
         let filtered = items.filter { item in
             // Filter issues by state type
             if let issue = item as? Issue {
                 if let stateType = issue.state?.type {
-                    if stateType == "completed" && !settings.showCompletedItems {
+                    if stateType == "completed" && !showCompletedItems {
                         return false
                     }
-                    if stateType == "canceled" && !settings.showCanceledItems {
+                    if stateType == "canceled" && !showCanceledItems {
                         return false
                     }
                 }
@@ -27,17 +29,17 @@ struct RecentlyUpdatedView: View {
 
             // Filter projects by state
             if let project = item as? Project {
-                if project.state.lowercased() == "completed" && !settings.showCompletedItems {
+                if project.state.lowercased() == "completed" && !showCompletedItems {
                     return false
                 }
-                if project.state.lowercased() == "canceled" && !settings.showCanceledItems {
+                if project.state.lowercased() == "canceled" && !showCanceledItems {
                     return false
                 }
             }
 
             // Filter initiatives by status
             if let initiative = item as? Initiative {
-                if initiative.status?.lowercased() == "completed" && !settings.showCompletedItems {
+                if initiative.status?.lowercased() == "completed" && !showCompletedItems {
                     return false
                 }
             }
@@ -47,7 +49,7 @@ struct RecentlyUpdatedView: View {
 
         // Apply sort order
         return filtered.sorted { item1, item2 in
-            switch settings.sortOrder {
+            switch sortOrder {
             case .createdNewest:
                 let date1 = item1.createdAt ?? Date.distantPast
                 let date2 = item2.createdAt ?? Date.distantPast
@@ -87,8 +89,9 @@ struct RecentlyUpdatedView: View {
             }
         }
         .onAppear {
+            syncSettingsFromAppSettings()
             if !hasLoadedInitialView {
-                selectedMode = settings.defaultViewMode
+                selectedMode = AppSettings.shared.defaultViewMode
                 hasLoadedInitialView = true
             }
             loadData()
@@ -96,6 +99,16 @@ struct RecentlyUpdatedView: View {
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            syncSettingsFromAppSettings()
+        }
+    }
+
+    private func syncSettingsFromAppSettings() {
+        let settings = AppSettings.shared
+        showCompletedItems = settings.showCompletedItems
+        showCanceledItems = settings.showCanceledItems
+        sortOrder = settings.sortOrder
     }
 
     // MARK: - Controls
