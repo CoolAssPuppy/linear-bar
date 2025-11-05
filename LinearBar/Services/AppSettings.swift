@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AppKit
+import os.log
 
 /// Application settings with iCloud synchronization
 @MainActor
@@ -151,28 +152,28 @@ class AppSettings: ObservableObject {
                     // If account has no local tokens, mark as needing auth
                     if !hasAccessToken {
                         decoded[i].authStatus = .needsAuth
-                        print("[AppSettings] Account \(account.email) has no local tokens - marked as needsAuth")
+                        AppLogger.info("Account \(account.email) has no local tokens - marked as needsAuth", log: AppLogger.settings)
                     } else if decoded[i].authStatus == .needsAuth {
                         // If account was marked as needsAuth but now has tokens, mark as valid
                         decoded[i].authStatus = .valid
-                        print("[AppSettings] Account \(account.email) now has tokens - marked as valid")
+                        AppLogger.info("Account \(account.email) now has tokens - marked as valid", log: AppLogger.settings)
                     }
                 }
 
                 self.accounts = decoded
-                print("[AppSettings] Successfully loaded \(decoded.count) accounts")
+                AppLogger.info("Successfully loaded \(decoded.count) accounts", log: AppLogger.settings)
             } catch {
-                print("[AppSettings] Error loading accounts: \(error)")
+                AppLogger.error("Error loading accounts", log: AppLogger.settings, error: error)
             }
         } else {
-            print("[AppSettings] No account data found in UserDefaults")
+            AppLogger.debug("No account data found in UserDefaults", log: AppLogger.settings)
         }
     }
 
     private func saveAccounts() {
         if let encoded = try? JSONEncoder().encode(accounts) {
             UserDefaults.standard.set(encoded, forKey: "accounts")
-            print("[AppSettings] Saved \(accounts.count) accounts")
+            AppLogger.debug("Saved \(accounts.count) accounts", log: AppLogger.settings)
         }
     }
 

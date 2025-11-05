@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 /// Service for interacting with Linear's GraphQL API
 @MainActor
@@ -39,7 +40,7 @@ class LinearAPI {
 
     /// Fetches user's favorite items (issues, projects, initiatives)
     func fetchFavorites(accessToken: String) async throws -> [Favorite] {
-        print("[LinearAPI] Fetching favorites...")
+        AppLogger.debug("Fetching favorites...", log: AppLogger.api)
         // Try the favorites query at root level based on Linear SDK schema
         let favoritesQuery = """
         query {
@@ -125,16 +126,16 @@ class LinearAPI {
         let response: GraphQLResponse<FavoritesResponseData> = try await execute(query: favoritesQuery, accessToken: accessToken)
 
         guard let data = response.data else {
-            print("[LinearAPI] No data in favorites response")
+            AppLogger.error("No data in favorites response", log: AppLogger.api)
             if let errors = response.errors {
-                print("[LinearAPI] GraphQL errors: \(errors)")
+                AppLogger.error("GraphQL errors: \(errors)", log: AppLogger.api)
                 // Fall back to assigned issues if favorites query fails
                 return try await fetchAssignedIssuesAsFavorites(accessToken: accessToken)
             }
             throw LinearError.invalidResponse
         }
 
-        print("[LinearAPI] Successfully fetched \(data.favorites.nodes.count) favorites")
+        AppLogger.info("Successfully fetched \(data.favorites.nodes.count) favorites", log: AppLogger.api)
 
         // Debug: Log what types of favorites we got
         for favorite in data.favorites.nodes {
@@ -154,7 +155,7 @@ class LinearAPI {
             } else if favorite.folderName != nil {
                 itemType = "folder"
             }
-            print("[LinearAPI] Favorite: type=\(favorite.type ?? "nil"), itemType=\(itemType), folderName=\(favorite.folderName ?? "nil")")
+            AppLogger.debug("Favorite: type=\(favorite.type ?? "nil"), itemType=\(itemType), folderName=\(favorite.folderName ?? "nil")", log: AppLogger.api)
         }
 
         return data.favorites.nodes
@@ -162,7 +163,7 @@ class LinearAPI {
 
     /// Fallback: Fetch assigned issues as favorites
     private func fetchAssignedIssuesAsFavorites(accessToken: String) async throws -> [Favorite] {
-        print("[LinearAPI] Falling back to assigned issues for favorites")
+        AppLogger.info("Falling back to assigned issues for favorites", log: AppLogger.api)
         let query = """
         query {
           viewer {
@@ -649,7 +650,7 @@ class LinearAPI {
         guard (200...299).contains(httpResponse.statusCode) else {
             // Try to parse error response
             if let errorBody = String(data: data, encoding: .utf8) {
-                print("[LinearAPI] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
+                AppLogger.error("HTTP \(httpResponse.statusCode) error response: \(errorBody)", log: AppLogger.api)
             }
             throw LinearError.networkError(NSError(domain: "LinearAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"]))
         }
@@ -669,7 +670,7 @@ class LinearAPI {
         } catch let error as LinearError {
             throw error
         } catch {
-            print("[LinearAPI] Decoding error: \(error)")
+            AppLogger.error("Decoding error", log: AppLogger.api, error: error)
             throw LinearError.invalidResponse
         }
     }

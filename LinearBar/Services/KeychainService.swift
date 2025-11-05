@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import os.log
 
 /// Service for securely storing and retrieving Linear OAuth tokens in the system Keychain
 @MainActor
@@ -52,7 +53,7 @@ class KeychainService {
 
     private func save(token: String, forAccount account: String) -> Bool {
         guard let tokenData = token.data(using: .utf8) else {
-            print("[Keychain] ERROR: Failed to encode token as UTF-8 for account: \(account)")
+            AppLogger.error("Failed to encode token as UTF-8 for account: \(account)", log: AppLogger.keychain)
             return false
         }
 
@@ -71,11 +72,11 @@ class KeychainService {
         let updateStatus = SecItemUpdate(searchQuery as CFDictionary, attributes as CFDictionary)
 
         if updateStatus == errSecSuccess {
-            print("[Keychain] Successfully updated token for \(account)")
+            AppLogger.debug("Successfully updated token for \(account)", log: AppLogger.keychain)
             return true
         } else if updateStatus == errSecItemNotFound {
             // Item doesn't exist, try to add it
-            print("[Keychain] No existing item for \(account), attempting to add new item")
+            AppLogger.debug("No existing item for \(account), attempting to add new item", log: AppLogger.keychain)
 
             var addQuery = searchQuery
             addQuery[kSecValueData as String] = tokenData
@@ -84,11 +85,11 @@ class KeychainService {
             let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
 
             if addStatus == errSecSuccess {
-                print("[Keychain] Successfully added token for \(account)")
+                AppLogger.debug("Successfully added token for \(account)", log: AppLogger.keychain)
                 return true
             } else if addStatus == errSecDuplicateItem || addStatus == -2147413719 {
                 // Duplicate item error - try aggressive cleanup
-                print("[Keychain] Duplicate item detected for \(account), attempting cleanup and retry")
+                AppLogger.info("Duplicate item detected for \(account), attempting cleanup and retry", log: AppLogger.keychain)
 
                 // Try deleting with comprehensive query
                 let cleanupQuery: [String: Any] = [
@@ -99,23 +100,23 @@ class KeychainService {
                 ]
 
                 let deleteStatus = SecItemDelete(cleanupQuery as CFDictionary)
-                print("[Keychain] Cleanup delete result: \(deleteStatus) (\(keychainErrorMessage(deleteStatus)))")
+                AppLogger.debug("Cleanup delete result: \(deleteStatus) (\(keychainErrorMessage(deleteStatus)))", log: AppLogger.keychain)
 
                 // Retry add after cleanup
                 let retryStatus = SecItemAdd(addQuery as CFDictionary, nil)
                 if retryStatus == errSecSuccess {
-                    print("[Keychain] Successfully added token after cleanup for \(account)")
+                    AppLogger.debug("Successfully added token after cleanup for \(account)", log: AppLogger.keychain)
                     return true
                 } else {
-                    print("[Keychain] ERROR: Failed to add token even after cleanup for \(account). Status: \(retryStatus) (\(keychainErrorMessage(retryStatus)))")
+                    AppLogger.error("Failed to add token even after cleanup for \(account). Status: \(retryStatus) (\(keychainErrorMessage(retryStatus)))", log: AppLogger.keychain)
                     return false
                 }
             } else {
-                print("[Keychain] ERROR: Failed to add token for \(account). Status: \(addStatus) (\(keychainErrorMessage(addStatus)))")
+                AppLogger.error("Failed to add token for \(account). Status: \(addStatus) (\(keychainErrorMessage(addStatus)))", log: AppLogger.keychain)
                 return false
             }
         } else {
-            print("[Keychain] ERROR: Failed to update token for \(account). Status: \(updateStatus) (\(keychainErrorMessage(updateStatus)))")
+            AppLogger.error("Failed to update token for \(account). Status: \(updateStatus) (\(keychainErrorMessage(updateStatus)))", log: AppLogger.keychain)
             return false
         }
     }
@@ -136,7 +137,7 @@ class KeychainService {
               let data = result as? Data,
               let token = String(data: data, encoding: .utf8) else {
             if status != errSecItemNotFound {
-                print("[Keychain] Failed to retrieve token for \(account). Status: \(status) (\(keychainErrorMessage(status)))")
+                AppLogger.error("Failed to retrieve token for \(account). Status: \(status) (\(keychainErrorMessage(status)))", log: AppLogger.keychain)
             }
             return nil
         }
@@ -155,7 +156,7 @@ class KeychainService {
         let success = status == errSecSuccess || status == errSecItemNotFound
 
         if !success {
-            print("[Keychain] Failed to delete token for \(account). Status: \(status) (\(keychainErrorMessage(status)))")
+            AppLogger.error("Failed to delete token for \(account). Status: \(status) (\(keychainErrorMessage(status)))", log: AppLogger.keychain)
         }
 
         return success

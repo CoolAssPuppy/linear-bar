@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import os.log
 
 /// Service for handling OAuth authentication with Linear
 @MainActor
@@ -38,7 +39,7 @@ class LinearAuthService {
             return
         }
 
-        print("[LinearAuth] Opening authorization URL with redirect_uri: \(redirectURI)")
+        AppLogger.info("Opening authorization URL with redirect_uri: \(redirectURI)", log: AppLogger.auth)
 
         // Open the authorization URL in the default browser
         NSWorkspace.shared.open(url)
@@ -46,7 +47,7 @@ class LinearAuthService {
 
     /// Handles the OAuth callback URL after user authorization
     func handleCallback(url: URL) -> Bool {
-        print("[LinearAuth] Received callback URL: \(url.absoluteString)")
+        AppLogger.debug("Received callback URL: \(url.absoluteString)", log: AppLogger.auth)
 
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else {
@@ -70,7 +71,7 @@ class LinearAuthService {
             return false
         }
 
-        print("[LinearAuth] Received authorization code: \(code.prefix(20))...")
+        AppLogger.debug("Received authorization code: \(code.prefix(20))...", log: AppLogger.auth)
 
         // Exchange code for access token
         Task {
@@ -125,11 +126,11 @@ class LinearAuthService {
                             AppSettings.shared.addAccount(account)
                         }
 
-                        print("[LinearAuth] Successfully authenticated and saved credentials for \(viewer.email)")
+                        AppLogger.info("Successfully authenticated and saved credentials for \(viewer.email)", log: AppLogger.auth)
                         completion(.success(account))
 
                     } catch {
-                        print("[LinearAuth] Error fetching user information: \(error)")
+                        AppLogger.error("Error fetching user information", log: AppLogger.auth, error: error)
                         completion(.failure(error))
                     }
 
@@ -164,9 +165,9 @@ class LinearAuthService {
 
         request.httpBody = query.data(using: .utf8)
 
-        print("[LinearAuth] Exchanging code for token...")
-        print("[LinearAuth] Client ID: \(clientId.prefix(10))...")
-        print("[LinearAuth] Redirect URI: \(redirectURI)")
+        AppLogger.info("Exchanging code for token...", log: AppLogger.auth)
+        AppLogger.debug("Client ID: \(clientId.prefix(10))...", log: AppLogger.auth)
+        AppLogger.debug("Redirect URI: \(redirectURI)", log: AppLogger.auth)
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -174,13 +175,13 @@ class LinearAuthService {
             throw NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response from server"])
         }
 
-        print("[LinearAuth] Response status code: \(httpResponse.statusCode)")
+        AppLogger.debug("Response status code: \(httpResponse.statusCode)", log: AppLogger.auth)
 
         guard (200...299).contains(httpResponse.statusCode) else {
             // Try to parse error response
             var errorMessage = "Failed to exchange code for token (HTTP \(httpResponse.statusCode))"
             if let errorBody = String(data: data, encoding: .utf8) {
-                print("[LinearAuth] Error response: \(errorBody)")
+                AppLogger.error("Error response: \(errorBody)", log: AppLogger.auth)
 
                 // Try to parse Linear's error format
                 if let jsonObject = try? JSONSerialization.jsonObject(with: data),
@@ -203,7 +204,7 @@ class LinearAuthService {
         }
 
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
-        print("[LinearAuth] Successfully received access token")
+        AppLogger.info("Successfully received access token", log: AppLogger.auth)
         return tokenResponse.access_token
     }
 

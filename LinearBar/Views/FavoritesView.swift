@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 /// View displaying user's favorite items from Linear
 struct FavoritesView: View {
@@ -420,16 +421,16 @@ extension FavoritesView {
     // MARK: - Data Loading
 
     private func loadFavorites() {
-        print("[FavoritesView] Loading favorites...")
+        AppLogger.debug("Loading favorites...", log: AppLogger.ui)
         // Get first enabled account
         guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
               let accessToken = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
-            print("[FavoritesView] No authenticated account found")
+            AppLogger.info("No authenticated account found", log: AppLogger.ui)
             errorMessage = "No authenticated account found. Please sign in."
             return
         }
 
-        print("[FavoritesView] Found account: \(account.email)")
+        AppLogger.debug("Found account: \(account.email)", log: AppLogger.ui)
         isLoading = true
         errorMessage = nil
 
@@ -437,13 +438,13 @@ extension FavoritesView {
             do {
                 let loadedFavorites = try await LinearAPI.shared.fetchFavorites(accessToken: accessToken)
                 await MainActor.run {
-                    print("[FavoritesView] Loaded \(loadedFavorites.count) favorites")
+                    AppLogger.info("Loaded \(loadedFavorites.count) favorites", log: AppLogger.ui)
                     self.favorites = loadedFavorites
                     self.isLoading = false
                 }
             } catch {
                 await MainActor.run {
-                    print("[FavoritesView] Error loading favorites: \(error)")
+                    AppLogger.error("Error loading favorites", log: AppLogger.ui, error: error)
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                 }

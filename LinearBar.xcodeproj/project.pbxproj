@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8FBA78A92EBC0CFC000C6D76 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78A82EBC0CFC000C6D76 /* Logger.swift */; };
+		8FBA78AC2EBC0D12000C6D76 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */; };
+		8FBA78AF2EBC0D32000C6D76 /* AboutTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */; };
 		AA0001 /* LinearBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0001 /* LinearBarApp.swift */; };
 		AA0002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0002 /* AppDelegate.swift */; };
 		AA0003 /* LinearAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0003 /* LinearAccount.swift */; };
@@ -27,6 +30,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8FBA78A82EBC0CFC000C6D76 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTab.swift; sourceTree = "<group>"; };
 		BB0001 /* LinearBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearBarApp.swift; sourceTree = "<group>"; };
 		BB0002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BB0003 /* LinearAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearAccount.swift; sourceTree = "<group>"; };
@@ -60,6 +66,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8FBA78AB2EBC0D12000C6D76 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		8FBA78AE2EBC0D32000C6D76 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		EE0001 = {
 			isa = PBXGroup;
 			children = (
@@ -71,6 +93,7 @@
 		EE0002 /* LinearBar */ = {
 			isa = PBXGroup;
 			children = (
+				8FBA78AB2EBC0D12000C6D76 /* Extensions */,
 				EE0004 /* App */,
 				EE0005 /* Models */,
 				EE0006 /* Views */,
@@ -115,6 +138,7 @@
 				BB0012 /* RecentlyUpdatedView.swift */,
 				BB0013 /* SearchView.swift */,
 				BB0014 /* SettingsView.swift */,
+				8FBA78AE2EBC0D32000C6D76 /* Settings */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -122,6 +146,7 @@
 		EE0007 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				8FBA78A82EBC0CFC000C6D76 /* Logger.swift */,
 				BB0005 /* KeychainService.swift */,
 				BB0006 /* AppSettings.swift */,
 				BB0007 /* LinearAPI.swift */,
@@ -212,6 +237,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FBA78AC2EBC0D12000C6D76 /* Color+Hex.swift in Sources */,
+				8FBA78AF2EBC0D32000C6D76 /* AboutTab.swift in Sources */,
 				AA0001 /* LinearBarApp.swift in Sources */,
 				AA0002 /* AppDelegate.swift in Sources */,
 				AA0003 /* LinearAccount.swift in Sources */,
@@ -219,6 +246,7 @@
 				AA0005 /* KeychainService.swift in Sources */,
 				AA0006 /* AppSettings.swift in Sources */,
 				AA0007 /* LinearAPI.swift in Sources */,
+				8FBA78A92EBC0CFC000C6D76 /* Logger.swift in Sources */,
 				AA0008 /* LinearAuthService.swift in Sources */,
 				AA0009 /* MenuBarView.swift in Sources */,
 				AA0010 /* ItemRow.swift in Sources */,
