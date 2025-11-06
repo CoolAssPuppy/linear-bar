@@ -14,7 +14,6 @@ class SimpleScreenshotTests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments.append("--uitesting")
 
-        setupSnapshot(app)
         app.launch()
 
         // Give the app time to load test data and show menu bar icon
@@ -23,6 +22,16 @@ class SimpleScreenshotTests: XCTestCase {
 
         print("✅ App should be ready now")
         print("📍 Check your menu bar for the LinearBar icon (checkmark circle)")
+    }
+
+    // Helper to take and attach screenshot
+    private func takeScreenshot(named name: String) {
+        let screenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        print("✅ Saved screenshot: \(name)")
     }
 
     override func tearDown() {
@@ -53,7 +62,7 @@ class SimpleScreenshotTests: XCTestCase {
 
         // Screenshot 1: Favorites tab (should be default)
         print("📸 Capturing Favorites tab...")
-        snapshot("01FavoritesTab")
+        takeScreenshot(named: "01-FavoritesTab")
         sleep(1)
 
         // Navigate to Recent tab
@@ -61,12 +70,12 @@ class SimpleScreenshotTests: XCTestCase {
         if clickTab(named: "Recent") {
             sleep(2)
             print("📸 Capturing Recent tab...")
-            snapshot("02RecentTab")
+            takeScreenshot(named: "02-RecentTab")
         } else {
             print("⚠️  Could not find Recent tab automatically")
             print("📌 Please click the Recent tab now!")
             sleep(5)
-            snapshot("02RecentTab")
+            takeScreenshot(named: "02-RecentTab")
         }
 
         // Navigate to Search tab
@@ -74,12 +83,12 @@ class SimpleScreenshotTests: XCTestCase {
         if clickTab(named: "Search") {
             sleep(2)
             print("📸 Capturing Search tab...")
-            snapshot("03SearchTab")
+            takeScreenshot(named: "03-SearchTab")
         } else {
             print("⚠️  Could not find Search tab automatically")
             print("📌 Please click the Search tab now!")
             sleep(5)
-            snapshot("03SearchTab")
+            takeScreenshot(named: "03-SearchTab")
         }
 
         // Look for the Settings button and click it
@@ -103,22 +112,22 @@ class SimpleScreenshotTests: XCTestCase {
 
         // Screenshot 4: Settings - Accounts tab (default)
         print("📸 Capturing Accounts tab...")
-        snapshot("04SettingsAccounts")
+        takeScreenshot(named: "04-SettingsAccounts")
 
         // Navigate to Setup tab
         print("🔍 Navigating to Setup tab...")
         if clickTab(named: "Setup") {
             sleep(1)
             print("📸 Capturing Setup tab...")
-            snapshot("05SettingsSetup")
+            takeScreenshot(named: "05-SettingsSetup")
         } else {
             print("⚠️  Please manually click the Setup tab")
             sleep(5)
-            snapshot("05SettingsSetup")
+            takeScreenshot(named: "05-SettingsSetup")
         }
 
         print("✅ Screenshot capture complete!")
-        print("📂 Screenshots saved to: ~/Library/Caches/tools.fastlane/")
+        print("📂 Screenshots attached to test results - view in Xcode")
     }
 
     // MARK: - Helper Methods
