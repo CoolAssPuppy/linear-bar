@@ -32,13 +32,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		03664860117F4B3791BBEDA9 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
 		2411367A6C154F178FBF1A73 /* CoffeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoffeeView.swift; sourceTree = "<group>"; };
 		61B651CCA31F4F778A11D91A /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		8FBA78A82EBC0CFC000C6D76 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTab.swift; sourceTree = "<group>"; };
 		8FFB96B32EBC95C700B945F1 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
+		8FFB96B42EBC991000B945F1 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = Configuration.storekit; path = LinearBar/Resources/Configuration.storekit; sourceTree = "<group>"; };
 		BB0001 /* LinearBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearBarApp.swift; sourceTree = "<group>"; };
 		BB0002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BB0003 /* LinearAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearAccount.swift; sourceTree = "<group>"; };
@@ -91,7 +91,7 @@
 		EE0001 = {
 			isa = PBXGroup;
 			children = (
-				8FFB96B32EBC95C700B945F1 /* Configuration.storekit */,
+				8FFB96B42EBC991000B945F1 /* Configuration.storekit */,
 				EE0002 /* LinearBar */,
 				EE0003 /* Products */,
 			);
@@ -100,7 +100,6 @@
 		EE0002 /* LinearBar */ = {
 			isa = PBXGroup;
 			children = (
-				03664860117F4B3791BBEDA9 /* Configuration.storekit */,
 				8FBA78AB2EBC0D12000C6D76 /* Extensions */,
 				EE0004 /* App */,
 				EE0005 /* Models */,
@@ -173,6 +172,7 @@
 				BB0016 /* PrivacyInfo.xcprivacy */,
 				BB0017 /* Info.plist */,
 				BB0018 /* LinearBar.entitlements */,
+				8FFB96B32EBC95C700B945F1 /* Configuration.storekit */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
