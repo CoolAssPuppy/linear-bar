@@ -197,7 +197,7 @@ struct CoffeeView: View {
                 }
             }
         } catch {
-            print("Purchase failed: \(error)")
+            // Purchase failed - error will be shown via errorMessage if needed
         }
 
         isPurchasing = false

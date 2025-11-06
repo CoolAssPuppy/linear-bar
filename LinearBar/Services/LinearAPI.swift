@@ -45,7 +45,6 @@ class LinearAPI {
 
     /// Fetches user's favorite items (issues, projects, initiatives)
     func fetchFavorites(accessToken: String) async throws -> [Favorite] {
-        AppLogger.debug("Fetching favorites...", log: AppLogger.api)
         // Try the favorites query at root level based on Linear SDK schema
         let favoritesQuery = """
         query {
@@ -160,35 +159,11 @@ class LinearAPI {
             throw LinearError.invalidResponse
         }
 
-        AppLogger.info("Successfully fetched \(data.favorites.nodes.count) favorites", log: AppLogger.api)
-
-        // Debug: Log what types of favorites we got
-        for favorite in data.favorites.nodes {
-            var itemType = "unknown"
-            if favorite.issue != nil {
-                itemType = "issue"
-            } else if favorite.project != nil {
-                itemType = "project"
-            } else if favorite.initiative != nil {
-                itemType = "initiative"
-            } else if favorite.customView != nil {
-                itemType = "customView"
-            } else if favorite.cycle != nil {
-                itemType = "cycle"
-            } else if favorite.label != nil {
-                itemType = "label"
-            } else if favorite.folderName != nil {
-                itemType = "folder"
-            }
-            AppLogger.debug("Favorite: type=\(favorite.type ?? "nil"), itemType=\(itemType), folderName=\(favorite.folderName ?? "nil")", log: AppLogger.api)
-        }
-
         return data.favorites.nodes
     }
 
     /// Fallback: Fetch assigned issues as favorites
     private func fetchAssignedIssuesAsFavorites(accessToken: String) async throws -> [Favorite] {
-        AppLogger.info("Falling back to assigned issues for favorites", log: AppLogger.api)
         let query = """
         query {
           viewer {

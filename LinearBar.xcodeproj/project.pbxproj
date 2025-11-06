@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		619891770E9F4A929CC98490 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B651CCA31F4F778A11D91A /* StoreKitManager.swift */; };
 		600B28BE18E84890A23A7921 /* CoffeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2411367A6C154F178FBF1A73 /* CoffeeView.swift */; };
-		A8A2654116AC471B880E0CA2 /* Configuration.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 03664860117F4B3791BBEDA9 /* Configuration.storekit */; };
+		619891770E9F4A929CC98490 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B651CCA31F4F778A11D91A /* StoreKitManager.swift */; };
 		8FBA78A92EBC0CFC000C6D76 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78A82EBC0CFC000C6D76 /* Logger.swift */; };
 		8FBA78AC2EBC0D12000C6D76 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */; };
 		8FBA78AF2EBC0D32000C6D76 /* AboutTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */; };
@@ -33,12 +32,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		61B651CCA31F4F778A11D91A /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
-		2411367A6C154F178FBF1A73 /* CoffeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoffeeView.swift; sourceTree = "<group>"; };
 		03664860117F4B3791BBEDA9 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
+		2411367A6C154F178FBF1A73 /* CoffeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoffeeView.swift; sourceTree = "<group>"; };
+		61B651CCA31F4F778A11D91A /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		8FBA78A82EBC0CFC000C6D76 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTab.swift; sourceTree = "<group>"; };
+		8FFB96B32EBC95C700B945F1 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
 		BB0001 /* LinearBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearBarApp.swift; sourceTree = "<group>"; };
 		BB0002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BB0003 /* LinearAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearAccount.swift; sourceTree = "<group>"; };
@@ -91,6 +91,7 @@
 		EE0001 = {
 			isa = PBXGroup;
 			children = (
+				8FFB96B32EBC95C700B945F1 /* Configuration.storekit */,
 				EE0002 /* LinearBar */,
 				EE0003 /* Products */,
 			);

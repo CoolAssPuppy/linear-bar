@@ -112,12 +112,14 @@ struct RecentlyUpdatedView: View {
             }
         }
         .onAppear {
-            syncSettingsFromAppSettings()
-            if !hasLoadedInitialView {
-                selectedMode = AppSettings.shared.defaultViewMode
-                hasLoadedInitialView = true
+            DispatchQueue.main.async {
+                syncSettingsFromAppSettings()
+                if !hasLoadedInitialView {
+                    selectedMode = AppSettings.shared.defaultViewMode
+                    hasLoadedInitialView = true
+                }
+                loadData()
             }
-            loadData()
         }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()

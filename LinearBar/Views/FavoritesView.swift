@@ -109,8 +109,10 @@ struct FavoritesView: View {
             }
         }
         .onAppear {
-            syncSettingsFromAppSettings()
-            loadFavorites()
+            DispatchQueue.main.async {
+                syncSettingsFromAppSettings()
+                loadFavorites()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadFavorites()
@@ -450,16 +452,12 @@ extension FavoritesView {
     // MARK: - Data Loading
 
     private func loadFavorites() {
-        AppLogger.debug("Loading favorites...", log: AppLogger.ui)
-        // Get first enabled account
         guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
               let accessToken = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
-            AppLogger.info("No authenticated account found", log: AppLogger.ui)
             errorMessage = "No authenticated account found. Please sign in."
             return
         }
 
-        AppLogger.debug("Found account: \(account.email)", log: AppLogger.ui)
         isLoading = true
         errorMessage = nil
 
@@ -467,7 +465,6 @@ extension FavoritesView {
             do {
                 let loadedFavorites = try await LinearAPI.shared.fetchFavorites(accessToken: accessToken)
                 await MainActor.run {
-                    AppLogger.info("Loaded \(loadedFavorites.count) favorites", log: AppLogger.ui)
                     self.favorites = loadedFavorites
                     self.isLoading = false
                 }

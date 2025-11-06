@@ -112,7 +112,9 @@ struct SearchView: View {
             }
         }
         .onAppear {
-            syncSettingsFromAppSettings()
+            DispatchQueue.main.async {
+                syncSettingsFromAppSettings()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
             syncSettingsFromAppSettings()
