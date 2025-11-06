@@ -3,12 +3,13 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		600B28BE18E84890A23A7921 /* CoffeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2411367A6C154F178FBF1A73 /* CoffeeView.swift */; };
 		619891770E9F4A929CC98490 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B651CCA31F4F778A11D91A /* StoreKitManager.swift */; };
+		8F4D7E7D2EBCBB0F00AB44F0 /* TestDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F4D7E7C2EBCBB0F00AB44F0 /* TestDataProvider.swift */; };
 		8FBA78A92EBC0CFC000C6D76 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78A82EBC0CFC000C6D76 /* Logger.swift */; };
 		8FBA78AC2EBC0D12000C6D76 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */; };
 		8FBA78AF2EBC0D32000C6D76 /* AboutTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */; };
@@ -31,9 +32,21 @@
 		AA0017 /* LinearAuthSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0019 /* LinearAuthSecrets.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		8F4D7E6F2EBCB8CC00AB44F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = GG0001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FF0001;
+			remoteInfo = LinearBar;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		2411367A6C154F178FBF1A73 /* CoffeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoffeeView.swift; sourceTree = "<group>"; };
 		61B651CCA31F4F778A11D91A /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
+		8F4D7E692EBCB8CC00AB44F0 /* LinearBarUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LinearBarUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8F4D7E7C2EBCBB0F00AB44F0 /* TestDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDataProvider.swift; sourceTree = "<group>"; };
 		8FBA78A82EBC0CFC000C6D76 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTab.swift; sourceTree = "<group>"; };
@@ -61,7 +74,18 @@
 		CC0001 /* LinearBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LinearBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		8F4D7E6A2EBCB8CC00AB44F0 /* LinearBarUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LinearBarUITests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		8F4D7E662EBCB8CC00AB44F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DD0001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -93,6 +117,7 @@
 			children = (
 				8FFB96B42EBC991000B945F1 /* Configuration.storekit */,
 				EE0002 /* LinearBar */,
+				8F4D7E6A2EBCB8CC00AB44F0 /* LinearBarUITests */,
 				EE0003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -114,6 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				CC0001 /* LinearBar.app */,
+				8F4D7E692EBCB8CC00AB44F0 /* LinearBarUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -154,6 +180,7 @@
 		EE0007 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				8F4D7E7C2EBCBB0F00AB44F0 /* TestDataProvider.swift */,
 				61B651CCA31F4F778A11D91A /* StoreKitManager.swift */,
 				8FBA78A82EBC0CFC000C6D76 /* Logger.swift */,
 				BB0005 /* KeychainService.swift */,
@@ -180,6 +207,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8F4D7E682EBCB8CC00AB44F0 /* LinearBarUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8F4D7E732EBCB8CC00AB44F0 /* Build configuration list for PBXNativeTarget "LinearBarUITests" */;
+			buildPhases = (
+				8F4D7E652EBCB8CC00AB44F0 /* Sources */,
+				8F4D7E662EBCB8CC00AB44F0 /* Frameworks */,
+				8F4D7E672EBCB8CC00AB44F0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8F4D7E702EBCB8CC00AB44F0 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8F4D7E6A2EBCB8CC00AB44F0 /* LinearBarUITests */,
+			);
+			name = LinearBarUITests;
+			packageProductDependencies = (
+			);
+			productName = LinearBarUITests;
+			productReference = 8F4D7E692EBCB8CC00AB44F0 /* LinearBarUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		FF0001 /* LinearBar */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FF0002 /* Build configuration list for PBXNativeTarget "LinearBar" */;
@@ -204,9 +254,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
+					8F4D7E682EBCB8CC00AB44F0 = {
+						CreatedOnToolsVersion = 26.1;
+						TestTargetID = FF0001;
+					};
 					FF0001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
@@ -226,11 +280,19 @@
 			projectRoot = "";
 			targets = (
 				FF0001 /* LinearBar */,
+				8F4D7E682EBCB8CC00AB44F0 /* LinearBarUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8F4D7E672EBCB8CC00AB44F0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DD0003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -243,6 +305,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8F4D7E652EBCB8CC00AB44F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DD0002 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -260,6 +329,7 @@
 				AA0007 /* LinearAPI.swift in Sources */,
 				8FBA78A92EBC0CFC000C6D76 /* Logger.swift in Sources */,
 				AA0008 /* LinearAuthService.swift in Sources */,
+				8F4D7E7D2EBCBB0F00AB44F0 /* TestDataProvider.swift in Sources */,
 				AA0009 /* MenuBarView.swift in Sources */,
 				AA0010 /* ItemRow.swift in Sources */,
 				AA0011 /* FavoritesView.swift in Sources */,
@@ -272,7 +342,55 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		8F4D7E702EBCB8CC00AB44F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FF0001 /* LinearBar */;
+			targetProxy = 8F4D7E6F2EBCB8CC00AB44F0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		8F4D7E712EBCB8CC00AB44F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 955GSY56UT;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.LinearBarUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = LinearBar;
+			};
+			name = Debug;
+		};
+		8F4D7E722EBCB8CC00AB44F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 955GSY56UT;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.LinearBarUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = LinearBar;
+			};
+			name = Release;
+		};
 		HH0001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -468,6 +586,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8F4D7E732EBCB8CC00AB44F0 /* Build configuration list for PBXNativeTarget "LinearBarUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8F4D7E712EBCB8CC00AB44F0 /* Debug */,
+				8F4D7E722EBCB8CC00AB44F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FF0002 /* Build configuration list for PBXNativeTarget "LinearBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

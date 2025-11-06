@@ -15,6 +15,12 @@ class LinearAPI {
 
     /// Fetches the current user's information
     func fetchViewer(accessToken: String) async throws -> Viewer {
+        #if DEBUG
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getViewer()
+        }
+        #endif
+
         let query = """
         query {
           viewer {
@@ -45,6 +51,13 @@ class LinearAPI {
 
     /// Fetches user's favorite items (issues, projects, initiatives)
     func fetchFavorites(accessToken: String) async throws -> [Favorite] {
+        #if DEBUG
+        // Return test data for UI testing
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getFavorites()
+        }
+        #endif
+
         // Try the favorites query at root level based on Linear SDK schema
         let favoritesQuery = """
         query {
@@ -256,6 +269,12 @@ class LinearAPI {
 
     /// Fetches user's teams
     func fetchTeams(accessToken: String) async throws -> [Team] {
+        #if DEBUG
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getTeams()
+        }
+        #endif
+
         let query = """
         query {
           viewer {
@@ -292,6 +311,12 @@ class LinearAPI {
 
     /// Fetches issues created by the current user
     func fetchMyIssues(accessToken: String) async throws -> [Issue] {
+        #if DEBUG
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getRecentIssues()
+        }
+        #endif
+
         let query = """
         query {
           viewer {
@@ -359,6 +384,12 @@ class LinearAPI {
 
     /// Fetches issues assigned to the current user
     func fetchAssignedIssues(accessToken: String) async throws -> [Issue] {
+        #if DEBUG
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getRecentIssues()
+        }
+        #endif
+
         let query = """
         query {
           viewer {
@@ -429,6 +460,12 @@ class LinearAPI {
 
     /// Fetches issues for a specific team
     func fetchTeamIssues(teamId: String, accessToken: String) async throws -> [Issue] {
+        #if DEBUG
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getRecentIssues()
+        }
+        #endif
+
         let query = """
         query($teamId: String!) {
           team(id: $teamId) {
@@ -496,6 +533,12 @@ class LinearAPI {
 
     /// Fetches projects for the current user
     func fetchMyProjects(accessToken: String) async throws -> [Project] {
+        #if DEBUG
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getProjects()
+        }
+        #endif
+
         // First get the current user's ID
         let viewerQuery = """
         query {
@@ -562,6 +605,12 @@ class LinearAPI {
 
     /// Fetches initiatives in the workspace
     func fetchInitiatives(accessToken: String) async throws -> [Initiative] {
+        #if DEBUG
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.getInitiatives()
+        }
+        #endif
+
         let query = """
         query {
           initiatives(first: 100, orderBy: updatedAt) {

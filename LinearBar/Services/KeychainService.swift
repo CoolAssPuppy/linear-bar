@@ -19,7 +19,14 @@ class KeychainService {
 
     /// Retrieves the access token for a Linear account
     func retrieveAccessToken(forAccount account: String) -> String? {
-        retrieve(forAccount: "\(account)_access")
+        #if DEBUG
+        // Return fake token for UI testing
+        if CommandLine.arguments.contains("--uitesting") {
+            return "fake-test-token-for-ui-testing"
+        }
+        #endif
+
+        return retrieve(forAccount: "\(account)_access")
     }
 
     /// Deletes the access token for a Linear account

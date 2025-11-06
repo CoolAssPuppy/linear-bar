@@ -13,6 +13,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupPopover()
         NSApp.setActivationPolicy(.accessory)
 
+        #if DEBUG
+        // Load test data for UI testing screenshots
+        if CommandLine.arguments.contains("--uitesting") {
+            setupTestDataForUITesting()
+        }
+        #endif
+
         // Register URL handler for OAuth callbacks
         NSAppleEventManager.shared().setEventHandler(
             self,
@@ -62,6 +69,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateMenuBarIcon() {
         guard let button = statusItem?.button else { return }
+
+        #if DEBUG
+        // In UI testing mode, always show the connected icon
+        if CommandLine.arguments.contains("--uitesting") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "LinearBar") {
+                image.isTemplate = true
+                button.image = image
+            }
+            return
+        }
+        #endif
 
         // Check if any account has auth issues
         let hasAuthIssues = AppSettings.shared.accounts.contains { $0.authStatus != .valid }
@@ -205,6 +223,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             updateMenuBarIcon()
         }
     }
+
+    // MARK: - UI Testing Support
+
+    #if DEBUG
+    private func setupTestDataForUITesting() {
+        print("🎬 Setting up test data for UI testing (AI Ski Goggles Co.)")
+
+        // Create a mock test account
+        let testAccount = LinearAccount(
+            email: "sarah@aiskigoggles.ai",
+            name: "Sarah Chen",
+            organizationSlug: "aigoggles",
+            isEnabled: true,
+            authStatus: .valid,
+            color: "#5E6AD2"
+        )
+
+        // Note: This won't persist since we're in a test environment,
+        // but it will show in the UI for screenshots
+        AppSettings.shared.accounts = [testAccount]
+
+        // Notify that we have a valid account
+        NotificationCenter.default.post(name: .accountsDidUpdate, object: nil)
+
+        print("✅ Test data loaded successfully")
+    }
+    #endif
 }
 
 // MARK: - Window Delegate

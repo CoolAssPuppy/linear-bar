@@ -191,6 +191,14 @@ class AppSettings: ObservableObject {
     }
 
     private func saveAccounts() {
+        #if DEBUG
+        // Don't persist test accounts
+        if CommandLine.arguments.contains("--uitesting") {
+            AppLogger.debug("UI testing mode - skipping account persistence", log: AppLogger.settings)
+            return
+        }
+        #endif
+
         if let encoded = try? JSONEncoder().encode(accounts) {
             UserDefaults.standard.set(encoded, forKey: "accounts")
             AppLogger.debug("Saved \(accounts.count) accounts", log: AppLogger.settings)
