@@ -6,6 +6,7 @@ struct LinearAccount: Codable, Identifiable, Hashable {
     var id: String { email }
     var email: String
     var name: String?
+    var organizationSlug: String? // Organization URL key (e.g., "supabase")
     var isEnabled: Bool = true
     var authStatus: AuthStatus = .valid
     var lastAuthError: Date?

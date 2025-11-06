@@ -222,7 +222,7 @@ struct ItemRow: View {
     // MARK: - Content Views
 
     private func issueContent(_ issue: Issue) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(issue.identifier)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.primary)
@@ -232,6 +232,34 @@ struct ItemRow: View {
                 .foregroundColor(.secondary)
                 .lineLimit(1)
 
+            // Metadata badges row (due date, project, labels)
+            if issue.dueDate != nil || issue.project != nil || (issue.labels?.nodes.isEmpty == false) {
+                HStack(spacing: 6) {
+                    // Due date badge
+                    if let dueDate = issue.dueDate {
+                        dueDateBadge(dueDate: dueDate, isOverdue: issue.isOverdue)
+                    }
+
+                    // Project badge
+                    if let project = issue.project {
+                        projectBadge(project: project)
+                    }
+
+                    // Label badges
+                    if let labels = issue.labels?.nodes, !labels.isEmpty {
+                        ForEach(labels.prefix(3)) { label in
+                            labelBadge(label: label)
+                        }
+                        if labels.count > 3 {
+                            Text("+\(labels.count - 3)")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+
+            // Status and assignee row
             HStack(spacing: 6) {
                 if let state = issue.state {
                     Text(state.name)
@@ -251,11 +279,18 @@ struct ItemRow: View {
     }
 
     private func projectContent(_ project: Project) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(project.name)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.primary)
                 .lineLimit(1)
+
+            // Target date badge
+            if let targetDate = project.targetDate {
+                HStack(spacing: 6) {
+                    dueDateBadge(dueDate: targetDate, isOverdue: project.isOverdue)
+                }
+            }
 
             HStack(spacing: 6) {
                 Text(normalizeProjectState(project.state))
@@ -282,11 +317,18 @@ struct ItemRow: View {
     }
 
     private func initiativeContent(_ initiative: Initiative) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(initiative.name)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.primary)
                 .lineLimit(1)
+
+            // Target date badge
+            if let targetDate = initiative.targetDate {
+                HStack(spacing: 6) {
+                    dueDateBadge(dueDate: targetDate, isOverdue: initiative.isOverdue)
+                }
+            }
 
             if let progress = initiative.progress {
                 Text("\(Int(progress * 100))% complete")
@@ -294,6 +336,76 @@ struct ItemRow: View {
                     .foregroundColor(.secondary)
             }
         }
+    }
+
+    // MARK: - Metadata Badges
+
+    private func dueDateBadge(dueDate: String, isOverdue: Bool) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: isOverdue ? "calendar.badge.exclamationmark" : "calendar")
+                .font(.system(size: 9))
+                .foregroundColor(isOverdue ? .red : .secondary)
+
+            Text(formatDate(dueDate))
+                .font(.system(size: 10))
+                .foregroundColor(isOverdue ? .red : .secondary)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(4)
+    }
+
+    private func projectBadge(project: ProjectReference) -> some View {
+        HStack(spacing: 3) {
+            // Show project icon if available, otherwise use cube
+            if let icon = project.icon, !icon.isEmpty, icon.count == 1 {
+                Text(icon)
+                    .font(.system(size: 9))
+            } else {
+                Image(systemName: "shippingbox")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+            }
+
+            Text(project.name)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(4)
+    }
+
+    private func labelBadge(label: IssueLabel) -> some View {
+        HStack(spacing: 3) {
+            Circle()
+                .fill(Color(hex: label.color))
+                .frame(width: 6, height: 6)
+
+            Text(label.name)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(4)
+    }
+
+    private func formatDate(_ dateString: String) -> String {
+        // dateString is in format "YYYY-MM-DD"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        if let date = formatter.date(from: dateString) {
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: date)
+        }
+        return dateString
     }
 
     // MARK: - Actions

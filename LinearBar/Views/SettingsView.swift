@@ -24,12 +24,6 @@ struct SettingsView: View {
                         Label("Setup", systemImage: "gearshape")
                     }
                     .tag(1)
-
-                AboutTab()
-                    .tabItem {
-                        Label("About", systemImage: "info.circle")
-                    }
-                    .tag(2)
             }
         }
         .background(.ultraThinMaterial)
@@ -269,8 +263,9 @@ struct PreferencesTab: View {
     @AppStorage("refreshInterval") private var refreshIntervalRaw = RefreshInterval.fifteenMinutes.rawValue
     @AppStorage("showCompletedItems") private var showCompletedItems = true
     @AppStorage("showCanceledItems") private var showCanceledItems = false
-    @AppStorage("sortOrder") private var sortOrderRaw = SortOrder.updatedNewest.rawValue
     @AppStorage("launchAtLogin") private var launchAtLogin = false
+
+    @State private var showingCoffee = false
 
     private var defaultViewMode: Binding<ViewMode> {
         Binding(
@@ -290,13 +285,6 @@ struct PreferencesTab: View {
         Binding(
             get: { RefreshInterval(rawValue: refreshIntervalRaw) ?? .fifteenMinutes },
             set: { refreshIntervalRaw = $0.rawValue }
-        )
-    }
-
-    private var sortOrder: Binding<SortOrder> {
-        Binding(
-            get: { SortOrder(rawValue: sortOrderRaw) ?? .updatedNewest },
-            set: { sortOrderRaw = $0.rawValue }
         )
     }
 
@@ -320,13 +308,6 @@ struct PreferencesTab: View {
                         sectionHeader(icon: "line.3.horizontal.decrease.circle.fill", title: "Filters", gradient: [.blue, .cyan])
                     }
 
-                    // SORT ORDER
-                    Section {
-                        sortOrderPicker
-                    } header: {
-                        sectionHeader(icon: "arrow.up.arrow.down.circle.fill", title: "Sort Order", gradient: [.indigo, .purple])
-                    }
-
                     // REFRESH
                     Section {
                         refreshIntervalPicker
@@ -339,6 +320,20 @@ struct PreferencesTab: View {
                         launchAtLoginToggle
                     } header: {
                         sectionHeader(icon: "power.circle.fill", title: "Startup", gradient: [.orange, .yellow])
+                    }
+
+                    // SUPPORT
+                    Section {
+                        buyMeCoffeeButton
+                    } header: {
+                        sectionHeader(icon: "cup.and.saucer.fill", title: "Support", gradient: [.brown, .orange])
+                    }
+
+                    // ABOUT
+                    Section {
+                        aboutInfo
+                    } header: {
+                        sectionHeader(icon: "info.circle.fill", title: "About", gradient: [.gray, .secondary])
                     }
                 }
                 .formStyle(.grouped)
@@ -356,6 +351,9 @@ struct PreferencesTab: View {
                 endPoint: .bottomTrailing
             )
         )
+        .sheet(isPresented: $showingCoffee) {
+            CoffeeView()
+        }
         .onChange(of: defaultViewModeRaw) { newValue in
             syncToiCloud(newValue, forKey: "defaultViewMode")
         }
@@ -370,9 +368,6 @@ struct PreferencesTab: View {
         }
         .onChange(of: showCanceledItems) { newValue in
             syncToiCloud(newValue, forKey: "showCanceledItems")
-        }
-        .onChange(of: sortOrderRaw) { newValue in
-            syncToiCloud(newValue, forKey: "sortOrder")
         }
         .onChange(of: launchAtLogin) { newValue in
             syncToiCloud(newValue, forKey: "launchAtLogin")
@@ -464,26 +459,6 @@ struct PreferencesTab: View {
         }
     }
 
-    // MARK: - Sort Order Section
-
-    private var sortOrderPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Sort items by:")
-                .font(.body)
-
-            Picker("", selection: sortOrder) {
-                ForEach(SortOrder.allCases) { order in
-                    Text(order.rawValue).tag(order)
-                }
-            }
-            .pickerStyle(.menu)
-
-            Text("How to order items in Favorites and Recent tabs")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-
     // MARK: - Refresh Section
 
     private var refreshIntervalPicker: some View {
@@ -513,6 +488,60 @@ struct PreferencesTab: View {
             Text("Automatically start LinearBar when you log in")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Support Section
+
+    private var buyMeCoffeeButton: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: {
+                showingCoffee = true
+            }) {
+                HStack {
+                    Image(systemName: "cup.and.saucer.fill")
+                        .foregroundColor(.orange)
+                    Text("Buy Me Coffee")
+                }
+            }
+
+            Text("Support LinearBar development")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - About Section
+
+    private var aboutInfo: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Made with love by Strategic Nerds, Inc.")
+                .font(.body)
+                .foregroundColor(.primary)
+
+            Text("© \(Calendar.current.component(.year, from: Date())) Strategic Nerds, Inc.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            if let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+                Text("Build \(buildNumber)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Button(action: {
+                if let url = URL(string: "https://github.com/coolasspuppy/linear-bar") {
+                    NSWorkspace.shared.open(url)
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "link")
+                        .font(.system(size: 10))
+                    Text("Contribute on GitHub")
+                        .font(.caption)
+                }
+            }
+            .buttonStyle(.link)
         }
     }
 }

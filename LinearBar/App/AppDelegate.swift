@@ -45,7 +45,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem?.button {
             // Use a template icon that works in both light and dark mode
-            if let image = NSImage(systemSymbolName: "checkmark.square", accessibilityDescription: "LinearBar") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "LinearBar") {
                 image.isTemplate = true
                 button.image = image
             } else {
@@ -74,13 +74,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         } else if AppSettings.shared.accounts.isEmpty {
             // Show default icon
-            if let image = NSImage(systemSymbolName: "checkmark.square", accessibilityDescription: "LinearBar") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "LinearBar") {
                 image.isTemplate = true
                 button.image = image
             }
         } else {
             // Show connected icon
-            if let image = NSImage(systemSymbolName: "checkmark.square.fill", accessibilityDescription: "LinearBar") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "LinearBar") {
                 image.isTemplate = true
                 button.image = image
             }

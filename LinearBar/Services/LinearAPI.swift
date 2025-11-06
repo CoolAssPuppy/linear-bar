@@ -21,6 +21,11 @@ class LinearAPI {
             id
             name
             email
+            organization {
+              id
+              name
+              urlKey
+            }
           }
         }
         """
@@ -65,6 +70,7 @@ class LinearAPI {
                 url
                 createdAt
                 updatedAt
+                dueDate
                 state {
                   name
                   type
@@ -79,6 +85,23 @@ class LinearAPI {
                   name
                   key
                 }
+                labels {
+                  nodes {
+                    id
+                    name
+                    color
+                  }
+                }
+                project {
+                  id
+                  name
+                  icon
+                }
+                parent {
+                  id
+                  identifier
+                  title
+                }
               }
               project {
                 id
@@ -92,6 +115,7 @@ class LinearAPI {
                 lead {
                   name
                 }
+                targetDate
               }
               initiative {
                 id
@@ -101,6 +125,7 @@ class LinearAPI {
                 updatedAt
                 icon
                 status
+                targetDate
               }
               cycle {
                 id
@@ -175,6 +200,7 @@ class LinearAPI {
                 url
                 createdAt
                 updatedAt
+                dueDate
                 state {
                   name
                   type
@@ -188,6 +214,23 @@ class LinearAPI {
                   id
                   name
                   key
+                }
+                labels {
+                  nodes {
+                    id
+                    name
+                    color
+                  }
+                }
+                project {
+                  id
+                  name
+                  icon
+                }
+                parent {
+                  id
+                  identifier
+                  title
                 }
               }
             }
@@ -285,6 +328,7 @@ class LinearAPI {
                 url
                 createdAt
                 updatedAt
+                dueDate
                 state {
                   name
                   type
@@ -295,6 +339,23 @@ class LinearAPI {
                   id
                   name
                   key
+                }
+                labels {
+                  nodes {
+                    id
+                    name
+                    color
+                  }
+                }
+                project {
+                  id
+                  name
+                  icon
+                }
+                parent {
+                  id
+                  identifier
+                  title
                 }
               }
             }
@@ -334,6 +395,7 @@ class LinearAPI {
                 url
                 createdAt
                 updatedAt
+                dueDate
                 state {
                   name
                   type
@@ -347,6 +409,23 @@ class LinearAPI {
                 }
                 assignee {
                   name
+                }
+                labels {
+                  nodes {
+                    id
+                    name
+                    color
+                  }
+                }
+                project {
+                  id
+                  name
+                  icon
+                }
+                parent {
+                  id
+                  identifier
+                  title
                 }
               }
             }
@@ -386,6 +465,7 @@ class LinearAPI {
                 url
                 createdAt
                 updatedAt
+                dueDate
                 state {
                   name
                   type
@@ -394,6 +474,23 @@ class LinearAPI {
                 priorityLabel
                 assignee {
                   name
+                }
+                labels {
+                  nodes {
+                    id
+                    name
+                    color
+                  }
+                }
+                project {
+                  id
+                  name
+                  icon
+                }
+                parent {
+                  id
+                  identifier
+                  title
                 }
               }
             }
@@ -534,6 +631,7 @@ class LinearAPI {
               url
               createdAt
               updatedAt
+              dueDate
               state {
                 name
                 type
@@ -547,6 +645,23 @@ class LinearAPI {
               }
               assignee {
                 name
+              }
+              labels {
+                nodes {
+                  id
+                  name
+                  color
+                }
+              }
+              project {
+                id
+                name
+                icon
+              }
+              parent {
+                id
+                identifier
+                title
               }
             }
           }

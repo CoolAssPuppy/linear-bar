@@ -61,6 +61,12 @@ class AppSettings: ObservableObject {
         }
     }
 
+    @Published var selectedTeamId: String? {
+        didSet {
+            saveSetting(selectedTeamId ?? "", forKey: "selectedTeamId")
+        }
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -101,6 +107,10 @@ class AppSettings: ObservableObject {
             ?? UserDefaults.standard.string(forKey: "sortOrder")
             ?? SortOrder.updatedNewest.rawValue
         self.sortOrder = SortOrder(rawValue: sortOrderRaw) ?? .updatedNewest
+
+        let teamId = iCloudStore.string(forKey: "selectedTeamId")
+            ?? UserDefaults.standard.string(forKey: "selectedTeamId")
+        self.selectedTeamId = teamId?.isEmpty == false ? teamId : nil
 
         loadAccounts()
         syncAllSettingsFromiCloudToUserDefaults()
@@ -187,7 +197,7 @@ class AppSettings: ObservableObject {
     }
 
     private func syncAllSettingsFromiCloudToUserDefaults() {
-        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder"]
+        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder", "selectedTeamId"]
 
         for key in settingsKeys {
             if let value = iCloudStore.object(forKey: key) {
@@ -251,6 +261,10 @@ class AppSettings: ObservableObject {
                 let sortRaw = UserDefaults.standard.string(forKey: "sortOrder") ?? SortOrder.updatedNewest.rawValue
                 self.sortOrder = SortOrder(rawValue: sortRaw) ?? .updatedNewest
             }
+            if keys.contains("selectedTeamId") {
+                let teamId = UserDefaults.standard.string(forKey: "selectedTeamId")
+                self.selectedTeamId = teamId?.isEmpty == false ? teamId : nil
+            }
         }
     }
 }
@@ -303,6 +317,7 @@ enum SortOrder: String, CaseIterable, Identifiable {
     case createdOldest = "Created Date, Oldest First"
     case updatedNewest = "Updated Date, Newest First"
     case updatedOldest = "Updated Date, Oldest First"
+    case dueDate = "Due Date"
 
     var id: String { rawValue }
 }

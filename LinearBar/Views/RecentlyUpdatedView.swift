@@ -66,6 +66,29 @@ struct RecentlyUpdatedView: View {
                 let date1 = item1.updatedAt ?? Date.distantPast
                 let date2 = item2.updatedAt ?? Date.distantPast
                 return date1 < date2
+            case .dueDate:
+                // Get due dates - could be from Issue, Project, or Initiative
+                let dueDate1 = getDueDate(from: item1)
+                let dueDate2 = getDueDate(from: item2)
+
+                // Items with due dates come first, sorted by due date
+                // Items without due dates come after, sorted by created date (newest first)
+                switch (dueDate1, dueDate2) {
+                case (.some(let date1), .some(let date2)):
+                    // Both have due dates - sort by due date (earliest first)
+                    return date1 < date2
+                case (.some, .none):
+                    // Only first has due date - it comes first
+                    return true
+                case (.none, .some):
+                    // Only second has due date - it comes first
+                    return false
+                case (.none, .none):
+                    // Neither has due date - sort by created date (newest first)
+                    let created1 = item1.createdAt ?? Date.distantPast
+                    let created2 = item2.createdAt ?? Date.distantPast
+                    return created1 > created2
+                }
             }
         }
     }
@@ -109,6 +132,11 @@ struct RecentlyUpdatedView: View {
         showCompletedItems = settings.showCompletedItems
         showCanceledItems = settings.showCanceledItems
         sortOrder = settings.sortOrder
+
+        // Restore selected team from settings
+        if let savedTeamId = settings.selectedTeamId {
+            selectedTeam = teams.first(where: { $0.id == savedTeamId })
+        }
     }
 
     // MARK: - Controls
@@ -125,19 +153,56 @@ struct RecentlyUpdatedView: View {
                 loadData()
             }
 
+            Spacer()
+
             if selectedMode == .teamItems && !teams.isEmpty {
-                Picker("", selection: $selectedTeam) {
+                // Team selector button
+                Menu {
                     ForEach(teams) { team in
-                        Text(team.name).tag(team as Team?)
+                        Button(action: {
+                            selectedTeam = team
+                            AppSettings.shared.selectedTeamId = team.id
+                            loadData()
+                        }) {
+                            HStack {
+                                Text(team.name)
+                                if selectedTeam?.id == team.id {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
                     }
+                } label: {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
                 }
-                .frame(maxWidth: .infinity)
-                .onChange(of: selectedTeam) { _ in
-                    loadData()
-                }
+                .menuStyle(.borderlessButton)
+                .help("Select Team")
             }
 
-            Spacer()
+            // Sort button
+            Menu {
+                ForEach(SortOrder.allCases) { order in
+                    Button(action: {
+                        sortOrder = order
+                        AppSettings.shared.sortOrder = order
+                    }) {
+                        HStack {
+                            Text(order.rawValue)
+                            if sortOrder == order {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+            .menuStyle(.borderlessButton)
+            .help("Sort Order")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -309,5 +374,22 @@ struct RecentlyUpdatedView: View {
 
     private func getAccountColor() -> String? {
         return AppSettings.shared.accounts.first?.color
+    }
+
+    private func getDueDate(from item: any LinearItem) -> Date? {
+        // Use simple DateFormatter for YYYY-MM-DD format
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        if let issue = item as? Issue, let dueDate = issue.dueDate {
+            return formatter.date(from: dueDate)
+        } else if let project = item as? Project, let targetDate = project.targetDate {
+            return formatter.date(from: targetDate)
+        } else if let initiative = item as? Initiative, let targetDate = initiative.targetDate {
+            return formatter.date(from: targetDate)
+        }
+
+        return nil
     }
 }

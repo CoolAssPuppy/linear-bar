@@ -113,6 +113,7 @@ class LinearAuthService {
                         var account = LinearAccount(
                             email: viewer.email,
                             name: viewer.name,
+                            organizationSlug: viewer.organization?.urlKey,
                             isEnabled: true
                         )
 

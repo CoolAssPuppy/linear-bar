@@ -26,11 +26,15 @@ struct Issue: LinearItem, Codable {
     let url: String
     let createdAt: Date?
     let updatedAt: Date?
+    let dueDate: String?  // ISO 8601 date string (YYYY-MM-DD)
     let state: IssueState?
     let priority: Int?
     let priorityLabel: String?
     let assignee: User?
     let team: Team?
+    let labels: LabelConnection?
+    let project: ProjectReference?
+    let parent: IssueReference?
 
     var itemType: LinearItemType { .issue }
 
@@ -40,6 +44,12 @@ struct Issue: LinearItem, Codable {
 
     var stateColor: String {
         state?.color ?? "#6B7280"
+    }
+
+    var isOverdue: Bool {
+        guard let dueDate = dueDate else { return false }
+        guard let date = ISO8601DateFormatter().date(from: dueDate + "T00:00:00Z") else { return false }
+        return date < Date()
     }
 }
 
@@ -61,6 +71,34 @@ struct IssueState: Codable, Hashable {
     }
 }
 
+// MARK: - Issue Label
+
+struct IssueLabel: Codable, Hashable, Identifiable {
+    let id: String
+    let name: String
+    let color: String  // Hex color like "#FF0000"
+}
+
+struct LabelConnection: Codable, Hashable {
+    let nodes: [IssueLabel]
+}
+
+// MARK: - Project Reference (lightweight version for issue.project)
+
+struct ProjectReference: Codable, Hashable {
+    let id: String
+    let name: String
+    let icon: String?
+}
+
+// MARK: - Issue Reference (lightweight version for issue.parent)
+
+struct IssueReference: Codable, Hashable {
+    let id: String
+    let identifier: String
+    let title: String
+}
+
 // MARK: - Project
 
 struct Project: LinearItem, Codable {
@@ -73,6 +111,7 @@ struct Project: LinearItem, Codable {
     let progress: Double?
     let icon: String?
     let lead: User?
+    let targetDate: String?  // ISO 8601 date string (YYYY-MM-DD)
 
     var title: String { name }
     var itemType: LinearItemType { .project }
@@ -89,6 +128,12 @@ struct Project: LinearItem, Codable {
             return "#94A3B8" // slate
         }
     }
+
+    var isOverdue: Bool {
+        guard let targetDate = targetDate else { return false }
+        guard let date = ISO8601DateFormatter().date(from: targetDate + "T00:00:00Z") else { return false }
+        return date < Date()
+    }
 }
 
 // MARK: - Initiative
@@ -102,9 +147,16 @@ struct Initiative: LinearItem, Codable {
     let progress: Double?
     let icon: String?
     let status: String? // "planned", "active", "completed"
+    let targetDate: String?  // ISO 8601 date string (YYYY-MM-DD)
 
     var title: String { name }
     var itemType: LinearItemType { .initiative }
+
+    var isOverdue: Bool {
+        guard let targetDate = targetDate else { return false }
+        guard let date = ISO8601DateFormatter().date(from: targetDate + "T00:00:00Z") else { return false }
+        return date < Date()
+    }
 }
 
 // MARK: - Team
@@ -196,6 +248,13 @@ struct Viewer: Codable {
     let id: String
     let name: String
     let email: String
+    let organization: ViewerOrganization?
+}
+
+struct ViewerOrganization: Codable {
+    let id: String
+    let name: String
+    let urlKey: String  // This is the organization slug used in URLs
 }
 
 // MARK: - GraphQL Responses

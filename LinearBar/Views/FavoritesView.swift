@@ -69,6 +69,29 @@ struct FavoritesView: View {
                 let date1 = item1?.updatedAt ?? Date.distantPast
                 let date2 = item2?.updatedAt ?? Date.distantPast
                 return date1 < date2
+            case .dueDate:
+                // Get due dates - could be from Issue, Project, or Initiative
+                let dueDate1 = getDueDate(from: fav1)
+                let dueDate2 = getDueDate(from: fav2)
+
+                // Items with due dates come first, sorted by due date
+                // Items without due dates come after, sorted by created date (newest first)
+                switch (dueDate1, dueDate2) {
+                case (.some(let date1), .some(let date2)):
+                    // Both have due dates - sort by due date (earliest first)
+                    return date1 < date2
+                case (.some, .none):
+                    // Only first has due date - it comes first
+                    return true
+                case (.none, .some):
+                    // Only second has due date - it comes first
+                    return false
+                case (.none, .none):
+                    // Neither has due date - sort by created date (newest first)
+                    let created1 = item1?.createdAt ?? Date.distantPast
+                    let created2 = item2?.createdAt ?? Date.distantPast
+                    return created1 > created2
+                }
             }
         }
     }
@@ -121,10 +144,12 @@ struct FavoritesView: View {
                             .padding(.horizontal, 12)
                     } else if let customView = favorite.customView {
                         Button(action: {
-                            // Construct Linear URL for custom view
-                            let url = URL(string: "https://linear.app/view/\(customView.id)")
-                            if let url = url {
-                                NSWorkspace.shared.open(url)
+                            // Construct Linear URL for custom view with organization slug
+                            if let orgSlug = getOrganizationSlug() {
+                                let url = URL(string: "https://linear.app/\(orgSlug)/view/\(customView.id)")
+                                if let url = url {
+                                    NSWorkspace.shared.open(url)
+                                }
                             }
                         }) {
                             genericFavoriteRow(
@@ -138,10 +163,12 @@ struct FavoritesView: View {
                         .padding(.horizontal, 12)
                     } else if let cycle = favorite.cycle {
                         Button(action: {
-                            // Construct Linear URL for cycle
-                            let url = URL(string: "https://linear.app/cycle/\(cycle.id)")
-                            if let url = url {
-                                NSWorkspace.shared.open(url)
+                            // Construct Linear URL for cycle with organization slug
+                            if let orgSlug = getOrganizationSlug() {
+                                let url = URL(string: "https://linear.app/\(orgSlug)/cycle/\(cycle.id)")
+                                if let url = url {
+                                    NSWorkspace.shared.open(url)
+                                }
                             }
                         }) {
                             genericFavoriteRow(
@@ -155,10 +182,12 @@ struct FavoritesView: View {
                         .padding(.horizontal, 12)
                     } else if let label = favorite.label {
                         Button(action: {
-                            // Construct Linear URL for label
-                            let url = URL(string: "https://linear.app/label/\(label.id)")
-                            if let url = url {
-                                NSWorkspace.shared.open(url)
+                            // Construct Linear URL for label with organization slug
+                            if let orgSlug = getOrganizationSlug() {
+                                let url = URL(string: "https://linear.app/\(orgSlug)/label/\(label.id)")
+                                if let url = url {
+                                    NSWorkspace.shared.open(url)
+                                }
                             }
                         }) {
                             genericFavoriteRow(
@@ -467,5 +496,27 @@ extension FavoritesView {
             return initiative
         }
         return nil
+    }
+
+    private func getDueDate(from favorite: Favorite) -> Date? {
+        // Use simple DateFormatter for YYYY-MM-DD format
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        if let issue = favorite.issue, let dueDate = issue.dueDate {
+            return formatter.date(from: dueDate)
+        } else if let project = favorite.project, let targetDate = project.targetDate {
+            return formatter.date(from: targetDate)
+        } else if let initiative = favorite.initiative, let targetDate = initiative.targetDate {
+            return formatter.date(from: targetDate)
+        }
+
+        return nil
+    }
+
+    private func getOrganizationSlug() -> String? {
+        // Get the organization slug from the first enabled account
+        return AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })?.organizationSlug
     }
 }

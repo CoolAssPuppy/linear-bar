@@ -50,13 +50,19 @@ struct MenuBarView: View {
 
             // Create new item menu
             Menu {
-                Button(action: { openLinearCreate(type: "issue") }) {
+                Button {
+                    openLinearCreate(type: "issue")
+                } label: {
                     Label("New Issue", systemImage: "checkmark.circle")
                 }
-                Button(action: { openLinearCreate(type: "project") }) {
+                Button {
+                    openLinearCreate(type: "project")
+                } label: {
                     Label("New Project", systemImage: "folder")
                 }
-                Button(action: { openLinearCreate(type: "initiative") }) {
+                Button {
+                    openLinearCreate(type: "initiative")
+                } label: {
                     Label("New Initiative", systemImage: "target")
                 }
             } label: {
