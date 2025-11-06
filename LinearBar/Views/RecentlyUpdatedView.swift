@@ -162,6 +162,7 @@ struct RecentlyUpdatedView: View {
                         Button(action: {
                             selectedTeam = team
                             AppSettings.shared.selectedTeamId = team.id
+                            AppSettings.shared.selectedTeamKey = team.key
                             loadData()
                         }) {
                             HStack {

@@ -162,19 +162,29 @@ struct MenuBarView: View {
     }
 
     private func openLinearCreate(type: String) {
-        // Get the team from the first enabled account's recent team selection
+        // Get the organization slug and team key from settings
+        guard let orgSlug = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })?.organizationSlug else {
+            return
+        }
+
+        let teamKey = AppSettings.shared.selectedTeamKey
+
         var url: URL?
 
         switch type {
         case "issue":
-            // Linear's new issue URL - will prompt for team selection if needed
-            url = URL(string: "https://linear.app/team/new-issue")
+            // Linear's new issue URL with team if available
+            if let teamKey = teamKey {
+                url = URL(string: "https://linear.app/\(orgSlug)/team/\(teamKey)/new")
+            } else {
+                url = URL(string: "https://linear.app/\(orgSlug)/issue/new")
+            }
         case "project":
             // Linear's new project URL
-            url = URL(string: "https://linear.app/projects/new")
+            url = URL(string: "https://linear.app/\(orgSlug)/projects/new")
         case "initiative":
             // Linear's new initiative URL (roadmap item)
-            url = URL(string: "https://linear.app/roadmap")
+            url = URL(string: "https://linear.app/\(orgSlug)/roadmap")
         default:
             return
         }

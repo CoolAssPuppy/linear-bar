@@ -67,6 +67,12 @@ class AppSettings: ObservableObject {
         }
     }
 
+    @Published var selectedTeamKey: String? {
+        didSet {
+            saveSetting(selectedTeamKey ?? "", forKey: "selectedTeamKey")
+        }
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -111,6 +117,10 @@ class AppSettings: ObservableObject {
         let teamId = iCloudStore.string(forKey: "selectedTeamId")
             ?? UserDefaults.standard.string(forKey: "selectedTeamId")
         self.selectedTeamId = teamId?.isEmpty == false ? teamId : nil
+
+        let teamKey = iCloudStore.string(forKey: "selectedTeamKey")
+            ?? UserDefaults.standard.string(forKey: "selectedTeamKey")
+        self.selectedTeamKey = teamKey?.isEmpty == false ? teamKey : nil
 
         loadAccounts()
         syncAllSettingsFromiCloudToUserDefaults()
@@ -197,7 +207,7 @@ class AppSettings: ObservableObject {
     }
 
     private func syncAllSettingsFromiCloudToUserDefaults() {
-        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder", "selectedTeamId"]
+        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder", "selectedTeamId", "selectedTeamKey"]
 
         for key in settingsKeys {
             if let value = iCloudStore.object(forKey: key) {
@@ -264,6 +274,10 @@ class AppSettings: ObservableObject {
             if keys.contains("selectedTeamId") {
                 let teamId = UserDefaults.standard.string(forKey: "selectedTeamId")
                 self.selectedTeamId = teamId?.isEmpty == false ? teamId : nil
+            }
+            if keys.contains("selectedTeamKey") {
+                let teamKey = UserDefaults.standard.string(forKey: "selectedTeamKey")
+                self.selectedTeamKey = teamKey?.isEmpty == false ? teamKey : nil
             }
         }
     }
