@@ -519,7 +519,7 @@ struct PreferencesTab: View {
                 .font(.body)
                 .foregroundColor(.primary)
 
-            Text("© \(Calendar.current.component(.year, from: Date())) Strategic Nerds, Inc.")
+            Text("© \(String(Calendar.current.component(.year, from: Date()))) Strategic Nerds, Inc.")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
