@@ -3,6 +3,7 @@ import SwiftUI
 /// Main popover view with tab navigation
 struct MenuBarView: View {
     @State private var selectedTab: Tab = .favorites
+    @State private var isRefreshing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,13 +43,38 @@ struct MenuBarView: View {
     // MARK: - Header
 
     private var headerBar: some View {
-        HStack {
+        HStack(spacing: 12) {
+            // App icon with glow
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.accentColor.opacity(0.2),
+                                Color.purple.opacity(0.1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 32, height: 32)
+                    .blur(radius: 8)
+
+                if let appIcon = NSImage(named: NSImage.applicationIconName) {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .frame(width: 32, height: 32)
+                        .clipShape(Circle())
+                }
+            }
+
             Text("LinearBar")
-                .font(.headline)
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
 
             Spacer()
 
-            // Create new item menu
+            // Create new item menu with styled button
             Menu {
                 Button {
                     openLinearCreate(type: "issue")
@@ -66,22 +92,38 @@ struct MenuBarView: View {
                     Label("New Initiative", systemImage: "target")
                 }
             } label: {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 16))
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.green, .mint],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Text("Add New")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(.regularMaterial)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(Color.green.opacity(0.3), lineWidth: 1)
+                )
             }
             .menuStyle(.borderlessButton)
             .help("Create New...")
-
-            Button(action: openSettings) {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 16))
-            }
-            .buttonStyle(.borderless)
-            .help("Settings")
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(height: 40)
+        .padding(.vertical, 14)
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: 0)
+        )
     }
 
     // MARK: - Tab Bar
@@ -133,26 +175,102 @@ struct MenuBarView: View {
     // MARK: - Footer
 
     private var footerBar: some View {
-        HStack {
-            Button(action: refreshAllViews) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 12))
-            }
-            .buttonStyle(.borderless)
-            .help("Refresh all data")
+        HStack(spacing: 10) {
+            // Refresh button with animation
+            refreshButton
 
             Spacer()
 
-            Button(action: quitApp) {
-                Text("Quit")
-                    .font(.system(size: 12))
+            // Settings button
+            footerButton(
+                icon: "gearshape.fill",
+                title: "Settings",
+                gradient: [.blue, .cyan]
+            ) {
+                openSettings()
             }
-            .buttonStyle(.borderless)
-            .help("Quit LinearBar")
+
+            // Quit button
+            footerButton(
+                icon: "power",
+                title: "Quit",
+                gradient: [.red, .orange]
+            ) {
+                quitApp()
+            }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .frame(height: 32)
+        .padding(.vertical, 12)
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: 0)
+        )
+    }
+
+    private var refreshButton: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                isRefreshing = true
+            }
+            Task {
+                refreshAllViews()
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                withAnimation {
+                    isRefreshing = false
+                }
+            }
+        }) {
+            ZStack {
+                Circle()
+                    .fill(.regularMaterial)
+                    .frame(width: 32, height: 32)
+
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.blue, .cyan],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .rotationEffect(.degrees(isRefreshing ? 360 : 0))
+            }
+            .overlay(
+                Circle()
+                    .strokeBorder(Color.blue.opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .help("Refresh all data")
+    }
+
+    private func footerButton(icon: String, title: String, gradient: [Color], action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: gradient,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.primary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.thinMaterial)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Actions

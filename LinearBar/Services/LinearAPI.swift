@@ -14,7 +14,7 @@ class LinearAPI {
     // MARK: - Public API Methods
 
     /// Fetches the current user's information
-    func fetchViewer(accessToken: String) async throws -> Viewer {
+    func fetchViewer(accessToken: String, accountEmail: String? = nil) async throws -> Viewer {
         #if DEBUG
         if TestDataProvider.isUITesting {
             return TestDataProvider.getViewer()
@@ -40,7 +40,7 @@ class LinearAPI {
             let viewer: Viewer
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -50,7 +50,7 @@ class LinearAPI {
     }
 
     /// Fetches user's favorite items (issues, projects, initiatives)
-    func fetchFavorites(accessToken: String) async throws -> [Favorite] {
+    func fetchFavorites(accessToken: String, accountEmail: String? = nil) async throws -> [Favorite] {
         #if DEBUG
         // Return test data for UI testing
         if TestDataProvider.isUITesting {
@@ -79,6 +79,7 @@ class LinearAPI {
                 id
                 identifier
                 title
+                description
                 url
                 createdAt
                 updatedAt
@@ -118,6 +119,7 @@ class LinearAPI {
               project {
                 id
                 name
+                description
                 url
                 createdAt
                 updatedAt
@@ -132,6 +134,7 @@ class LinearAPI {
               initiative {
                 id
                 name
+                description
                 url
                 createdAt
                 updatedAt
@@ -160,14 +163,14 @@ class LinearAPI {
         }
         """
 
-        let response: GraphQLResponse<FavoritesResponseData> = try await execute(query: favoritesQuery, accessToken: accessToken)
+        let response: GraphQLResponse<FavoritesResponseData> = try await execute(query: favoritesQuery, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             AppLogger.error("No data in favorites response", log: AppLogger.api)
             if let errors = response.errors {
                 AppLogger.error("GraphQL errors: \(errors)", log: AppLogger.api)
                 // Fall back to assigned issues if favorites query fails
-                return try await fetchAssignedIssuesAsFavorites(accessToken: accessToken)
+                return try await fetchAssignedIssuesAsFavorites(accessToken: accessToken, accountEmail: accountEmail)
             }
             throw LinearError.invalidResponse
         }
@@ -176,7 +179,7 @@ class LinearAPI {
     }
 
     /// Fallback: Fetch assigned issues as favorites
-    private func fetchAssignedIssuesAsFavorites(accessToken: String) async throws -> [Favorite] {
+    private func fetchAssignedIssuesAsFavorites(accessToken: String, accountEmail: String? = nil) async throws -> [Favorite] {
         let query = """
         query {
           viewer {
@@ -185,6 +188,7 @@ class LinearAPI {
                 id
                 identifier
                 title
+                description
                 url
                 createdAt
                 updatedAt
@@ -236,7 +240,7 @@ class LinearAPI {
             let viewer: ViewerData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -268,7 +272,7 @@ class LinearAPI {
     }
 
     /// Fetches user's teams
-    func fetchTeams(accessToken: String) async throws -> [Team] {
+    func fetchTeams(accessToken: String, accountEmail: String? = nil) async throws -> [Team] {
         #if DEBUG
         if TestDataProvider.isUITesting {
             return TestDataProvider.getTeams()
@@ -300,7 +304,7 @@ class LinearAPI {
             let viewer: ViewerData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -310,7 +314,7 @@ class LinearAPI {
     }
 
     /// Fetches issues created by the current user
-    func fetchMyIssues(accessToken: String) async throws -> [Issue] {
+    func fetchMyIssues(accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
         #if DEBUG
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
@@ -325,6 +329,7 @@ class LinearAPI {
                 id
                 identifier
                 title
+                description
                 url
                 createdAt
                 updatedAt
@@ -373,7 +378,7 @@ class LinearAPI {
             let viewer: ViewerData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -383,7 +388,7 @@ class LinearAPI {
     }
 
     /// Fetches issues assigned to the current user
-    func fetchAssignedIssues(accessToken: String) async throws -> [Issue] {
+    func fetchAssignedIssues(accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
         #if DEBUG
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
@@ -398,6 +403,7 @@ class LinearAPI {
                 id
                 identifier
                 title
+                description
                 url
                 createdAt
                 updatedAt
@@ -449,7 +455,7 @@ class LinearAPI {
             let viewer: ViewerData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -459,7 +465,7 @@ class LinearAPI {
     }
 
     /// Fetches issues for a specific team
-    func fetchTeamIssues(teamId: String, accessToken: String) async throws -> [Issue] {
+    func fetchTeamIssues(teamId: String, accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
         #if DEBUG
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
@@ -474,6 +480,7 @@ class LinearAPI {
                 id
                 identifier
                 title
+                description
                 url
                 createdAt
                 updatedAt
@@ -522,7 +529,7 @@ class LinearAPI {
             let team: TeamData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -532,7 +539,7 @@ class LinearAPI {
     }
 
     /// Fetches projects for the current user
-    func fetchMyProjects(accessToken: String) async throws -> [Project] {
+    func fetchMyProjects(accessToken: String, accountEmail: String? = nil) async throws -> [Project] {
         #if DEBUG
         if TestDataProvider.isUITesting {
             return TestDataProvider.getProjects()
@@ -555,7 +562,7 @@ class LinearAPI {
             let id: String
         }
 
-        let viewerResult: GraphQLResponse<ViewerResponse> = try await execute(query: viewerQuery, accessToken: accessToken)
+        let viewerResult: GraphQLResponse<ViewerResponse> = try await execute(query: viewerQuery, accessToken: accessToken, accountEmail: accountEmail)
         guard let viewerId = viewerResult.data?.viewer.id else {
             throw LinearError.invalidResponse
         }
@@ -567,6 +574,7 @@ class LinearAPI {
             nodes {
               id
               name
+              description
               url
               createdAt
               updatedAt
@@ -588,7 +596,7 @@ class LinearAPI {
             let projects: ProjectsData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -598,13 +606,13 @@ class LinearAPI {
     }
 
     /// Fetches projects assigned to the current user (as lead or member)
-    func fetchAssignedProjects(accessToken: String) async throws -> [Project] {
+    func fetchAssignedProjects(accessToken: String, accountEmail: String? = nil) async throws -> [Project] {
         // Linear doesn't have a separate assignedProjects query, so we use the same projects query
-        return try await fetchMyProjects(accessToken: accessToken)
+        return try await fetchMyProjects(accessToken: accessToken, accountEmail: accountEmail)
     }
 
     /// Fetches initiatives in the workspace
-    func fetchInitiatives(accessToken: String) async throws -> [Initiative] {
+    func fetchInitiatives(accessToken: String, accountEmail: String? = nil) async throws -> [Initiative] {
         #if DEBUG
         if TestDataProvider.isUITesting {
             return TestDataProvider.getInitiatives()
@@ -617,6 +625,7 @@ class LinearAPI {
             nodes {
               id
               name
+              description
               url
               createdAt
               updatedAt
@@ -634,7 +643,7 @@ class LinearAPI {
             let initiatives: InitiativesData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -644,7 +653,7 @@ class LinearAPI {
     }
 
     /// Searches for issues across the workspace
-    func searchIssues(term: String, accessToken: String) async throws -> [Issue] {
+    func searchIssues(term: String, accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
         let query = """
         query($term: String!) {
           searchIssues(term: $term, first: 50, includeArchived: false) {
@@ -652,6 +661,7 @@ class LinearAPI {
               id
               identifier
               title
+              description
               url
               createdAt
               updatedAt
@@ -701,7 +711,7 @@ class LinearAPI {
             let searchIssues: SearchData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -711,13 +721,14 @@ class LinearAPI {
     }
 
     /// Searches for projects across the workspace
-    func searchProjects(term: String, accessToken: String) async throws -> [Project] {
+    func searchProjects(term: String, accessToken: String, accountEmail: String? = nil) async throws -> [Project] {
         let query = """
         query($term: String!) {
           searchProjects(term: $term, first: 50) {
             nodes {
               id
               name
+              description
               url
               createdAt
               updatedAt
@@ -741,7 +752,7 @@ class LinearAPI {
             let searchProjects: SearchData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken)
+        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken, accountEmail: accountEmail)
 
         guard let data = response.data else {
             throw LinearError.invalidResponse
@@ -755,11 +766,22 @@ class LinearAPI {
     private func execute<T: Decodable>(
         query: String,
         variables: [String: Any]? = nil,
-        accessToken: String
+        accessToken: String,
+        accountEmail: String? = nil,
+        isRetry: Bool = false
     ) async throws -> GraphQLResponse<T> {
+        var currentAccessToken = accessToken
+
+        // If this is not a retry and we have an account email, check if we can get a fresh token
+        if !isRetry, let email = accountEmail {
+            if let freshToken = KeychainService.shared.retrieveAccessToken(forAccount: email) {
+                currentAccessToken = freshToken
+            }
+        }
+
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(currentAccessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         var body: [String: Any] = ["query": query]
@@ -775,9 +797,30 @@ class LinearAPI {
             throw LinearError.networkError(NSError(domain: "LinearAPI", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
         }
 
-        // Handle authentication errors
+        // Handle authentication errors with automatic token refresh
         if httpResponse.statusCode == 401 {
-            throw LinearError.authenticationRequired
+            // If we have an account email and haven't retried yet, attempt token refresh
+            if !isRetry, let email = accountEmail {
+                AppLogger.info("Access token expired, attempting refresh for \(email)", log: AppLogger.api)
+                do {
+                    let newAccessToken = try await LinearAuthService.shared.refreshAccessToken(forAccount: email)
+                    AppLogger.info("Token refreshed successfully, retrying request", log: AppLogger.api)
+
+                    // Retry the request with the new token
+                    return try await execute(
+                        query: query,
+                        variables: variables,
+                        accessToken: newAccessToken,
+                        accountEmail: email,
+                        isRetry: true
+                    )
+                } catch {
+                    AppLogger.error("Failed to refresh token for \(email)", log: AppLogger.api, error: error)
+                    throw LinearError.authenticationRequired
+                }
+            } else {
+                throw LinearError.authenticationRequired
+            }
         }
 
         // Handle rate limiting

@@ -319,8 +319,8 @@ struct RecentlyUpdatedView: View {
                 if selectedMode == .createdByMe {
                     // Load items created by me (issues and projects in parallel)
                     // Note: Initiatives don't have a creator field in Linear's API, so we can't filter them
-                    async let issuesResult = LinearAPI.shared.fetchMyIssues(accessToken: accessToken)
-                    async let projectsResult = LinearAPI.shared.fetchMyProjects(accessToken: accessToken)
+                    async let issuesResult = LinearAPI.shared.fetchMyIssues(accessToken: accessToken, accountEmail: account.email)
+                    async let projectsResult = LinearAPI.shared.fetchMyProjects(accessToken: accessToken, accountEmail: account.email)
 
                     let (issues, projects) = try await (issuesResult, projectsResult)
 
@@ -334,8 +334,8 @@ struct RecentlyUpdatedView: View {
                     }
                 } else if selectedMode == .assignedToMe {
                     // Load items assigned to me (issues and projects in parallel)
-                    async let issuesResult = LinearAPI.shared.fetchAssignedIssues(accessToken: accessToken)
-                    async let projectsResult = LinearAPI.shared.fetchAssignedProjects(accessToken: accessToken)
+                    async let issuesResult = LinearAPI.shared.fetchAssignedIssues(accessToken: accessToken, accountEmail: account.email)
+                    async let projectsResult = LinearAPI.shared.fetchAssignedProjects(accessToken: accessToken, accountEmail: account.email)
 
                     let (issues, projects) = try await (issuesResult, projectsResult)
 
@@ -350,7 +350,7 @@ struct RecentlyUpdatedView: View {
                 } else {
                     // Load teams first if not loaded
                     if teams.isEmpty {
-                        let loadedTeams = try await LinearAPI.shared.fetchTeams(accessToken: accessToken)
+                        let loadedTeams = try await LinearAPI.shared.fetchTeams(accessToken: accessToken, accountEmail: account.email)
                         await MainActor.run {
                             self.teams = loadedTeams
                             self.selectedTeam = loadedTeams.first
@@ -359,7 +359,7 @@ struct RecentlyUpdatedView: View {
 
                     // Load team items (only issues for now, as team projects/initiatives aren't as common)
                     if let teamId = selectedTeam?.id {
-                        let issues = try await LinearAPI.shared.fetchTeamIssues(teamId: teamId, accessToken: accessToken)
+                        let issues = try await LinearAPI.shared.fetchTeamIssues(teamId: teamId, accessToken: accessToken, accountEmail: account.email)
                         await MainActor.run {
                             self.items = issues.sorted { ($0.updatedAt ?? Date.distantPast) > ($1.updatedAt ?? Date.distantPast) }
                             self.isLoading = false

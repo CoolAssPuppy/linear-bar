@@ -463,7 +463,7 @@ extension FavoritesView {
 
         Task {
             do {
-                let loadedFavorites = try await LinearAPI.shared.fetchFavorites(accessToken: accessToken)
+                let loadedFavorites = try await LinearAPI.shared.fetchFavorites(accessToken: accessToken, accountEmail: account.email)
                 await MainActor.run {
                     self.favorites = loadedFavorites
                     self.isLoading = false

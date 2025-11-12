@@ -2,6 +2,13 @@ import Foundation
 import AppKit
 import os.log
 
+/// Represents a pair of access and refresh tokens
+struct TokenPair {
+    let accessToken: String
+    let refreshToken: String?
+    let expiresIn: Int?
+}
+
 /// Service for handling OAuth authentication with Linear
 @MainActor
 class LinearAuthService {
@@ -16,14 +23,14 @@ class LinearAuthService {
     private let authorizationURL = "https://linear.app/oauth/authorize"
     private let tokenURL = "https://api.linear.app/oauth/token"
 
-    private var authCompletion: ((Result<String, Error>) -> Void)?
+    private var authCompletion: ((Result<TokenPair, Error>) -> Void)?
 
     private init() {}
 
     // MARK: - Public Methods
 
     /// Initiates the OAuth flow by opening the authorization URL in the user's browser
-    func authorize(completion: @escaping (Result<String, Error>) -> Void) {
+    func authorize(completion: @escaping (Result<TokenPair, Error>) -> Void) {
         self.authCompletion = completion
 
         var components = URLComponents(string: authorizationURL)!
@@ -76,8 +83,8 @@ class LinearAuthService {
         // Exchange code for access token
         Task {
             do {
-                let accessToken = try await exchangeCodeForToken(code: code)
-                authCompletion?(.success(accessToken))
+                let tokenPair = try await exchangeCodeForToken(code: code)
+                authCompletion?(.success(tokenPair))
                 authCompletion = nil
             } catch {
                 authCompletion?(.failure(error))
@@ -93,20 +100,32 @@ class LinearAuthService {
         authorize { result in
             Task { @MainActor in
                 switch result {
-                case .success(let accessToken):
+                case .success(let tokenPair):
                     do {
                         // Fetch user information
-                        let viewer = try await LinearAPI.shared.fetchViewer(accessToken: accessToken)
+                        let viewer = try await LinearAPI.shared.fetchViewer(accessToken: tokenPair.accessToken)
 
                         // Ensure app is active so keychain permission dialog can appear
                         NSApp.activate(ignoringOtherApps: true)
 
                         // Save access token to keychain
-                        let tokenSaved = KeychainService.shared.saveAccessToken(accessToken, forAccount: viewer.email)
+                        let accessTokenSaved = KeychainService.shared.saveAccessToken(tokenPair.accessToken, forAccount: viewer.email)
 
-                        guard tokenSaved else {
-                            completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to save credentials to keychain"])))
+                        guard accessTokenSaved else {
+                            completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to save access token to keychain"])))
                             return
+                        }
+
+                        // Save refresh token to keychain if available
+                        if let refreshToken = tokenPair.refreshToken {
+                            let refreshTokenSaved = KeychainService.shared.saveRefreshToken(refreshToken, forAccount: viewer.email)
+                            if !refreshTokenSaved {
+                                AppLogger.error("Failed to save refresh token to keychain for \(viewer.email)", log: AppLogger.auth)
+                            } else {
+                                AppLogger.info("Successfully saved refresh token for \(viewer.email)", log: AppLogger.auth)
+                            }
+                        } else {
+                            AppLogger.info("No refresh token provided by Linear OAuth", log: AppLogger.auth)
                         }
 
                         // Create or update account
@@ -144,7 +163,7 @@ class LinearAuthService {
 
     // MARK: - Private Methods
 
-    private func exchangeCodeForToken(code: String) async throws -> String {
+    private func exchangeCodeForToken(code: String) async throws -> TokenPair {
         var request = URLRequest(url: URL(string: tokenURL)!)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -202,10 +221,110 @@ class LinearAuthService {
 
         struct TokenResponse: Decodable {
             let access_token: String
+            let refresh_token: String?
+            let expires_in: Int?
         }
 
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
         AppLogger.info("Successfully received access token", log: AppLogger.auth)
+        if tokenResponse.refresh_token != nil {
+            AppLogger.info("Refresh token also received", log: AppLogger.auth)
+        }
+
+        return TokenPair(
+            accessToken: tokenResponse.access_token,
+            refreshToken: tokenResponse.refresh_token,
+            expiresIn: tokenResponse.expires_in
+        )
+    }
+
+    /// Refreshes an access token using a refresh token
+    func refreshAccessToken(forAccount email: String) async throws -> String {
+        // Retrieve refresh token from keychain
+        guard let refreshToken = KeychainService.shared.retrieveRefreshToken(forAccount: email) else {
+            AppLogger.error("No refresh token found for \(email)", log: AppLogger.auth)
+            throw NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No refresh token available"])
+        }
+
+        var request = URLRequest(url: URL(string: tokenURL)!)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        // Build URL-encoded form data
+        var components = URLComponents()
+        components.queryItems = [
+            URLQueryItem(name: "grant_type", value: "refresh_token"),
+            URLQueryItem(name: "refresh_token", value: refreshToken),
+            URLQueryItem(name: "client_id", value: clientId),
+            URLQueryItem(name: "client_secret", value: clientSecret)
+        ]
+
+        guard let query = components.percentEncodedQuery else {
+            throw NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to encode request body"])
+        }
+
+        request.httpBody = query.data(using: .utf8)
+
+        AppLogger.info("Refreshing access token for \(email)...", log: AppLogger.auth)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response from server"])
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            var errorMessage = "Failed to refresh token (HTTP \(httpResponse.statusCode))"
+            if let errorBody = String(data: data, encoding: .utf8) {
+                AppLogger.error("Error response: \(errorBody)", log: AppLogger.auth)
+
+                if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                   let errorData = jsonObject as? [String: Any] {
+                    if let error = errorData["error"] as? String {
+                        errorMessage = error
+                    }
+                    if let errorDescription = errorData["error_description"] as? String {
+                        errorMessage = errorDescription
+                    }
+                } else {
+                    errorMessage += ": \(errorBody)"
+                }
+            }
+
+            // If refresh token is invalid or expired, delete it
+            if httpResponse.statusCode == 401 || httpResponse.statusCode == 400 {
+                AppLogger.error("Refresh token is invalid or expired for \(email)", log: AppLogger.auth)
+                _ = KeychainService.shared.deleteRefreshToken(forAccount: email)
+            }
+
+            throw NSError(domain: "LinearAuthService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
+        }
+
+        struct TokenResponse: Decodable {
+            let access_token: String
+            let refresh_token: String?
+            let expires_in: Int?
+        }
+
+        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        AppLogger.info("Successfully refreshed access token for \(email)", log: AppLogger.auth)
+
+        // Save the new access token
+        let accessTokenSaved = KeychainService.shared.saveAccessToken(tokenResponse.access_token, forAccount: email)
+        guard accessTokenSaved else {
+            throw NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to save refreshed access token"])
+        }
+
+        // Save the new refresh token if provided
+        if let newRefreshToken = tokenResponse.refresh_token {
+            let refreshTokenSaved = KeychainService.shared.saveRefreshToken(newRefreshToken, forAccount: email)
+            if refreshTokenSaved {
+                AppLogger.info("Successfully saved new refresh token for \(email)", log: AppLogger.auth)
+            } else {
+                AppLogger.error("Failed to save new refresh token for \(email)", log: AppLogger.auth)
+            }
+        }
+
         return tokenResponse.access_token
     }
 

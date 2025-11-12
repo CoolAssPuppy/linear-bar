@@ -232,6 +232,14 @@ struct ItemRow: View {
                 .foregroundColor(.secondary)
                 .lineLimit(1)
 
+            // Description (if available)
+            if let description = issue.description, !description.isEmpty {
+                Text(description)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+
             // Metadata badges row (due date, project, labels)
             if issue.dueDate != nil || issue.project != nil || (issue.labels?.nodes.isEmpty == false) {
                 HStack(spacing: 6) {
@@ -285,6 +293,14 @@ struct ItemRow: View {
                 .foregroundColor(.primary)
                 .lineLimit(1)
 
+            // Description (if available)
+            if let description = project.description, !description.isEmpty {
+                Text(description)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+
             // Target date badge
             if let targetDate = project.targetDate {
                 HStack(spacing: 6) {
@@ -322,6 +338,14 @@ struct ItemRow: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.primary)
                 .lineLimit(1)
+
+            // Description (if available)
+            if let description = initiative.description, !description.isEmpty {
+                Text(description)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
 
             // Target date badge
             if let targetDate = initiative.targetDate {

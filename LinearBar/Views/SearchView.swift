@@ -306,8 +306,8 @@ struct SearchView: View {
 
         do {
             // Search issues and projects in parallel
-            async let issuesResult = LinearAPI.shared.searchIssues(term: query, accessToken: accessToken)
-            async let projectsResult = LinearAPI.shared.searchProjects(term: query, accessToken: accessToken)
+            async let issuesResult = LinearAPI.shared.searchIssues(term: query, accessToken: accessToken, accountEmail: account.email)
+            async let projectsResult = LinearAPI.shared.searchProjects(term: query, accessToken: accessToken, accountEmail: account.email)
 
             let (issues, projects) = try await (issuesResult, projectsResult)
 

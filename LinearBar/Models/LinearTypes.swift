@@ -23,6 +23,7 @@ struct Issue: LinearItem, Codable {
     let id: String
     let identifier: String
     let title: String
+    let description: String?
     let url: String
     let createdAt: Date?
     let updatedAt: Date?
@@ -104,6 +105,7 @@ struct IssueReference: Codable, Hashable {
 struct Project: LinearItem, Codable {
     let id: String
     let name: String
+    let description: String?
     let url: String
     let createdAt: Date?
     let updatedAt: Date?
@@ -141,6 +143,7 @@ struct Project: LinearItem, Codable {
 struct Initiative: LinearItem, Codable {
     let id: String
     let name: String
+    let description: String?
     let url: String
     let createdAt: Date?
     let updatedAt: Date?
