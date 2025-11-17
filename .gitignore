@@ -156,3 +156,6 @@ credentials.json
 # Testing
 *.coverage
 *.lcov
+
+# UI Test Screenshots
+screenshots/

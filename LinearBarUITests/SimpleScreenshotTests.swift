@@ -27,11 +27,32 @@ class SimpleScreenshotTests: XCTestCase {
     // Helper to take and attach screenshot
     private func takeScreenshot(named name: String) {
         let screenshot = XCUIScreen.main.screenshot()
+
+        // Save to Xcode test results (for viewing in Xcode)
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
-        print("✅ Saved screenshot: \(name)")
+
+        // Save to project screenshots folder (for easy access)
+        let projectPath = URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let screenshotsDir = projectPath.appendingPathComponent("screenshots")
+
+        // Create screenshots directory if it doesn't exist
+        try? FileManager.default.createDirectory(at: screenshotsDir, withIntermediateDirectories: true)
+
+        // Save PNG file
+        let fileName = "\(name).png"
+        let filePath = screenshotsDir.appendingPathComponent(fileName)
+
+        do {
+            try screenshot.pngRepresentation.write(to: filePath)
+            print("✅ Saved screenshot: \(filePath.path)")
+        } catch {
+            print("❌ Failed to save screenshot to \(filePath.path): \(error)")
+        }
     }
 
     override func tearDown() {
