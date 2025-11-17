@@ -1,6 +1,6 @@
 // SnapshotHelper.swift for macOS
-// Simplified version for macOS screenshot capture
-// Compatible with Fastlane's snapshot tool
+// Simplified helper for macOS screenshot capture
+// Note: This helper is not currently being used by SimpleScreenshotTests
 
 import Foundation
 import XCTest
@@ -31,7 +31,7 @@ public class Snapshot: NSObject {
         // Set up cache directory for screenshots
         let paths = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
         if let cachePath = paths.first {
-            cacheDirectory = cachePath.appendingPathComponent("tools.fastlane")
+            cacheDirectory = cachePath.appendingPathComponent("screenshot-cache")
             try? FileManager.default.createDirectory(at: cacheDirectory!, withIntermediateDirectories: true)
         }
 
