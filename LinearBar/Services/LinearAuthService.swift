@@ -238,11 +238,66 @@ class LinearAuthService {
         )
     }
 
+    /// Validates and proactively refreshes the access token for an account if needed
+    /// Returns true if the account has valid credentials, false if re-authentication is required
+    func validateAndRefreshToken(forAccount email: String) async -> Bool {
+        AppLogger.info("Validating token for \(email)", log: AppLogger.auth)
+
+        // Check if we have an access token
+        guard let accessToken = KeychainService.shared.retrieveAccessToken(forAccount: email) else {
+            AppLogger.error("No access token found for \(email)", log: AppLogger.auth)
+            updateAccountAuthStatus(email: email, status: .needsAuth)
+            return false
+        }
+
+        // Try to make a simple API call to validate the token
+        do {
+            _ = try await LinearAPI.shared.fetchViewer(accessToken: accessToken, accountEmail: email)
+            AppLogger.info("Token is valid for \(email)", log: AppLogger.auth)
+            updateAccountAuthStatus(email: email, status: .valid)
+            return true
+        } catch LinearError.authenticationRequired {
+            // Token refresh was attempted but failed
+            AppLogger.error("Token validation failed for \(email) - authentication required", log: AppLogger.auth)
+            updateAccountAuthStatus(email: email, status: .expired)
+            return false
+        } catch {
+            // Other errors (network, etc.) - don't mark as expired
+            AppLogger.error("Token validation error for \(email): \(error.localizedDescription)", log: AppLogger.auth)
+            return true // Assume valid if it's just a network error
+        }
+    }
+
+    /// Validates tokens for all accounts and updates their auth status
+    func validateAllAccountTokens() async {
+        let accounts = AppSettings.shared.accounts
+        AppLogger.info("Validating tokens for \(accounts.count) accounts", log: AppLogger.auth)
+
+        for account in accounts where account.isEnabled {
+            _ = await validateAndRefreshToken(forAccount: account.email)
+        }
+    }
+
+    /// Updates the auth status for an account
+    private func updateAccountAuthStatus(email: String, status: AuthStatus) {
+        if var account = AppSettings.shared.account(forEmail: email) {
+            if account.authStatus != status {
+                account.authStatus = status
+                if status != .valid {
+                    account.lastAuthError = Date()
+                }
+                AppSettings.shared.updateAccount(account)
+                AppLogger.info("Updated auth status for \(email) to \(status.rawValue)", log: AppLogger.auth)
+            }
+        }
+    }
+
     /// Refreshes an access token using a refresh token
     func refreshAccessToken(forAccount email: String) async throws -> String {
         // Retrieve refresh token from keychain
         guard let refreshToken = KeychainService.shared.retrieveRefreshToken(forAccount: email) else {
             AppLogger.error("No refresh token found for \(email)", log: AppLogger.auth)
+            updateAccountAuthStatus(email: email, status: .expired)
             throw NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No refresh token available"])
         }
 
@@ -291,10 +346,12 @@ class LinearAuthService {
                 }
             }
 
-            // If refresh token is invalid or expired, delete it
+            // If refresh token is invalid or expired, delete it and update auth status
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 400 {
                 AppLogger.error("Refresh token is invalid or expired for \(email)", log: AppLogger.auth)
                 _ = KeychainService.shared.deleteRefreshToken(forAccount: email)
+                _ = KeychainService.shared.deleteAccessToken(forAccount: email)
+                updateAccountAuthStatus(email: email, status: .expired)
             }
 
             throw NSError(domain: "LinearAuthService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])

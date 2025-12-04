@@ -394,7 +394,7 @@ struct PreferencesTab: View {
                     )
                 )
             Text(title)
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.primary)
         }
     }
@@ -498,12 +498,15 @@ struct PreferencesTab: View {
             Button(action: {
                 showingCoffee = true
             }) {
-                HStack {
+                HStack(spacing: 6) {
                     Image(systemName: "cup.and.saucer.fill")
-                        .foregroundColor(.orange)
                     Text("Buy Me Coffee")
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
             }
+            .buttonStyle(.bordered)
+            .tint(.orange)
 
             Text("Support LinearBar development")
                 .font(.caption)
@@ -514,10 +517,10 @@ struct PreferencesTab: View {
     // MARK: - About Section
 
     private var aboutInfo: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Made with love by Strategic Nerds, Inc.")
-                .font(.body)
-                .foregroundColor(.primary)
+                .font(.caption)
+                .foregroundColor(.secondary)
 
             Text("© \(String(Calendar.current.component(.year, from: Date()))) Strategic Nerds, Inc.")
                 .font(.caption)
@@ -529,19 +532,8 @@ struct PreferencesTab: View {
                     .foregroundColor(.secondary)
             }
 
-            Button(action: {
-                if let url = URL(string: "https://github.com/coolasspuppy/linear-bar") {
-                    NSWorkspace.shared.open(url)
-                }
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "link")
-                        .font(.system(size: 10))
-                    Text("Contribute on GitHub")
-                        .font(.caption)
-                }
-            }
-            .buttonStyle(.link)
+            Link("Contribute on GitHub", destination: URL(string: "https://github.com/coolasspuppy/linear-bar")!)
+                .font(.caption)
         }
     }
 }

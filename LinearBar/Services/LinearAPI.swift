@@ -806,6 +806,14 @@ class LinearAPI {
                     let newAccessToken = try await LinearAuthService.shared.refreshAccessToken(forAccount: email)
                     AppLogger.info("Token refreshed successfully, retrying request", log: AppLogger.api)
 
+                    // Update account status to valid after successful refresh
+                    if var account = AppSettings.shared.account(forEmail: email) {
+                        if account.authStatus != .valid {
+                            account.authStatus = .valid
+                            AppSettings.shared.updateAccount(account)
+                        }
+                    }
+
                     // Retry the request with the new token
                     return try await execute(
                         query: query,
@@ -816,6 +824,7 @@ class LinearAPI {
                     )
                 } catch {
                     AppLogger.error("Failed to refresh token for \(email)", log: AppLogger.api, error: error)
+                    // Auth status is already updated in LinearAuthService.refreshAccessToken
                     throw LinearError.authenticationRequired
                 }
             } else {

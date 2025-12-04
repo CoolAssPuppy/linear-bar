@@ -43,6 +43,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .accountsDidUpdate,
             object: nil
         )
+
+        // Validate and refresh tokens on app launch (skip during UI testing)
+        #if DEBUG
+        if !CommandLine.arguments.contains("--uitesting") {
+            Task {
+                await LinearAuthService.shared.validateAllAccountTokens()
+            }
+        }
+        #else
+        Task {
+            await LinearAuthService.shared.validateAllAccountTokens()
+        }
+        #endif
     }
 
     // MARK: - Menu Bar Setup
