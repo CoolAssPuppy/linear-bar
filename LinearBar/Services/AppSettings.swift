@@ -63,13 +63,15 @@ class AppSettings: ObservableObject {
 
     @Published var selectedTeamId: String? {
         didSet {
-            saveSetting(selectedTeamId ?? "", forKey: "selectedTeamId")
+            // Save locally only - different machines may have different team preferences
+            saveLocalSetting(selectedTeamId ?? "", forKey: "selectedTeamId")
         }
     }
 
     @Published var selectedTeamKey: String? {
         didSet {
-            saveSetting(selectedTeamKey ?? "", forKey: "selectedTeamKey")
+            // Save locally only - different machines may have different team preferences
+            saveLocalSetting(selectedTeamKey ?? "", forKey: "selectedTeamKey")
         }
     }
 
@@ -114,12 +116,11 @@ class AppSettings: ObservableObject {
             ?? SortOrder.updatedNewest.rawValue
         self.sortOrder = SortOrder(rawValue: sortOrderRaw) ?? .updatedNewest
 
-        let teamId = iCloudStore.string(forKey: "selectedTeamId")
-            ?? UserDefaults.standard.string(forKey: "selectedTeamId")
+        // Load team selection from local storage only (not synced across devices)
+        let teamId = UserDefaults.standard.string(forKey: "selectedTeamId")
         self.selectedTeamId = teamId?.isEmpty == false ? teamId : nil
 
-        let teamKey = iCloudStore.string(forKey: "selectedTeamKey")
-            ?? UserDefaults.standard.string(forKey: "selectedTeamKey")
+        let teamKey = UserDefaults.standard.string(forKey: "selectedTeamKey")
         self.selectedTeamKey = teamKey?.isEmpty == false ? teamKey : nil
 
         loadAccounts()
@@ -155,6 +156,18 @@ class AppSettings: ObservableObject {
         if let index = accounts.firstIndex(where: { $0.email == email }) {
             accounts[index].color = color
         }
+    }
+
+    // MARK: - Computed Properties
+
+    /// The color of the first enabled account with valid auth, or nil if none
+    var primaryAccountColor: String? {
+        accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })?.color
+    }
+
+    /// The organization slug of the first enabled account with valid auth
+    var primaryOrganizationSlug: String? {
+        accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })?.organizationSlug
     }
 
     // MARK: - Private Methods
@@ -214,8 +227,13 @@ class AppSettings: ObservableObject {
         iCloudStore.synchronize()
     }
 
+    private func saveLocalSetting<T>(_ value: T, forKey key: String) {
+        // Save to local UserDefaults only (not synced to iCloud)
+        UserDefaults.standard.set(value, forKey: key)
+    }
+
     private func syncAllSettingsFromiCloudToUserDefaults() {
-        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder", "selectedTeamId", "selectedTeamKey"]
+        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder"]
 
         for key in settingsKeys {
             if let value = iCloudStore.object(forKey: key) {
@@ -278,14 +296,6 @@ class AppSettings: ObservableObject {
             if keys.contains("sortOrder") {
                 let sortRaw = UserDefaults.standard.string(forKey: "sortOrder") ?? SortOrder.updatedNewest.rawValue
                 self.sortOrder = SortOrder(rawValue: sortRaw) ?? .updatedNewest
-            }
-            if keys.contains("selectedTeamId") {
-                let teamId = UserDefaults.standard.string(forKey: "selectedTeamId")
-                self.selectedTeamId = teamId?.isEmpty == false ? teamId : nil
-            }
-            if keys.contains("selectedTeamKey") {
-                let teamKey = UserDefaults.standard.string(forKey: "selectedTeamKey")
-                self.selectedTeamKey = teamKey?.isEmpty == false ? teamKey : nil
             }
         }
     }

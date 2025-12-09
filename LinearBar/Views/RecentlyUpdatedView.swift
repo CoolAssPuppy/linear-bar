@@ -14,83 +14,8 @@ struct RecentlyUpdatedView: View {
     @State private var sortOrder: SortOrder = .updatedNewest
 
     private var filteredItems: [any LinearItem] {
-        let filtered = items.filter { item in
-            // Filter issues by state type
-            if let issue = item as? Issue {
-                if let stateType = issue.state?.type {
-                    if stateType == "completed" && !showCompletedItems {
-                        return false
-                    }
-                    if stateType == "canceled" && !showCanceledItems {
-                        return false
-                    }
-                }
-            }
-
-            // Filter projects by state
-            if let project = item as? Project {
-                if project.state.lowercased() == "completed" && !showCompletedItems {
-                    return false
-                }
-                if project.state.lowercased() == "canceled" && !showCanceledItems {
-                    return false
-                }
-            }
-
-            // Filter initiatives by status
-            if let initiative = item as? Initiative {
-                if initiative.status?.lowercased() == "completed" && !showCompletedItems {
-                    return false
-                }
-            }
-
-            return true
-        }
-
-        // Apply sort order
-        return filtered.sorted { item1, item2 in
-            switch sortOrder {
-            case .createdNewest:
-                let date1 = item1.createdAt ?? Date.distantPast
-                let date2 = item2.createdAt ?? Date.distantPast
-                return date1 > date2
-            case .createdOldest:
-                let date1 = item1.createdAt ?? Date.distantPast
-                let date2 = item2.createdAt ?? Date.distantPast
-                return date1 < date2
-            case .updatedNewest:
-                let date1 = item1.updatedAt ?? Date.distantPast
-                let date2 = item2.updatedAt ?? Date.distantPast
-                return date1 > date2
-            case .updatedOldest:
-                let date1 = item1.updatedAt ?? Date.distantPast
-                let date2 = item2.updatedAt ?? Date.distantPast
-                return date1 < date2
-            case .dueDate:
-                // Get due dates - could be from Issue, Project, or Initiative
-                let dueDate1 = getDueDate(from: item1)
-                let dueDate2 = getDueDate(from: item2)
-
-                // Items with due dates come first, sorted by due date
-                // Items without due dates come after, sorted by created date (newest first)
-                switch (dueDate1, dueDate2) {
-                case (.some(let date1), .some(let date2)):
-                    // Both have due dates - sort by due date (earliest first)
-                    return date1 < date2
-                case (.some, .none):
-                    // Only first has due date - it comes first
-                    return true
-                case (.none, .some):
-                    // Only second has due date - it comes first
-                    return false
-                case (.none, .none):
-                    // Neither has due date - sort by created date (newest first)
-                    let created1 = item1.createdAt ?? Date.distantPast
-                    let created2 = item2.createdAt ?? Date.distantPast
-                    return created1 > created2
-                }
-            }
-        }
+        let options = ItemFilter.FilterOptions(showCompleted: showCompletedItems, showCanceled: showCanceledItems)
+        return ItemFilter.filterAndSort(items, options: options, sortOrder: sortOrder)
     }
 
     var body: some View {
@@ -101,9 +26,11 @@ struct RecentlyUpdatedView: View {
 
             Group {
                 if isLoading {
-                    loadingView
+                    LoadingStateView("Loading items...")
+                } else if AppSettings.shared.accounts.isEmpty {
+                    NoAccountView(message: "Connect your Linear account to see your recent issues and projects.")
                 } else if let error = errorMessage {
-                    errorView(error)
+                    ErrorStateView(title: "Error loading items", message: error, onRetry: loadData)
                 } else if filteredItems.isEmpty {
                     emptyStateView
                 } else {
@@ -135,7 +62,6 @@ struct RecentlyUpdatedView: View {
         showCanceledItems = settings.showCanceledItems
         sortOrder = settings.sortOrder
 
-        // Restore selected team from settings
         if let savedTeamId = settings.selectedTeamId {
             selectedTeam = teams.first(where: { $0.id == savedTeamId })
         }
@@ -158,57 +84,63 @@ struct RecentlyUpdatedView: View {
             Spacer()
 
             if selectedMode == .teamItems && !teams.isEmpty {
-                // Team selector button
-                Menu {
-                    ForEach(teams) { team in
-                        Button(action: {
-                            selectedTeam = team
-                            AppSettings.shared.selectedTeamId = team.id
-                            AppSettings.shared.selectedTeamKey = team.key
-                            loadData()
-                        }) {
-                            HStack {
-                                Text(team.name)
-                                if selectedTeam?.id == team.id {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "person.2.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-                .menuStyle(.borderlessButton)
-                .help("Select Team")
+                teamSelectorMenu
             }
 
-            // Sort button
-            Menu {
-                ForEach(SortOrder.allCases) { order in
-                    Button(action: {
-                        sortOrder = order
-                        AppSettings.shared.sortOrder = order
-                    }) {
-                        HStack {
-                            Text(order.rawValue)
-                            if sortOrder == order {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
-            .menuStyle(.borderlessButton)
-            .help("Sort Order")
+            sortOrderMenu
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private var teamSelectorMenu: some View {
+        Menu {
+            ForEach(teams) { team in
+                Button(action: {
+                    selectedTeam = team
+                    AppSettings.shared.selectedTeamId = team.id
+                    AppSettings.shared.selectedTeamKey = team.key
+                    loadData()
+                }) {
+                    HStack {
+                        Text(team.name)
+                        if selectedTeam?.id == team.id {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "person.2.fill")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .help("Select Team")
+    }
+
+    private var sortOrderMenu: some View {
+        Menu {
+            ForEach(SortOrder.allCases) { order in
+                Button(action: {
+                    sortOrder = order
+                    AppSettings.shared.sortOrder = order
+                }) {
+                    HStack {
+                        Text(order.rawValue)
+                        if sortOrder == order {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .help("Sort Order")
     }
 
     // MARK: - Content
@@ -216,126 +148,42 @@ struct RecentlyUpdatedView: View {
     private var contentView: some View {
         ScrollView {
             VStack(spacing: 8) {
-                ForEach(Array(filteredItems.enumerated()), id: \.offset) { index, item in
-                    if let issue = item as? Issue {
-                        ItemRow(issue: issue, accountColor: getAccountColor())
-                            .padding(.horizontal, 12)
-                    } else if let project = item as? Project {
-                        ItemRow(project: project, accountColor: getAccountColor())
-                            .padding(.horizontal, 12)
-                    } else if let initiative = item as? Initiative {
-                        ItemRow(initiative: initiative, accountColor: getAccountColor())
-                            .padding(.horizontal, 12)
-                    }
+                ForEach(Array(filteredItems.enumerated()), id: \.offset) { _, item in
+                    itemRow(for: item)
+                        .padding(.horizontal, 12)
                 }
             }
             .padding(.vertical, 12)
         }
     }
 
-    // MARK: - Loading State
-
-    private var loadingView: some View {
-        VStack {
-            Spacer()
-            ProgressView()
-                .controlSize(.large)
-            Text("Loading items...")
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-                .padding(.top, 8)
-            Spacer()
+    @ViewBuilder
+    private func itemRow(for item: any LinearItem) -> some View {
+        if let issue = item as? Issue {
+            ItemRow(issue: issue, accountColor: AppSettings.shared.primaryAccountColor)
+        } else if let project = item as? Project {
+            ItemRow(project: project, accountColor: AppSettings.shared.primaryAccountColor)
+        } else if let initiative = item as? Initiative {
+            ItemRow(initiative: initiative, accountColor: AppSettings.shared.primaryAccountColor)
         }
     }
 
     // MARK: - Empty State
 
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
-            Spacer()
-
-            Image(systemName: "tray")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-
-            if selectedMode == .createdByMe {
-                Text("No items created by you")
-                    .font(.headline)
-            } else if selectedMode == .assignedToMe {
-                Text("No items assigned to you")
-                    .font(.headline)
-            } else {
-                Text("No recent items")
-                    .font(.headline)
-            }
-
-            Spacer()
-        }
-        .padding()
+        let (title, subtitle) = emptyStateContent
+        return EmptyStateView(icon: "tray", title: title, subtitle: subtitle)
     }
 
-    // MARK: - Error State
-
-    private func errorView(_ message: String) -> some View {
-        VStack(spacing: 12) {
-            Spacer()
-
-            // Check if this is a "no account" error
-            if AppSettings.shared.accounts.isEmpty {
-                noAccountView
-            } else {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 48))
-                    .foregroundColor(.orange)
-
-                Text("Error loading items")
-                    .font(.headline)
-
-                Text(message)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-
-                Button("Retry") {
-                    loadData()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-
-            Spacer()
+    private var emptyStateContent: (title: String, subtitle: String) {
+        switch selectedMode {
+        case .createdByMe:
+            return ("No items created by you", "Create issues or projects in Linear to see them here")
+        case .assignedToMe:
+            return ("No items assigned to you", "Get assigned to issues or projects to see them here")
+        case .teamItems:
+            return ("No recent items", "Your team's items will appear here")
         }
-        .padding()
-    }
-
-    // MARK: - No Account State
-
-    private var noAccountView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "person.crop.circle.badge.plus")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-
-            Text("No Linear account")
-                .font(.headline)
-
-            Text("Connect your Linear account to see your recent issues and projects.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-
-            Button(action: openSettings) {
-                HStack(spacing: 6) {
-                    Image(systemName: "gearshape")
-                    Text("Open Settings")
-                }
-            }
-            .buttonStyle(.borderedProminent)
-        }
-    }
-
-    private func openSettings() {
-        NotificationCenter.default.post(name: .settingsRequested, object: nil)
     }
 
     // MARK: - Data Loading
@@ -352,55 +200,10 @@ struct RecentlyUpdatedView: View {
 
         Task {
             do {
-                if selectedMode == .createdByMe {
-                    // Load items created by me (issues and projects in parallel)
-                    // Note: Initiatives don't have a creator field in Linear's API, so we can't filter them
-                    async let issuesResult = LinearAPI.shared.fetchMyIssues(accessToken: accessToken, accountEmail: account.email)
-                    async let projectsResult = LinearAPI.shared.fetchMyProjects(accessToken: accessToken, accountEmail: account.email)
-
-                    let (issues, projects) = try await (issuesResult, projectsResult)
-
-                    var combined: [any LinearItem] = []
-                    combined.append(contentsOf: issues)
-                    combined.append(contentsOf: projects)
-
-                    await MainActor.run {
-                        self.items = combined.sorted { ($0.updatedAt ?? Date.distantPast) > ($1.updatedAt ?? Date.distantPast) }
-                        self.isLoading = false
-                    }
-                } else if selectedMode == .assignedToMe {
-                    // Load items assigned to me (issues and projects in parallel)
-                    async let issuesResult = LinearAPI.shared.fetchAssignedIssues(accessToken: accessToken, accountEmail: account.email)
-                    async let projectsResult = LinearAPI.shared.fetchAssignedProjects(accessToken: accessToken, accountEmail: account.email)
-
-                    let (issues, projects) = try await (issuesResult, projectsResult)
-
-                    var combined: [any LinearItem] = []
-                    combined.append(contentsOf: issues)
-                    combined.append(contentsOf: projects)
-
-                    await MainActor.run {
-                        self.items = combined.sorted { ($0.updatedAt ?? Date.distantPast) > ($1.updatedAt ?? Date.distantPast) }
-                        self.isLoading = false
-                    }
-                } else {
-                    // Load teams first if not loaded
-                    if teams.isEmpty {
-                        let loadedTeams = try await LinearAPI.shared.fetchTeams(accessToken: accessToken, accountEmail: account.email)
-                        await MainActor.run {
-                            self.teams = loadedTeams
-                            self.selectedTeam = loadedTeams.first
-                        }
-                    }
-
-                    // Load team items (only issues for now, as team projects/initiatives aren't as common)
-                    if let teamId = selectedTeam?.id {
-                        let issues = try await LinearAPI.shared.fetchTeamIssues(teamId: teamId, accessToken: accessToken, accountEmail: account.email)
-                        await MainActor.run {
-                            self.items = issues.sorted { ($0.updatedAt ?? Date.distantPast) > ($1.updatedAt ?? Date.distantPast) }
-                            self.isLoading = false
-                        }
-                    }
+                let loadedItems = try await loadItemsForMode(accessToken: accessToken, accountEmail: account.email)
+                await MainActor.run {
+                    self.items = loadedItems
+                    self.isLoading = false
                 }
             } catch {
                 await MainActor.run {
@@ -411,24 +214,68 @@ struct RecentlyUpdatedView: View {
         }
     }
 
-    private func getAccountColor() -> String? {
-        return AppSettings.shared.accounts.first?.color
+    private func loadItemsForMode(accessToken: String, accountEmail: String) async throws -> [any LinearItem] {
+        switch selectedMode {
+        case .createdByMe:
+            return try await loadCreatedByMeItems(accessToken: accessToken, accountEmail: accountEmail)
+        case .assignedToMe:
+            return try await loadAssignedToMeItems(accessToken: accessToken, accountEmail: accountEmail)
+        case .teamItems:
+            return try await loadTeamItems(accessToken: accessToken, accountEmail: accountEmail)
+        }
     }
 
-    private func getDueDate(from item: any LinearItem) -> Date? {
-        // Use simple DateFormatter for YYYY-MM-DD format
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    private func loadCreatedByMeItems(accessToken: String, accountEmail: String) async throws -> [any LinearItem] {
+        async let issuesResult = LinearAPI.shared.fetchMyIssues(accessToken: accessToken, accountEmail: accountEmail)
+        async let projectsResult = LinearAPI.shared.fetchMyProjects(accessToken: accessToken, accountEmail: accountEmail)
 
-        if let issue = item as? Issue, let dueDate = issue.dueDate {
-            return formatter.date(from: dueDate)
-        } else if let project = item as? Project, let targetDate = project.targetDate {
-            return formatter.date(from: targetDate)
-        } else if let initiative = item as? Initiative, let targetDate = initiative.targetDate {
-            return formatter.date(from: targetDate)
+        let (issues, projects) = try await (issuesResult, projectsResult)
+
+        var combined: [any LinearItem] = []
+        combined.append(contentsOf: issues)
+        combined.append(contentsOf: projects)
+
+        return combined.sorted { ($0.updatedAt ?? Date.distantPast) > ($1.updatedAt ?? Date.distantPast) }
+    }
+
+    private func loadAssignedToMeItems(accessToken: String, accountEmail: String) async throws -> [any LinearItem] {
+        async let issuesResult = LinearAPI.shared.fetchAssignedIssues(accessToken: accessToken, accountEmail: accountEmail)
+        async let projectsResult = LinearAPI.shared.fetchAssignedProjects(accessToken: accessToken, accountEmail: accountEmail)
+
+        let (issues, projects) = try await (issuesResult, projectsResult)
+
+        var combined: [any LinearItem] = []
+        combined.append(contentsOf: issues)
+        combined.append(contentsOf: projects)
+
+        return combined.sorted { ($0.updatedAt ?? Date.distantPast) > ($1.updatedAt ?? Date.distantPast) }
+    }
+
+    private func loadTeamItems(accessToken: String, accountEmail: String) async throws -> [any LinearItem] {
+        if teams.isEmpty {
+            let loadedTeams = try await LinearAPI.shared.fetchTeams(accessToken: accessToken, accountEmail: accountEmail)
+            await MainActor.run {
+                self.teams = loadedTeams
+                // Restore previously selected team from settings, or default to first team
+                if let savedTeamId = AppSettings.shared.selectedTeamId,
+                   let savedTeam = loadedTeams.first(where: { $0.id == savedTeamId }) {
+                    self.selectedTeam = savedTeam
+                } else {
+                    self.selectedTeam = loadedTeams.first
+                    // Save the default selection
+                    if let firstTeam = loadedTeams.first {
+                        AppSettings.shared.selectedTeamId = firstTeam.id
+                        AppSettings.shared.selectedTeamKey = firstTeam.key
+                    }
+                }
+            }
         }
 
-        return nil
+        guard let teamId = selectedTeam?.id else {
+            return []
+        }
+
+        let issues = try await LinearAPI.shared.fetchTeamIssues(teamId: teamId, accessToken: accessToken, accountEmail: accountEmail)
+        return issues.sorted { ($0.updatedAt ?? Date.distantPast) > ($1.updatedAt ?? Date.distantPast) }
     }
 }
