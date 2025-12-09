@@ -20,8 +20,8 @@ class KeychainService {
     /// Retrieves the access token for a Linear account
     func retrieveAccessToken(forAccount account: String) -> String? {
         #if DEBUG
-        // Return fake token for UI testing
-        if CommandLine.arguments.contains("--uitesting") {
+        // Return fake token for UI testing or demo mode
+        if CommandLine.arguments.contains("--uitesting") || TestDataProvider.isDemoModeEnabled {
             return "fake-test-token-for-ui-testing"
         }
         #endif
@@ -49,11 +49,44 @@ class KeychainService {
         delete(forAccount: "\(account)_refresh")
     }
 
+    /// Saves the token expiration date for a Linear account
+    func saveTokenExpiration(_ expiresIn: Int, forAccount account: String) -> Bool {
+        let expirationDate = Date().addingTimeInterval(TimeInterval(expiresIn))
+        let expirationString = String(expirationDate.timeIntervalSince1970)
+        return save(token: expirationString, forAccount: "\(account)_expiration")
+    }
+
+    /// Retrieves the token expiration date for a Linear account
+    func retrieveTokenExpiration(forAccount account: String) -> Date? {
+        guard let expirationString = retrieve(forAccount: "\(account)_expiration"),
+              let timestamp = Double(expirationString) else {
+            return nil
+        }
+        return Date(timeIntervalSince1970: timestamp)
+    }
+
+    /// Deletes the token expiration for a Linear account
+    func deleteTokenExpiration(forAccount account: String) -> Bool {
+        delete(forAccount: "\(account)_expiration")
+    }
+
+    /// Checks if the token is expired or will expire soon (within buffer time)
+    /// Default buffer is 1 hour to allow proactive refresh
+    func isTokenExpiringSoon(forAccount account: String, bufferSeconds: TimeInterval = 3600) -> Bool {
+        guard let expirationDate = retrieveTokenExpiration(forAccount: account) else {
+            // No expiration stored - assume it might be expired
+            return true
+        }
+        let bufferDate = Date().addingTimeInterval(bufferSeconds)
+        return expirationDate <= bufferDate
+    }
+
     /// Deletes all tokens for a Linear account
     func deleteAllTokens(forAccount account: String) -> Bool {
         let accessDeleted = deleteAccessToken(forAccount: account)
         let refreshDeleted = deleteRefreshToken(forAccount: account)
-        return accessDeleted && refreshDeleted
+        let expirationDeleted = deleteTokenExpiration(forAccount: account)
+        return accessDeleted && refreshDeleted && expirationDeleted
     }
 
     // MARK: - Private Methods

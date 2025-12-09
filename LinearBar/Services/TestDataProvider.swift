@@ -5,8 +5,31 @@ import Foundation
 /// Fictional AI Ski Goggles company with funny but professional content
 struct TestDataProvider {
 
+    /// Runtime flag to enable demo mode (set by user clicking "Demo Data" link)
+    static var isDemoModeEnabled: Bool = false
+
     static var isUITesting: Bool {
-        CommandLine.arguments.contains("--uitesting")
+        CommandLine.arguments.contains("--uitesting") || isDemoModeEnabled
+    }
+
+    /// Enables demo mode and sets up the test account
+    @MainActor
+    static func enableDemoMode() {
+        isDemoModeEnabled = true
+
+        // Create a demo account
+        let demoAccount = LinearAccount(
+            email: "sarah@aiskigoggles.ai",
+            name: "Sarah Chen",
+            organizationSlug: "aigoggles",
+            isEnabled: true,
+            authStatus: .valid,
+            color: "#5E6AD2"
+        )
+
+        AppSettings.shared.accounts = [demoAccount]
+        NotificationCenter.default.post(name: .accountsDidUpdate, object: nil)
+        NotificationCenter.default.post(name: .refreshAllData, object: nil)
     }
 
     // MARK: - Viewer

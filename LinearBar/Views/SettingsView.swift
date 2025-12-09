@@ -62,6 +62,12 @@ struct AccountsTab: View {
 
             Spacer()
 
+            #if DEBUG
+            if settings.accounts.isEmpty {
+                demoDataLink
+            }
+            #endif
+
             addAccountButton
         }
         .padding(20)
@@ -202,6 +208,20 @@ struct AccountsTab: View {
         .background(account.authStatus != .valid ? Color.orange.opacity(0.1) : Color(nsColor: .controlBackgroundColor).opacity(0.5))
         .cornerRadius(6)
     }
+
+    #if DEBUG
+    private var demoDataLink: some View {
+        Button(action: {
+            TestDataProvider.enableDemoMode()
+        }) {
+            Text("View Demo Data")
+                .font(.system(size: 11))
+                .foregroundColor(.blue)
+        }
+        .buttonStyle(.plain)
+        .padding(.bottom, 8)
+    }
+    #endif
 
     private var addAccountButton: some View {
         Button(action: addLinearAccount) {

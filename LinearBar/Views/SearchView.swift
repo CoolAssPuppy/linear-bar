@@ -245,26 +245,62 @@ struct SearchView: View {
         VStack(spacing: 12) {
             Spacer()
 
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundColor(.orange)
+            // Check if this is a "no account" error
+            if AppSettings.shared.accounts.isEmpty {
+                noAccountView
+            } else {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 48))
+                    .foregroundColor(.orange)
 
-            Text("Search error")
-                .font(.headline)
+                Text("Search error")
+                    .font(.headline)
 
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
 
-            Button("Retry") {
-                performSearch(query: searchText)
+                Button("Retry") {
+                    performSearch(query: searchText)
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
 
             Spacer()
         }
         .padding()
+    }
+
+    // MARK: - No Account State
+
+    private var noAccountView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.crop.circle.badge.plus")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary)
+
+            Text("No Linear account")
+                .font(.headline)
+
+            Text("Connect your Linear account to search your issues and projects.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button(action: openSettings) {
+                HStack(spacing: 6) {
+                    Image(systemName: "gearshape")
+                    Text("Open Settings")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
+    private func openSettings() {
+        NotificationCenter.default.post(name: .settingsRequested, object: nil)
     }
 
     // MARK: - Search Logic

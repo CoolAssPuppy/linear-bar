@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var popover: NSPopover?
     private var eventMonitor: Any?
+    private var tokenRefreshTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
@@ -50,12 +51,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Task {
                 await LinearAuthService.shared.validateAllAccountTokens()
             }
+            startTokenRefreshTimer()
         }
         #else
         Task {
             await LinearAuthService.shared.validateAllAccountTokens()
         }
+        startTokenRefreshTimer()
         #endif
+    }
+
+    // MARK: - Token Refresh Timer
+
+    /// Starts a timer to periodically check and refresh tokens
+    /// Runs every hour to ensure tokens are refreshed before expiration
+    private func startTokenRefreshTimer() {
+        // Check tokens every hour (3600 seconds)
+        tokenRefreshTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+                AppLogger.info("Periodic token validation triggered", log: AppLogger.auth)
+                await LinearAuthService.shared.validateAllAccountTokens()
+                self.updateMenuBarIcon()
+            }
+        }
+        // Ensure timer runs even when menu is open
+        RunLoop.main.add(tokenRefreshTimer!, forMode: .common)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        tokenRefreshTimer?.invalidate()
+        tokenRefreshTimer = nil
     }
 
     // MARK: - Menu Bar Setup
@@ -170,14 +196,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - URL Handling
 
     @objc func handleGetURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
+        // URL scheme callbacks are now handled directly by ASWebAuthenticationSession
+        // This handler is kept for potential future use or deep linking
         guard let urlString = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
               let url = URL(string: urlString) else {
             return
         }
 
-        Task { @MainActor in
-            _ = LinearAuthService.shared.handleCallback(url: url)
-        }
+        AppLogger.debug("Received URL: \(url.absoluteString)", log: AppLogger.auth)
     }
 
     // MARK: - Settings

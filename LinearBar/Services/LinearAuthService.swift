@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import AuthenticationServices
 import os.log
 
 /// Represents a pair of access and refresh tokens
@@ -11,7 +12,7 @@ struct TokenPair {
 
 /// Service for handling OAuth authentication with Linear
 @MainActor
-class LinearAuthService {
+class LinearAuthService: NSObject {
     static let shared = LinearAuthService()
 
     // MARK: - OAuth Configuration
@@ -19,20 +20,21 @@ class LinearAuthService {
     // Copy LinearAuthSecrets.swift.template to LinearAuthSecrets.swift and add your credentials
     private let clientId = LinearAuthSecrets.clientId
     private let clientSecret = LinearAuthSecrets.clientSecret
+    private let callbackURLScheme = "linearbar"
     private let redirectURI = "linearbar://oauth/callback"
     private let authorizationURL = "https://linear.app/oauth/authorize"
     private let tokenURL = "https://api.linear.app/oauth/token"
 
-    private var authCompletion: ((Result<TokenPair, Error>) -> Void)?
+    private var authSession: ASWebAuthenticationSession?
 
-    private init() {}
+    private override init() {
+        super.init()
+    }
 
     // MARK: - Public Methods
 
-    /// Initiates the OAuth flow by opening the authorization URL in the user's browser
+    /// Initiates the OAuth flow using ASWebAuthenticationSession
     func authorize(completion: @escaping (Result<TokenPair, Error>) -> Void) {
-        self.authCompletion = completion
-
         var components = URLComponents(string: authorizationURL)!
         components.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),
@@ -41,41 +43,92 @@ class LinearAuthService {
             URLQueryItem(name: "scope", value: "read,write")
         ]
 
-        guard let url = components.url else {
+        guard let authURL = components.url else {
             completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to construct authorization URL"])))
             return
         }
 
-        AppLogger.info("Opening authorization URL with redirect_uri: \(redirectURI)", log: AppLogger.auth)
+        AppLogger.info("Starting ASWebAuthenticationSession with redirect_uri: \(redirectURI)", log: AppLogger.auth)
 
-        // Open the authorization URL in the default browser
-        NSWorkspace.shared.open(url)
+        // Create and start ASWebAuthenticationSession
+        let session = ASWebAuthenticationSession(
+            url: authURL,
+            callbackURLScheme: callbackURLScheme
+        ) { [weak self] callbackURL, error in
+            Task { @MainActor in
+                self?.handleAuthSessionCallback(callbackURL: callbackURL, error: error, completion: completion)
+            }
+        }
+
+        session.presentationContextProvider = self
+        session.prefersEphemeralWebBrowserSession = false
+
+        self.authSession = session
+
+        if !session.start() {
+            AppLogger.error("Failed to start ASWebAuthenticationSession", log: AppLogger.auth)
+            completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to start authentication session"])))
+        }
     }
 
-    /// Handles the OAuth callback URL after user authorization
-    func handleCallback(url: URL) -> Bool {
-        AppLogger.debug("Received callback URL: \(url.absoluteString)", log: AppLogger.auth)
+    /// Handles the callback from ASWebAuthenticationSession
+    private func handleAuthSessionCallback(
+        callbackURL: URL?,
+        error: Error?,
+        completion: @escaping (Result<TokenPair, Error>) -> Void
+    ) {
+        // Clean up the session reference
+        self.authSession = nil
 
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+        if let error = error as? ASWebAuthenticationSessionError {
+            switch error.code {
+            case .canceledLogin:
+                AppLogger.info("User canceled authentication", log: AppLogger.auth)
+                completion(.failure(NSError(domain: "LinearAuthService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Authentication was canceled"])))
+            case .presentationContextNotProvided:
+                AppLogger.error("Presentation context not provided", log: AppLogger.auth)
+                completion(.failure(error))
+            case .presentationContextInvalid:
+                AppLogger.error("Presentation context invalid", log: AppLogger.auth)
+                completion(.failure(error))
+            @unknown default:
+                AppLogger.error("Unknown ASWebAuthenticationSession error: \(error)", log: AppLogger.auth)
+                completion(.failure(error))
+            }
+            return
+        }
+
+        if let error = error {
+            AppLogger.error("Authentication error: \(error.localizedDescription)", log: AppLogger.auth)
+            completion(.failure(error))
+            return
+        }
+
+        guard let callbackURL = callbackURL else {
+            AppLogger.error("No callback URL received", log: AppLogger.auth)
+            completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No callback URL received"])))
+            return
+        }
+
+        AppLogger.debug("Received callback URL: \(callbackURL.absoluteString)", log: AppLogger.auth)
+
+        guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else {
-            authCompletion?(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid callback URL"])))
-            authCompletion = nil
-            return false
+            completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid callback URL"])))
+            return
         }
 
         // Check for error in callback
-        if let error = queryItems.first(where: { $0.name == "error" })?.value {
-            let errorDescription = queryItems.first(where: { $0.name == "error_description" })?.value ?? error
-            authCompletion?(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: errorDescription])))
-            authCompletion = nil
-            return false
+        if let errorParam = queryItems.first(where: { $0.name == "error" })?.value {
+            let errorDescription = queryItems.first(where: { $0.name == "error_description" })?.value ?? errorParam
+            completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: errorDescription])))
+            return
         }
 
         // Extract authorization code
         guard let code = queryItems.first(where: { $0.name == "code" })?.value else {
-            authCompletion?(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authorization code in callback"])))
-            authCompletion = nil
-            return false
+            completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authorization code in callback"])))
+            return
         }
 
         AppLogger.debug("Received authorization code: \(code.prefix(20))...", log: AppLogger.auth)
@@ -84,15 +137,11 @@ class LinearAuthService {
         Task {
             do {
                 let tokenPair = try await exchangeCodeForToken(code: code)
-                authCompletion?(.success(tokenPair))
-                authCompletion = nil
+                completion(.success(tokenPair))
             } catch {
-                authCompletion?(.failure(error))
-                authCompletion = nil
+                completion(.failure(error))
             }
         }
-
-        return true
     }
 
     /// Adds a new Linear account by initiating OAuth flow and storing credentials
@@ -126,6 +175,12 @@ class LinearAuthService {
                             }
                         } else {
                             AppLogger.info("No refresh token provided by Linear OAuth", log: AppLogger.auth)
+                        }
+
+                        // Save token expiration time if available
+                        if let expiresIn = tokenPair.expiresIn {
+                            _ = KeychainService.shared.saveTokenExpiration(expiresIn, forAccount: viewer.email)
+                            AppLogger.info("Token expires in \(expiresIn / 3600) hours for \(viewer.email)", log: AppLogger.auth)
                         }
 
                         // Create or update account
@@ -230,6 +285,9 @@ class LinearAuthService {
         if tokenResponse.refresh_token != nil {
             AppLogger.info("Refresh token also received", log: AppLogger.auth)
         }
+        if let expiresIn = tokenResponse.expires_in {
+            AppLogger.info("Token expires in \(expiresIn) seconds (\(expiresIn / 3600) hours)", log: AppLogger.auth)
+        }
 
         return TokenPair(
             accessToken: tokenResponse.access_token,
@@ -244,13 +302,33 @@ class LinearAuthService {
         AppLogger.info("Validating token for \(email)", log: AppLogger.auth)
 
         // Check if we have an access token
-        guard let accessToken = KeychainService.shared.retrieveAccessToken(forAccount: email) else {
+        guard KeychainService.shared.retrieveAccessToken(forAccount: email) != nil else {
             AppLogger.error("No access token found for \(email)", log: AppLogger.auth)
             updateAccountAuthStatus(email: email, status: .needsAuth)
             return false
         }
 
+        // Proactively refresh if token is expiring within 2 hours
+        if KeychainService.shared.isTokenExpiringSoon(forAccount: email, bufferSeconds: 7200) {
+            AppLogger.info("Token expiring soon for \(email), proactively refreshing", log: AppLogger.auth)
+            do {
+                _ = try await refreshAccessToken(forAccount: email)
+                AppLogger.info("Proactive token refresh successful for \(email)", log: AppLogger.auth)
+                updateAccountAuthStatus(email: email, status: .valid)
+                return true
+            } catch {
+                AppLogger.error("Proactive token refresh failed for \(email): \(error.localizedDescription)", log: AppLogger.auth)
+                // Don't fail yet - the token might still work, let the API call decide
+            }
+        }
+
         // Try to make a simple API call to validate the token
+        guard let accessToken = KeychainService.shared.retrieveAccessToken(forAccount: email) else {
+            AppLogger.error("No access token found for \(email) after refresh attempt", log: AppLogger.auth)
+            updateAccountAuthStatus(email: email, status: .needsAuth)
+            return false
+        }
+
         do {
             _ = try await LinearAPI.shared.fetchViewer(accessToken: accessToken, accountEmail: email)
             AppLogger.info("Token is valid for \(email)", log: AppLogger.auth)
@@ -382,6 +460,12 @@ class LinearAuthService {
             }
         }
 
+        // Save the new expiration time if provided
+        if let expiresIn = tokenResponse.expires_in {
+            _ = KeychainService.shared.saveTokenExpiration(expiresIn, forAccount: email)
+            AppLogger.info("New token expires in \(expiresIn / 3600) hours for \(email)", log: AppLogger.auth)
+        }
+
         return tokenResponse.access_token
     }
 
@@ -397,5 +481,20 @@ class LinearAuthService {
             "#14B8A6"  // teal
         ]
         return colors.randomElement() ?? "#5E6AD2"
+    }
+}
+
+// MARK: - ASWebAuthenticationPresentationContextProviding
+
+extension LinearAuthService: ASWebAuthenticationPresentationContextProviding {
+    nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        return MainActor.assumeIsolated {
+            // Return the key window, or create a new one if needed
+            if let window = NSApplication.shared.keyWindow {
+                return window
+            }
+            // Fallback to any available window
+            return NSApplication.shared.windows.first ?? NSWindow()
+        }
     }
 }
