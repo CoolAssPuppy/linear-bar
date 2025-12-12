@@ -96,16 +96,33 @@ struct CoffeeView: View {
                             }
                         }
                     } else {
-                        Text("Coffee not available at the moment")
-                            .font(.body)
-                            .foregroundColor(.secondary)
+                        // Product not yet available (e.g., pending App Store review)
+                        VStack(spacing: 16) {
+                            VStack(spacing: 8) {
+                                Text("Buy Me Coffee")
+                                    .font(.headline)
 
-                        Button("Retry Loading Products") {
-                            Task {
-                                await storeManager.loadProducts()
+                                Text("Support LinearBar development with a coffee!")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
                             }
+
+                            Text("Coming soon")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(4)
+
+                            Button("Check Availability") {
+                                Task {
+                                    await storeManager.loadProducts()
+                                }
+                            }
+                            .buttonStyle(.link)
                         }
-                        .padding(.top, 8)
                     }
 
                     // Error message

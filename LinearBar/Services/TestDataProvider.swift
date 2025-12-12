@@ -1,7 +1,6 @@
 import Foundation
 
-#if DEBUG
-/// Provides test data for UI testing screenshots
+/// Provides test data for UI testing screenshots and demo mode
 /// Fictional AI Ski Goggles company with funny but professional content
 struct TestDataProvider {
 
@@ -388,4 +387,3 @@ struct TestDataProvider {
         ]
     }
 }
-#endif

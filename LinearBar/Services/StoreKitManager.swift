@@ -52,13 +52,20 @@ class StoreKitManager: ObservableObject {
 
         do {
             let productIDs = ProductIdentifier.allCases.map { $0.rawValue }
+            print("[StoreKit] Requesting products: \(productIDs)")
             let storeProducts = try await Product.products(for: productIDs)
+            print("[StoreKit] Received \(storeProducts.count) products: \(storeProducts.map { $0.id })")
+
+            if storeProducts.isEmpty {
+                print("[StoreKit] WARNING: No products returned. Check App Store Connect configuration.")
+            }
 
             DispatchQueue.main.async {
                 self.products = storeProducts
                 self.isLoading = false
             }
         } catch {
+            print("[StoreKit] ERROR loading products: \(error)")
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to load products: \(error.localizedDescription)"
                 self.isLoading = false

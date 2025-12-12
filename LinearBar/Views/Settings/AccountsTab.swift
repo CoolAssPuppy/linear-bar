@@ -19,11 +19,9 @@ struct AccountsTab: View {
 
             Spacer()
 
-            #if DEBUG
             if settings.accounts.isEmpty {
                 demoDataLink
             }
-            #endif
 
             addAccountButton
         }
@@ -89,7 +87,6 @@ struct AccountsTab: View {
 
     // MARK: - Buttons
 
-    #if DEBUG
     private var demoDataLink: some View {
         Button(action: {
             TestDataProvider.enableDemoMode()
@@ -101,7 +98,6 @@ struct AccountsTab: View {
         .buttonStyle(.plain)
         .padding(.bottom, 8)
     }
-    #endif
 
     private var addAccountButton: some View {
         Button(action: addLinearAccount) {
