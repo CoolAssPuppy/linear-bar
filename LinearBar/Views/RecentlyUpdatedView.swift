@@ -189,10 +189,24 @@ struct RecentlyUpdatedView: View {
     // MARK: - Data Loading
 
     private func loadData() {
-        guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
-              let accessToken = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
-            errorMessage = "No authenticated account found. Please sign in."
-            return
+        // Check for demo mode first
+        let isDemoMode = TestDataProvider.isUITesting
+
+        // In demo mode, use a dummy token since the API will return test data
+        let accessToken: String
+        let accountEmail: String
+
+        if isDemoMode {
+            accessToken = "demo-token"
+            accountEmail = "demo@example.com"
+        } else {
+            guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
+                  let token = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
+                errorMessage = "No authenticated account found. Please sign in."
+                return
+            }
+            accessToken = token
+            accountEmail = account.email
         }
 
         isLoading = true
@@ -200,7 +214,7 @@ struct RecentlyUpdatedView: View {
 
         Task {
             do {
-                let loadedItems = try await loadItemsForMode(accessToken: accessToken, accountEmail: account.email)
+                let loadedItems = try await loadItemsForMode(accessToken: accessToken, accountEmail: accountEmail)
                 await MainActor.run {
                     self.items = loadedItems
                     self.isLoading = false

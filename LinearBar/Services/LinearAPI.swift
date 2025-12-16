@@ -15,11 +15,10 @@ class LinearAPI {
 
     /// Fetches the current user's information
     func fetchViewer(accessToken: String, accountEmail: String? = nil) async throws -> Viewer {
-        #if DEBUG
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getViewer()
         }
-        #endif
 
         let query = """
         query {
@@ -51,12 +50,10 @@ class LinearAPI {
 
     /// Fetches user's favorite items (issues, projects, initiatives)
     func fetchFavorites(accessToken: String, accountEmail: String? = nil) async throws -> [Favorite] {
-        #if DEBUG
-        // Return test data for UI testing
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getFavorites()
         }
-        #endif
 
         // Try the favorites query at root level based on Linear SDK schema
         let favoritesQuery = """
@@ -273,11 +270,10 @@ class LinearAPI {
 
     /// Fetches user's teams
     func fetchTeams(accessToken: String, accountEmail: String? = nil) async throws -> [Team] {
-        #if DEBUG
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getTeams()
         }
-        #endif
 
         let query = """
         query {
@@ -315,11 +311,10 @@ class LinearAPI {
 
     /// Fetches issues created by the current user
     func fetchMyIssues(accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
-        #if DEBUG
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
         }
-        #endif
 
         let query = """
         query {
@@ -389,11 +384,10 @@ class LinearAPI {
 
     /// Fetches issues assigned to the current user
     func fetchAssignedIssues(accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
-        #if DEBUG
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
         }
-        #endif
 
         let query = """
         query {
@@ -466,11 +460,10 @@ class LinearAPI {
 
     /// Fetches issues for a specific team
     func fetchTeamIssues(teamId: String, accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
-        #if DEBUG
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
         }
-        #endif
 
         let query = """
         query($teamId: String!) {
@@ -540,11 +533,10 @@ class LinearAPI {
 
     /// Fetches projects for the current user
     func fetchMyProjects(accessToken: String, accountEmail: String? = nil) async throws -> [Project] {
-        #if DEBUG
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getProjects()
         }
-        #endif
 
         // First get the current user's ID
         let viewerQuery = """
@@ -613,11 +605,10 @@ class LinearAPI {
 
     /// Fetches initiatives in the workspace
     func fetchInitiatives(accessToken: String, accountEmail: String? = nil) async throws -> [Initiative] {
-        #if DEBUG
+        // Support demo mode in all builds (needed for App Store review)
         if TestDataProvider.isUITesting {
             return TestDataProvider.getInitiatives()
         }
-        #endif
 
         let query = """
         query {

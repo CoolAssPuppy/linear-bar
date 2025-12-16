@@ -10,9 +10,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var tokenRefreshTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        setupCrashHandling()
         setupMenuBar()
         setupPopover()
         NSApp.setActivationPolicy(.accessory)
+
+        // Register for wake notifications to restart timer
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(handleWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+
+        // Log app launch
+        AppLogger.info("LinearBar launched successfully", log: AppLogger.app)
 
         #if DEBUG
         // Load test data for UI testing screenshots
@@ -66,8 +78,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Starts a timer to periodically check and refresh tokens
     /// Runs every hour to ensure tokens are refreshed before expiration
     private func startTokenRefreshTimer() {
+        // Invalidate existing timer if any
+        tokenRefreshTimer?.invalidate()
+
         // Check tokens every hour (3600 seconds)
-        tokenRefreshTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self else { return }
                 AppLogger.info("Periodic token validation triggered", log: AppLogger.auth)
@@ -75,13 +90,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.updateMenuBarIcon()
             }
         }
-        // Ensure timer runs even when menu is open
-        RunLoop.main.add(tokenRefreshTimer!, forMode: .common)
+
+        // Store and add to run loop
+        tokenRefreshTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+        AppLogger.info("Token refresh timer started", log: AppLogger.auth)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        AppLogger.info("LinearBar terminating", log: AppLogger.app)
         tokenRefreshTimer?.invalidate()
         tokenRefreshTimer = nil
+    }
+
+    // MARK: - Crash Handling
+
+    private func setupCrashHandling() {
+        // Set up exception handler
+        NSSetUncaughtExceptionHandler { exception in
+            AppLogger.fault("Uncaught exception: \(exception.name.rawValue) - \(exception.reason ?? "unknown")")
+            AppLogger.fault("Stack trace: \(exception.callStackSymbols.joined(separator: "\n"))")
+        }
+
+        // Handle SIGABRT, SIGSEGV, SIGBUS, SIGILL
+        signal(SIGABRT) { _ in
+            AppLogger.fault("Received SIGABRT signal")
+        }
+        signal(SIGSEGV) { _ in
+            AppLogger.fault("Received SIGSEGV signal")
+        }
+    }
+
+    @objc private func handleWake(_ notification: Notification) {
+        AppLogger.info("System woke from sleep - restarting token refresh timer", log: AppLogger.app)
+
+        // Restart the token refresh timer after wake
+        tokenRefreshTimer?.invalidate()
+        startTokenRefreshTimer()
+
+        // Proactively validate tokens after wake
+        Task {
+            await LinearAuthService.shared.validateAllAccountTokens()
+        }
     }
 
     // MARK: - Menu Bar Setup

@@ -150,10 +150,24 @@ struct FavoritesView: View {
     // MARK: - Data Loading
 
     private func loadFavorites() {
-        guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
-              let accessToken = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
-            errorMessage = "No authenticated account found. Please sign in."
-            return
+        // Check for demo mode first
+        let isDemoMode = TestDataProvider.isUITesting
+
+        // In demo mode, use a dummy token since the API will return test data
+        let accessToken: String
+        let accountEmail: String
+
+        if isDemoMode {
+            accessToken = "demo-token"
+            accountEmail = "demo@example.com"
+        } else {
+            guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
+                  let token = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
+                errorMessage = "No authenticated account found. Please sign in."
+                return
+            }
+            accessToken = token
+            accountEmail = account.email
         }
 
         isLoading = true
@@ -161,7 +175,7 @@ struct FavoritesView: View {
 
         Task {
             do {
-                let loadedFavorites = try await LinearAPI.shared.fetchFavorites(accessToken: accessToken, accountEmail: account.email)
+                let loadedFavorites = try await LinearAPI.shared.fetchFavorites(accessToken: accessToken, accountEmail: accountEmail)
                 await MainActor.run {
                     self.favorites = loadedFavorites
                     self.isLoading = false

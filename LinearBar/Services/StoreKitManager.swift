@@ -1,5 +1,6 @@
 import Foundation
 import StoreKit
+import os.log
 
 /// Product identifiers for IAP
 enum ProductIdentifier: String, CaseIterable {
@@ -23,10 +24,14 @@ enum ProductIdentifier: String, CaseIterable {
 class StoreKitManager: ObservableObject {
     static let shared = StoreKitManager()
 
+    private let logger = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.linearbar", category: "StoreKit")
+
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchasedProductIDs: Set<String> = []
     @Published private(set) var isLoading = false
+    @Published private(set) var loadAttempts = 0
     @Published var errorMessage: String?
+    @Published var debugInfo: String = ""
 
     private var updates: Task<Void, Never>?
 
@@ -49,25 +54,52 @@ class StoreKitManager: ObservableObject {
     func loadProducts() async {
         isLoading = true
         errorMessage = nil
+        loadAttempts += 1
+
+        let productIDs = ProductIdentifier.allCases.map { $0.rawValue }
+        os_log(.info, log: logger, "Loading products (attempt %d): %{public}@", loadAttempts, productIDs.joined(separator: ", "))
 
         do {
-            let productIDs = ProductIdentifier.allCases.map { $0.rawValue }
-            print("[StoreKit] Requesting products: \(productIDs)")
             let storeProducts = try await Product.products(for: productIDs)
-            print("[StoreKit] Received \(storeProducts.count) products: \(storeProducts.map { $0.id })")
+            os_log(.info, log: logger, "Received %d products", storeProducts.count)
 
-            if storeProducts.isEmpty {
-                print("[StoreKit] WARNING: No products returned. Check App Store Connect configuration.")
-            }
-
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.products = storeProducts
+
+                if storeProducts.isEmpty {
+                    self.debugInfo = "No products returned. Product ID: \(productIDs.joined(separator: ", ")). Attempts: \(loadAttempts)"
+                    os_log(.error, log: logger, "No products returned from App Store")
+                } else {
+                    self.debugInfo = "Loaded: \(storeProducts.map { "\($0.id) - \($0.displayPrice)" }.joined(separator: ", "))"
+                    for product in storeProducts {
+                        os_log(.info, log: logger, "Product: %{public}@ - %{public}@", product.id, product.displayPrice)
+                    }
+                }
                 self.isLoading = false
             }
         } catch {
-            print("[StoreKit] ERROR loading products: \(error)")
-            DispatchQueue.main.async {
-                self.errorMessage = "Failed to load products: \(error.localizedDescription)"
+            os_log(.error, log: logger, "Error loading products: %{public}@", error.localizedDescription)
+
+            await MainActor.run {
+                self.debugInfo = "Error: \(error.localizedDescription)"
+
+                // Provide more specific error messages
+                if let skError = error as? StoreKitError {
+                    switch skError {
+                    case .networkError:
+                        self.errorMessage = "Network error. Please check your internet connection."
+                    case .systemError:
+                        self.errorMessage = "System error. Please try again later."
+                    case .notAvailableInStorefront:
+                        self.errorMessage = "Not available in your region."
+                    case .notEntitled:
+                        self.errorMessage = "Not entitled to access this product."
+                    default:
+                        self.errorMessage = "Failed to load: \(error.localizedDescription)"
+                    }
+                } else {
+                    self.errorMessage = "Failed to load products. Please try again."
+                }
                 self.isLoading = false
             }
         }

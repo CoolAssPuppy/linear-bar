@@ -96,32 +96,74 @@ struct CoffeeView: View {
                             }
                         }
                     } else {
-                        // Product not yet available (e.g., pending App Store review)
+                        // Product not loaded - show retry option with explanation
                         VStack(spacing: 16) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 40))
+                                .foregroundColor(.orange)
+
                             VStack(spacing: 8) {
-                                Text("Buy Me Coffee")
+                                Text("Unable to Load Purchase")
                                     .font(.headline)
 
-                                Text("Support LinearBar development with a coffee!")
+                                Text("The in-app purchase couldn't be loaded from the App Store.")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
                             }
 
-                            Text("Coming soon")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.secondary.opacity(0.1))
-                                .cornerRadius(4)
-
-                            Button("Check Availability") {
+                            Button(action: {
                                 Task {
                                     await storeManager.loadProducts()
                                 }
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.clockwise")
+                                    Text("Try Again")
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
                             }
-                            .buttonStyle(.link)
+                            .buttonStyle(.borderedProminent)
+                            .tint(.blue)
+
+                            // Show debug info in a collapsible section
+                            DisclosureGroup("Troubleshooting Info") {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Product ID:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text(ProductIdentifier.coffee.rawValue)
+                                        .font(.caption.monospaced())
+                                        .textSelection(.enabled)
+
+                                    if !storeManager.debugInfo.isEmpty {
+                                        Text("Status:")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text(storeManager.debugInfo)
+                                            .font(.caption.monospaced())
+                                            .textSelection(.enabled)
+                                    }
+
+                                    Text("Load attempts: \(storeManager.loadAttempts)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+
+                                    Divider()
+
+                                    Text("Common causes:")
+                                        .font(.caption.bold())
+                                        .foregroundColor(.secondary)
+                                    Text("- App Store Connect IAP not approved\n- Paid Apps agreement not accepted\n- Network connectivity issues\n- App not signed correctly")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.top, 8)
+                            }
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
                         }
                     }
 
