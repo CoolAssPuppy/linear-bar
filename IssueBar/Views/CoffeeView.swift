@@ -17,7 +17,7 @@ struct CoffeeView: View {
 
             // Content
             VStack(spacing: 24) {
-                Text("LinearBar is free.")
+                Text("IssueBar is free.")
                     .font(.title3)
 
                 Text("But you can buy me coffee ☕")
@@ -213,7 +213,7 @@ struct CoffeeView: View {
                 .foregroundColor(.orange)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Support LinearBar")
+                Text("Support IssueBar")
                     .font(.title2)
                     .fontWeight(.bold)
 

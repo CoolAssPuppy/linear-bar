@@ -31,7 +31,7 @@ struct SettingsView: View {
 
     private var headerBar: some View {
         HStack {
-            Text("LinearBar Settings")
+            Text("IssueBar Settings")
                 .font(.title2)
                 .fontWeight(.semibold)
 

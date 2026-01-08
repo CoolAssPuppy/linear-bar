@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to LinearBar will be documented in this file.
+All notable changes to IssueBar will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-01-15
 
 ### Added
-- Initial release of LinearBar
+- Initial release of IssueBar
 - Quick access to Linear from macOS menu bar
 - View favorites, recent items, and search Linear workspace
 - Multiple Linear account support with account switcher
@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native macOS design built with SwiftUI
 - Credentials stored securely in macOS Keychain
 - Privacy manifest (PrivacyInfo.xcprivacy)
-- OAuth callback handling (linearbar:// URL scheme)
+- OAuth callback handling (issuebar:// URL scheme)
 - App Store metadata and descriptions
 - Automated deployment system with Fastlane
 - Comprehensive logging with OSLog

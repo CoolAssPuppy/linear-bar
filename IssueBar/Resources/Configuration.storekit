@@ -20,12 +20,12 @@
       "internalID" : "6754576032",
       "localizations" : [
         {
-          "description" : "Support LinearBar development with a coffee!",
+          "description" : "Support IssueBar development with a coffee!",
           "displayName" : "Buy Me Coffee",
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.strategicnerds.linearbar.coffee",
+      "productID" : "com.strategicnerds.issuebar.coffee",
       "referenceName" : "Buy Me Coffee",
       "type" : "NonConsumable"
     }

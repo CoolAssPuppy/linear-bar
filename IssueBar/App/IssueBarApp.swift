@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct LinearBarApp: App {
+struct IssueBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {

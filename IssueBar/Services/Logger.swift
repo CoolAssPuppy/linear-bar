@@ -1,10 +1,10 @@
 import Foundation
 import os.log
 
-/// Centralized logging utility for LinearBar
+/// Centralized logging utility for IssueBar
 /// Uses OSLog for production-ready logging with proper levels
 enum AppLogger {
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.linearbar"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.issuebar"
 
     /// Logger for app lifecycle events
     static let app = OSLog(subsystem: subsystem, category: "App")

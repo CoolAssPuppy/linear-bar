@@ -151,7 +151,7 @@ struct PreferencesTab: View {
             }
             .pickerStyle(.segmented)
 
-            Text("Choose which tab to open when launching LinearBar")
+            Text("Choose which tab to open when launching IssueBar")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -223,7 +223,7 @@ struct PreferencesTab: View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle("Launch at login", isOn: $launchAtLogin)
 
-            Text("Automatically start LinearBar when you log in")
+            Text("Automatically start IssueBar when you log in")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -246,7 +246,7 @@ struct PreferencesTab: View {
             .buttonStyle(.bordered)
             .tint(.orange)
 
-            Text("Support LinearBar development")
+            Text("Support IssueBar development")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

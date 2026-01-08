@@ -4,7 +4,7 @@ import os.log
 
 /// Product identifiers for IAP
 enum ProductIdentifier: String, CaseIterable {
-    case coffee = "com.strategicnerds.linearbar.coffee"
+    case coffee = "com.strategicnerds.issuebar.coffee"
 
     var displayName: String {
         switch self {
@@ -14,7 +14,7 @@ enum ProductIdentifier: String, CaseIterable {
 
     var description: String {
         switch self {
-        case .coffee: return "Support LinearBar development with a coffee!"
+        case .coffee: return "Support IssueBar development with a coffee!"
         }
     }
 }
@@ -24,7 +24,7 @@ enum ProductIdentifier: String, CaseIterable {
 class StoreKitManager: ObservableObject {
     static let shared = StoreKitManager()
 
-    private let logger = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.linearbar", category: "StoreKit")
+    private let logger = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.issuebar", category: "StoreKit")
 
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchasedProductIDs: Set<String> = []

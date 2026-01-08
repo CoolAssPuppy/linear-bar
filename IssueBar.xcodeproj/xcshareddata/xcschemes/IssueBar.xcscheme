@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "FF0001"
-               BuildableName = "LinearBar.app"
-               BlueprintName = "LinearBar"
-               ReferencedContainer = "container:LinearBar.xcodeproj">
+               BuildableName = "IssueBar.app"
+               BlueprintName = "IssueBar"
+               ReferencedContainer = "container:IssueBar.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -34,9 +34,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8F4D7E682EBCB8CC00AB44F0"
-               BuildableName = "LinearBarUITests.xctest"
-               BlueprintName = "LinearBarUITests"
-               ReferencedContainer = "container:LinearBar.xcodeproj">
+               BuildableName = "IssueBarUITests.xctest"
+               BlueprintName = "IssueBarUITests"
+               ReferencedContainer = "container:IssueBar.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -56,13 +56,13 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FF0001"
-            BuildableName = "LinearBar.app"
-            BlueprintName = "LinearBar"
-            ReferencedContainer = "container:LinearBar.xcodeproj">
+            BuildableName = "IssueBar.app"
+            BlueprintName = "IssueBar"
+            ReferencedContainer = "container:IssueBar.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <StoreKitConfigurationFileReference
-         identifier = "../../LinearBar/Resources/Configuration.storekit">
+         identifier = "../../IssueBar/Resources/Configuration.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
@@ -76,9 +76,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FF0001"
-            BuildableName = "LinearBar.app"
-            BlueprintName = "LinearBar"
-            ReferencedContainer = "container:LinearBar.xcodeproj">
+            BuildableName = "IssueBar.app"
+            BlueprintName = "IssueBar"
+            ReferencedContainer = "container:IssueBar.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

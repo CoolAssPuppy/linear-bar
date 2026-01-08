@@ -19,7 +19,7 @@
 		8FBA78A92EBC0CFC000C6D76 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78A82EBC0CFC000C6D76 /* Logger.swift */; };
 		8FBA78AC2EBC0D12000C6D76 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */; };
 		8FBA78AF2EBC0D32000C6D76 /* AboutTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */; };
-		AA0001 /* LinearBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0001 /* LinearBarApp.swift */; };
+		AA0001 /* IssueBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0001 /* IssueBarApp.swift */; };
 		AA0002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0002 /* AppDelegate.swift */; };
 		AA0003 /* LinearAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0003 /* LinearAccount.swift */; };
 		AA0004 /* LinearTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0004 /* LinearTypes.swift */; };
@@ -47,7 +47,7 @@
 			containerPortal = GG0001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = FF0001;
-			remoteInfo = LinearBar;
+			remoteInfo = IssueBar;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -58,15 +58,15 @@
 		61B651CCA31F4F778A11D91A /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		631A0EBBC2F20F47BE5AFD0C /* PreferencesTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreferencesTab.swift; sourceTree = "<group>"; };
 		8514744D3064625B8925BDEE /* AccountsTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccountsTab.swift; sourceTree = "<group>"; };
-		8F4D7E692EBCB8CC00AB44F0 /* LinearBarUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LinearBarUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8F4D7E692EBCB8CC00AB44F0 /* IssueBarUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IssueBarUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F4D7E7C2EBCBB0F00AB44F0 /* TestDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDataProvider.swift; sourceTree = "<group>"; };
 		8FBA78A82EBC0CFC000C6D76 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		8FBA78AA2EBC0D12000C6D76 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		8FBA78AD2EBC0D32000C6D76 /* AboutTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTab.swift; sourceTree = "<group>"; };
 		8FFB96B32EBC95C700B945F1 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
-		8FFB96B42EBC991000B945F1 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = Configuration.storekit; path = LinearBar/Resources/Configuration.storekit; sourceTree = "<group>"; };
+		8FFB96B42EBC991000B945F1 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = Configuration.storekit; path = IssueBar/Resources/Configuration.storekit; sourceTree = "<group>"; };
 		AB736EA9E9216FB7B9843D51 /* SFSymbolMapper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SFSymbolMapper.swift; sourceTree = "<group>"; };
-		BB0001 /* LinearBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearBarApp.swift; sourceTree = "<group>"; };
+		BB0001 /* IssueBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueBarApp.swift; sourceTree = "<group>"; };
 		BB0002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BB0003 /* LinearAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearAccount.swift; sourceTree = "<group>"; };
 		BB0004 /* LinearTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearTypes.swift; sourceTree = "<group>"; };
@@ -83,9 +83,9 @@
 		BB0015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BB0016 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB0017 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		BB0018 /* LinearBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LinearBar.entitlements; sourceTree = "<group>"; };
+		BB0018 /* IssueBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = IssueBar.entitlements; sourceTree = "<group>"; };
 		BB0019 /* LinearAuthSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearAuthSecrets.swift; sourceTree = "<group>"; };
-		CC0001 /* LinearBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LinearBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC0001 /* IssueBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IssueBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DCD710D95B22A603B58C44E1 /* LoadingStateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoadingStateView.swift; sourceTree = "<group>"; };
 		E48DB6EB69C54E81A8F91E75 /* ItemFilter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ItemFilter.swift; sourceTree = "<group>"; };
 		EF8073FB5D761C01B1F28E8B /* ErrorStateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
@@ -93,7 +93,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		8F4D7E6A2EBCB8CC00AB44F0 /* LinearBarUITests */ = {
+		8F4D7E6A2EBCB8CC00AB44F0 /* IssueBarUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 			);
@@ -101,7 +101,7 @@
 			};
 			explicitFolders = (
 			);
-			path = LinearBarUITests;
+			path = IssueBarUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -178,13 +178,13 @@
 			isa = PBXGroup;
 			children = (
 				8FFB96B42EBC991000B945F1 /* Configuration.storekit */,
-				EE0002 /* LinearBar */,
-				8F4D7E6A2EBCB8CC00AB44F0 /* LinearBarUITests */,
+				EE0002 /* IssueBar */,
+				8F4D7E6A2EBCB8CC00AB44F0 /* IssueBarUITests */,
 				EE0003 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		EE0002 /* LinearBar */ = {
+		EE0002 /* IssueBar */ = {
 			isa = PBXGroup;
 			children = (
 				8FBA78AB2EBC0D12000C6D76 /* Extensions */,
@@ -195,14 +195,14 @@
 				EE0008 /* Resources */,
 				C5F1A5F023966AD5C90B1A3A /* Utilities */,
 			);
-			path = LinearBar;
+			path = IssueBar;
 			sourceTree = "<group>";
 		};
 		EE0003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CC0001 /* LinearBar.app */,
-				8F4D7E692EBCB8CC00AB44F0 /* LinearBarUITests.xctest */,
+				CC0001 /* IssueBar.app */,
+				8F4D7E692EBCB8CC00AB44F0 /* IssueBarUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -210,7 +210,7 @@
 		EE0004 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				BB0001 /* LinearBarApp.swift */,
+				BB0001 /* IssueBarApp.swift */,
 				BB0002 /* AppDelegate.swift */,
 			);
 			path = App;
@@ -262,7 +262,7 @@
 				BB0015 /* Assets.xcassets */,
 				BB0016 /* PrivacyInfo.xcprivacy */,
 				BB0017 /* Info.plist */,
-				BB0018 /* LinearBar.entitlements */,
+				BB0018 /* IssueBar.entitlements */,
 				8FFB96B32EBC95C700B945F1 /* Configuration.storekit */,
 			);
 			path = Resources;
@@ -271,9 +271,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8F4D7E682EBCB8CC00AB44F0 /* LinearBarUITests */ = {
+		8F4D7E682EBCB8CC00AB44F0 /* IssueBarUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8F4D7E732EBCB8CC00AB44F0 /* Build configuration list for PBXNativeTarget "LinearBarUITests" */;
+			buildConfigurationList = 8F4D7E732EBCB8CC00AB44F0 /* Build configuration list for PBXNativeTarget "IssueBarUITests" */;
 			buildPhases = (
 				8F4D7E652EBCB8CC00AB44F0 /* Sources */,
 				8F4D7E662EBCB8CC00AB44F0 /* Frameworks */,
@@ -285,16 +285,16 @@
 				8F4D7E702EBCB8CC00AB44F0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8F4D7E6A2EBCB8CC00AB44F0 /* LinearBarUITests */,
+				8F4D7E6A2EBCB8CC00AB44F0 /* IssueBarUITests */,
 			);
-			name = LinearBarUITests;
-			productName = LinearBarUITests;
-			productReference = 8F4D7E692EBCB8CC00AB44F0 /* LinearBarUITests.xctest */;
+			name = IssueBarUITests;
+			productName = IssueBarUITests;
+			productReference = 8F4D7E692EBCB8CC00AB44F0 /* IssueBarUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		FF0001 /* LinearBar */ = {
+		FF0001 /* IssueBar */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = FF0002 /* Build configuration list for PBXNativeTarget "LinearBar" */;
+			buildConfigurationList = FF0002 /* Build configuration list for PBXNativeTarget "IssueBar" */;
 			buildPhases = (
 				DD0002 /* Sources */,
 				DD0001 /* Frameworks */,
@@ -304,9 +304,9 @@
 			);
 			dependencies = (
 			);
-			name = LinearBar;
-			productName = LinearBar;
-			productReference = CC0001 /* LinearBar.app */;
+			name = IssueBar;
+			productName = IssueBar;
+			productReference = CC0001 /* IssueBar.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -328,7 +328,7 @@
 					};
 				};
 			};
-			buildConfigurationList = GG0002 /* Build configuration list for PBXProject "LinearBar" */;
+			buildConfigurationList = GG0002 /* Build configuration list for PBXProject "IssueBar" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -341,8 +341,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				FF0001 /* LinearBar */,
-				8F4D7E682EBCB8CC00AB44F0 /* LinearBarUITests */,
+				FF0001 /* IssueBar */,
+				8F4D7E682EBCB8CC00AB44F0 /* IssueBarUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -382,7 +382,7 @@
 				600B28BE18E84890A23A7921 /* CoffeeView.swift in Sources */,
 				8FBA78AC2EBC0D12000C6D76 /* Color+Hex.swift in Sources */,
 				8FBA78AF2EBC0D32000C6D76 /* AboutTab.swift in Sources */,
-				AA0001 /* LinearBarApp.swift in Sources */,
+				AA0001 /* IssueBarApp.swift in Sources */,
 				AA0002 /* AppDelegate.swift in Sources */,
 				AA0003 /* LinearAccount.swift in Sources */,
 				AA0004 /* LinearTypes.swift in Sources */,
@@ -416,7 +416,7 @@
 /* Begin PBXTargetDependency section */
 		8F4D7E702EBCB8CC00AB44F0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = FF0001 /* LinearBar */;
+			target = FF0001 /* IssueBar */;
 			targetProxy = 8F4D7E6F2EBCB8CC00AB44F0 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -431,14 +431,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.LinearBarUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBarUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = LinearBar;
+				TEST_TARGET_NAME = IssueBar;
 			};
 			name = Debug;
 		};
@@ -451,14 +451,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.LinearBarUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBarUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = LinearBar;
+				TEST_TARGET_NAME = IssueBar;
 			};
 			name = Release;
 		};
@@ -591,7 +591,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = LinearBar/Resources/LinearBar.entitlements;
+				CODE_SIGN_ENTITLEMENTS = IssueBar/Resources/IssueBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -602,17 +602,17 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = LinearBar/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = LinearBar;
+				INFOPLIST_FILE = IssueBar/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = IssueBar;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 LinearBar. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 IssueBar. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.LinearBar;
+				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -625,7 +625,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = LinearBar/Resources/LinearBar.entitlements;
+				CODE_SIGN_ENTITLEMENTS = IssueBar/Resources/IssueBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -636,17 +636,17 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = LinearBar/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = LinearBar;
+				INFOPLIST_FILE = IssueBar/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = IssueBar;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 LinearBar. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 IssueBar. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.LinearBar;
+				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -657,7 +657,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		8F4D7E732EBCB8CC00AB44F0 /* Build configuration list for PBXNativeTarget "LinearBarUITests" */ = {
+		8F4D7E732EBCB8CC00AB44F0 /* Build configuration list for PBXNativeTarget "IssueBarUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8F4D7E712EBCB8CC00AB44F0 /* Debug */,
@@ -666,7 +666,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		FF0002 /* Build configuration list for PBXNativeTarget "LinearBar" */ = {
+		FF0002 /* Build configuration list for PBXNativeTarget "IssueBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				HH0003 /* Debug */,
@@ -675,7 +675,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		GG0002 /* Build configuration list for PBXProject "LinearBar" */ = {
+		GG0002 /* Build configuration list for PBXProject "IssueBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				HH0001 /* Debug */,

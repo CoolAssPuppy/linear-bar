@@ -1,4 +1,4 @@
-# LinearBar
+# IssueBar
 
 A native macOS menu bar app for quick access to your Linear workspace. View favorites, recently updated items, and search across issues, projects, and initiatives without leaving your workflow.
 
@@ -34,8 +34,8 @@ cd linear-bar
 1. Go to [Linear Settings → API → OAuth Applications](https://linear.app/settings/api/applications/new)
 2. Click **"Create new OAuth application"**
 3. Fill in the details:
-   - **Name**: LinearBar (or your preferred name)
-   - **Callback URL**: `linearbar://oauth/callback`
+   - **Name**: IssueBar (or your preferred name)
+   - **Callback URL**: `issuebar://oauth/callback`
    - **Scopes**: Select `read` (minimum required)
 4. Click **Create**
 5. Copy your **Client ID** and **Client Secret**
@@ -59,12 +59,12 @@ doppler secrets set LINEAR_CLIENT_ID="lin_oauth_xxxxx"
 doppler secrets set LINEAR_CLIENT_SECRET="your_secret_here"
 
 # Run Xcode with Doppler
-doppler run -- open LinearBar.xcodeproj
+doppler run -- open IssueBar.xcodeproj
 ```
 
 #### Option B: Local file (Simple for solo dev)
 
-1. Open `LinearBar/Services/LinearAuthSecrets.swift`
+1. Open `IssueBar/Services/LinearAuthSecrets.swift`
 2. Replace the placeholder values:
    ```swift
    static let clientId = "YOUR_LINEAR_CLIENT_ID"
@@ -74,19 +74,19 @@ doppler run -- open LinearBar.xcodeproj
 
 ### 4. Build and run
 
-1. Open `LinearBar.xcodeproj` in Xcode
+1. Open `IssueBar.xcodeproj` in Xcode
 2. Select your development team in **Signing & Capabilities**
 3. Press **Cmd+R** to build and run
 4. Click the menu bar icon and sign in to Linear
 
 ## Architecture
 
-LinearBar follows MVVM architecture with clean separation of concerns:
+IssueBar follows MVVM architecture with clean separation of concerns:
 
 ```
-LinearBar/
+IssueBar/
 ├── App/
-│   ├── LinearBarApp.swift          # App entry point
+│   ├── IssueBarApp.swift          # App entry point
 │   └── AppDelegate.swift           # Menu bar lifecycle, URL handling
 │
 ├── Models/
@@ -116,7 +116,7 @@ LinearBar/
 
 **LinearAPI**: GraphQL client for fetching issues, projects, initiatives, favorites, and teams. Handles pagination, error handling, and rate limiting.
 
-**LinearAuthService**: OAuth 2.0 flow implementation with custom URL scheme (`linearbar://`). Supports Doppler environment variables for credential management.
+**LinearAuthService**: OAuth 2.0 flow implementation with custom URL scheme (`issuebar://`). Supports Doppler environment variables for credential management.
 
 **KeychainService**: Stores OAuth tokens securely in macOS Keychain. Tokens never touch disk or iCloud.
 
@@ -126,7 +126,7 @@ LinearBar/
 
 ### Main Interface
 
-Click the LinearBar icon in your menu bar:
+Click the IssueBar icon in your menu bar:
 
 - **Favorites**: Shows your favorited items from Linear
 - **Recent**: Three sub-tabs for Created, Assigned, or Team items
@@ -170,10 +170,10 @@ Opens Linear's creation flow in your browser.
 # Clone and open
 git clone https://github.com/coolasspuppy/linear-bar.git
 cd linear-bar
-open LinearBar.xcodeproj
+open IssueBar.xcodeproj
 
 # Or build from command line
-xcodebuild -scheme LinearBar -configuration Debug build
+xcodebuild -scheme IssueBar -configuration Debug build
 ```
 
 ### Code Structure
@@ -195,7 +195,7 @@ xcodebuild -scheme LinearBar -configuration Debug build
 
 ## Troubleshooting
 
-**Authentication fails**: Check that your OAuth callback URL is exactly `linearbar://oauth/callback` in Linear settings.
+**Authentication fails**: Check that your OAuth callback URL is exactly `issuebar://oauth/callback` in Linear settings.
 
 **No items showing**: Verify authentication in Settings → Accounts. Check that you have items in Linear.
 
@@ -225,7 +225,7 @@ Contributions welcome! Please:
 
 Custom Open Source License - see [LICENSE](LICENSE) file for details.
 
-**TL;DR**: You can fork and customize for personal use, but you cannot distribute through the App Store without permission. This protects the official LinearBar while keeping the code open for learning and personal projects.
+**TL;DR**: You can fork and customize for personal use, but you cannot distribute through the App Store without permission. This protects the official IssueBar while keeping the code open for learning and personal projects.
 
 ## Credits
 
@@ -247,7 +247,7 @@ Inspired by Linear's elegant design philosophy.
 ## App Store Marketing
 
 ### App Name
-LinearBar
+IssueBar
 
 ### Subtitle
 Quick access to Linear from your menu bar
@@ -257,12 +257,12 @@ Access your Linear issues, projects, and favorites instantly from your Mac's men
 
 ### Description
 
-LinearBar brings Linear to your Mac's menu bar for instant access to your work items without disrupting your flow.
+IssueBar brings Linear to your Mac's menu bar for instant access to your work items without disrupting your flow.
 
 FEATURES
 
 Quick Access
-Open LinearBar from your menu bar with a single click. View your favorites, recent issues, and projects without opening a browser tab.
+Open IssueBar from your menu bar with a single click. View your favorites, recent issues, and projects without opening a browser tab.
 
 Multiple Views
 - Favorites: Your starred issues, projects, and initiatives at your fingertips
@@ -304,14 +304,14 @@ GET STARTED
 2. Choose your default view and preferences
 3. Access your work from the menu bar anytime
 
-LinearBar respects your focus. No notifications, no interruptions - just quick access when you need it.
+IssueBar respects your focus. No notifications, no interruptions - just quick access when you need it.
 
 ### Keywords (100 characters max)
 Linear,issue tracker,project management,productivity,menu bar,task management,workflow,developer tools
 
 ### What's New (Version 1.0.0)
 
-Initial release of LinearBar
+Initial release of IssueBar
 
 Features included in this first release:
 
@@ -323,7 +323,7 @@ Features included in this first release:
 - iCloud sync for preferences across devices
 - Native macOS design built with SwiftUI
 
-We built LinearBar to give you faster access to Linear without disrupting your workflow. Give it a try and let us know what you think.
+We built IssueBar to give you faster access to Linear without disrupting your workflow. Give it a try and let us know what you think.
 
 ### App Store Metadata
 
@@ -335,10 +335,10 @@ We built LinearBar to give you faster access to Linear without disrupting your w
 
 ### Privacy Policy
 
-LinearBar Privacy Policy
+IssueBar Privacy Policy
 
 Data Collection:
-LinearBar does not collect, store, or transmit any personal data to third parties.
+IssueBar does not collect, store, or transmit any personal data to third parties.
 
 Data Storage:
 - Your Linear access tokens are stored securely in the macOS Keychain
@@ -346,10 +346,10 @@ Data Storage:
 - No analytics or tracking data is collected
 
 Third-Party Services:
-LinearBar connects directly to Linear's API (api.linear.app) using OAuth authentication. Please refer to Linear's privacy policy for information about their data practices.
+IssueBar connects directly to Linear's API (api.linear.app) using OAuth authentication. Please refer to Linear's privacy policy for information about their data practices.
 
 Open Source:
-LinearBar is open source software. You can review the complete source code at our GitHub repository.
+IssueBar is open source software. You can review the complete source code at our GitHub repository.
 
 Contact:
 For privacy concerns or questions, please open an issue on our GitHub repository.
@@ -358,7 +358,7 @@ Last updated: January 2025
 
 ### App Review Notes
 
-LinearBar is a menu bar utility for macOS that provides quick access to the Linear project management platform.
+IssueBar is a menu bar utility for macOS that provides quick access to the Linear project management platform.
 
 Test Account Information:
 - You will need a Linear account to test this app
@@ -368,7 +368,7 @@ Test Account Information:
 OAuth Configuration:
 - The app uses standard OAuth 2.0 flow with Linear
 - Client ID and Secret are configured in the app
-- Redirect URI: linearbar://oauth/callback
+- Redirect URI: issuebar://oauth/callback
 
 Key Features to Test:
 1. Click the menu bar icon to open the dropdown

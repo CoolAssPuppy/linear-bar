@@ -24,7 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         // Log app launch
-        AppLogger.info("LinearBar launched successfully", log: AppLogger.app)
+        AppLogger.info("IssueBar launched successfully", log: AppLogger.app)
 
         #if DEBUG
         // Load test data for UI testing screenshots
@@ -98,7 +98,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        AppLogger.info("LinearBar terminating", log: AppLogger.app)
+        AppLogger.info("IssueBar terminating", log: AppLogger.app)
         tokenRefreshTimer?.invalidate()
         tokenRefreshTimer = nil
     }
@@ -141,7 +141,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem?.button {
             // Use a template icon that works in both light and dark mode
-            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "LinearBar") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "IssueBar") {
                 image.isTemplate = true
                 button.image = image
             } else {
@@ -162,7 +162,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         #if DEBUG
         // In UI testing mode, always show the connected icon
         if CommandLine.arguments.contains("--uitesting") {
-            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "LinearBar") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "IssueBar") {
                 image.isTemplate = true
                 button.image = image
             }
@@ -175,19 +175,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if hasAuthIssues {
             // Show warning icon
-            if let image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "LinearBar - Authentication Issue") {
+            if let image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "IssueBar - Authentication Issue") {
                 image.isTemplate = true
                 button.image = image
             }
         } else if AppSettings.shared.accounts.isEmpty {
             // Show default icon
-            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "LinearBar") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "IssueBar") {
                 image.isTemplate = true
                 button.image = image
             }
         } else {
             // Show connected icon
-            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "LinearBar") {
+            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "IssueBar") {
                 image.isTemplate = true
                 button.image = image
             }
@@ -297,7 +297,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 defer: false
             )
             newWindow.contentView = NSHostingView(rootView: settingsView)
-            newWindow.title = "LinearBar Settings"
+            newWindow.title = "IssueBar Settings"
             newWindow.isReleasedWhenClosed = false
             newWindow.center()
             newWindow.makeKeyAndOrderFront(nil)

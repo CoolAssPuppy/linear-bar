@@ -11,10 +11,10 @@ if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then
 fi
 
 # Create xcschemes directory if it doesn't exist
-mkdir -p LinearBar.xcodeproj/xcshareddata/xcschemes
+mkdir -p IssueBar.xcodeproj/xcshareddata/xcschemes
 
 # Create or update the scheme file
-cat > LinearBar.xcodeproj/xcshareddata/xcschemes/LinearBar.xcscheme << SCHEME
+cat > IssueBar.xcodeproj/xcshareddata/xcschemes/IssueBar.xcscheme << SCHEME
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1540"
@@ -32,9 +32,9 @@ cat > LinearBar.xcodeproj/xcshareddata/xcschemes/LinearBar.xcscheme << SCHEME
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "FF0001"
-               BuildableName = "LinearBar.app"
-               BlueprintName = "LinearBar"
-               ReferencedContainer = "container:LinearBar.xcodeproj">
+               BuildableName = "IssueBar.app"
+               BlueprintName = "IssueBar"
+               ReferencedContainer = "container:IssueBar.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -60,9 +60,9 @@ cat > LinearBar.xcodeproj/xcshareddata/xcschemes/LinearBar.xcscheme << SCHEME
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FF0001"
-            BuildableName = "LinearBar.app"
-            BlueprintName = "LinearBar"
-            ReferencedContainer = "container:LinearBar.xcodeproj">
+            BuildableName = "IssueBar.app"
+            BlueprintName = "IssueBar"
+            ReferencedContainer = "container:IssueBar.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>
@@ -89,9 +89,9 @@ cat > LinearBar.xcodeproj/xcshareddata/xcschemes/LinearBar.xcscheme << SCHEME
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FF0001"
-            BuildableName = "LinearBar.app"
-            BlueprintName = "LinearBar"
-            ReferencedContainer = "container:LinearBar.xcodeproj">
+            BuildableName = "IssueBar.app"
+            BlueprintName = "IssueBar"
+            ReferencedContainer = "container:IssueBar.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

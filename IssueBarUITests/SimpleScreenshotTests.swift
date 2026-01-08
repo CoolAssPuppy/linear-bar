@@ -1,6 +1,6 @@
 import XCTest
 
-/// Simplified screenshot tests for LinearBar menu bar app
+/// Simplified screenshot tests for IssueBar menu bar app
 /// Tests capture screenshots of Favorites, Recent, Search tabs, and Settings
 @MainActor
 class SimpleScreenshotTests: XCTestCase {
@@ -21,7 +21,7 @@ class SimpleScreenshotTests: XCTestCase {
         sleep(5)
 
         print("✅ App should be ready now")
-        print("📍 Check your menu bar for the LinearBar icon (checkmark circle)")
+        print("📍 Check your menu bar for the IssueBar icon (checkmark circle)")
     }
 
     // Helper to take and attach screenshot
@@ -63,11 +63,11 @@ class SimpleScreenshotTests: XCTestCase {
     /// Main screenshot capture test
     /// INSTRUCTIONS:
     /// 1. Run this test (Cmd+U or Product > Test)
-    /// 2. When the app launches, MANUALLY click the LinearBar menu bar icon to open the dropdown
+    /// 2. When the app launches, MANUALLY click the IssueBar menu bar icon to open the dropdown
     /// 3. The test will automatically capture screenshots as it navigates through tabs
     func testCaptureAllScreenshots() {
-        print("🎬 Starting LinearBar screenshot capture...")
-        print("📌 Please click the LinearBar menu bar icon now!")
+        print("🎬 Starting IssueBar screenshot capture...")
+        print("📌 Please click the IssueBar menu bar icon now!")
         print("⏱️ You have 10 seconds to click the icon...")
 
         // Wait for user to manually open the dropdown

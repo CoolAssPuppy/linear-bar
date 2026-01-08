@@ -6,7 +6,7 @@ import os.log
 @MainActor
 class KeychainService {
     static let shared = KeychainService()
-    private let serviceName = "com.strategicnerds.LinearBar"
+    private let serviceName = "com.strategicnerds.IssueBar"
 
     private init() {}
 

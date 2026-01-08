@@ -68,7 +68,7 @@ struct MenuBarView: View {
                 }
             }
 
-            Text("LinearBar")
+            Text("IssueBar")
                 .font(.system(size: 15, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
 

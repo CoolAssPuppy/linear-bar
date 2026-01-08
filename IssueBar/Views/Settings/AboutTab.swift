@@ -8,7 +8,7 @@ struct AboutTab: View {
                 .font(.system(size: 64))
                 .foregroundColor(.accentColor)
 
-            Text("LinearBar")
+            Text("IssueBar")
                 .font(.title)
                 .fontWeight(.bold)
 
