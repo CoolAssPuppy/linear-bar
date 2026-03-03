@@ -202,8 +202,8 @@ struct CoffeeView: View {
             }
             .padding()
         }
-        .background(.ultraThinMaterial)
-        .frame(width: 500, height: 600)
+        .background(AppStyle.Colors.windowBackground)
+        .frame(width: AppStyle.Layout.settingsWidth, height: AppStyle.Layout.settingsHeight)
     }
 
     private var headerBar: some View {
@@ -234,7 +234,6 @@ struct CoffeeView: View {
             .buttonStyle(.borderless)
         }
         .padding()
-        .background(.regularMaterial)
     }
 
     private func purchaseCoffee(_ product: Product) async {

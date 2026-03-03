@@ -46,6 +46,21 @@ enum AppLogger {
         }
     }
 
+    /// Log a message containing private identifiers (emails, user IDs, tokens)
+    /// Redacted in release builds; visible in Console.app with device connected in debug
+    static func privateInfo(_ message: String, log: OSLog = .default) {
+        os_log(.info, log: log, "%{private}@", message)
+    }
+
+    /// Log an error containing private identifiers
+    static func privateError(_ message: String, log: OSLog = .default, error: Error? = nil) {
+        if let error = error {
+            os_log(.error, log: log, "%{private}@: %{private}@", message, error.localizedDescription)
+        } else {
+            os_log(.error, log: log, "%{private}@", message)
+        }
+    }
+
     /// Log a fault (critical error)
     static func fault(_ message: String, log: OSLog = .default) {
         os_log(.fault, log: log, "%{public}@", message)

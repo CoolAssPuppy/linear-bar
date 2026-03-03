@@ -40,55 +40,45 @@ struct PreferencesTab: View {
                         defaultTabPicker
                         recentViewModePicker
                     } header: {
-                        sectionHeader(icon: "star.circle.fill", title: "Default View", gradient: [.purple, .pink])
+                        sectionHeader(icon: "star.circle.fill", title: "Default View")
                     }
 
                     Section {
                         showCompletedToggle
                         showCanceledToggle
                     } header: {
-                        sectionHeader(icon: "line.3.horizontal.decrease.circle.fill", title: "Filters", gradient: [.blue, .cyan])
+                        sectionHeader(icon: "line.3.horizontal.decrease.circle.fill", title: "Filters")
                     }
 
                     Section {
                         refreshIntervalPicker
                     } header: {
-                        sectionHeader(icon: "arrow.clockwise.circle.fill", title: "Refresh", gradient: [.green, .mint])
+                        sectionHeader(icon: "arrow.clockwise.circle.fill", title: "Refresh")
                     }
 
                     Section {
                         launchAtLoginToggle
                     } header: {
-                        sectionHeader(icon: "power.circle.fill", title: "Startup", gradient: [.orange, .yellow])
+                        sectionHeader(icon: "power.circle.fill", title: "Startup")
                     }
 
                     Section {
                         buyMeCoffeeButton
                     } header: {
-                        sectionHeader(icon: "cup.and.saucer.fill", title: "Support", gradient: [.brown, .orange])
+                        sectionHeader(icon: "cup.and.saucer.fill", title: "Support")
                     }
 
                     Section {
                         aboutInfo
                     } header: {
-                        sectionHeader(icon: "info.circle.fill", title: "About", gradient: [.gray, .secondary])
+                        sectionHeader(icon: "info.circle.fill", title: "About")
                     }
                 }
                 .formStyle(.grouped)
             }
             .padding(20)
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    Color.accentColor.opacity(0.02),
-                    Color.clear,
-                    Color.purple.opacity(0.01)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+        .background(AppStyle.Colors.windowBackground)
         .sheet(isPresented: $showingCoffee) {
             CoffeeView()
         }
@@ -120,19 +110,13 @@ struct PreferencesTab: View {
 
     // MARK: - Section Header
 
-    private func sectionHeader(icon: String, title: String, gradient: [Color]) -> some View {
-        HStack(spacing: 8) {
+    private func sectionHeader(icon: String, title: String) -> some View {
+        HStack(spacing: AppStyle.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: gradient,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .foregroundColor(.secondary)
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(AppStyle.Font.sectionHeader)
                 .foregroundColor(.primary)
         }
     }
