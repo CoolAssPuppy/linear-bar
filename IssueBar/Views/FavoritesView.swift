@@ -237,8 +237,8 @@ struct GenericFavoriteRowView: View {
                 }
                 .padding(.vertical, 8)
             }
-            .background(isHovered ? Color.accentColor.opacity(0.05) : Color.clear)
-            .cornerRadius(6)
+            .background(isHovered ? AppStyle.Colors.hoverHighlight : Color.clear)
+            .cornerRadius(AppStyle.Layout.rowCornerRadius)
         }
         .buttonStyle(.plain)
         .onHover { hovering in

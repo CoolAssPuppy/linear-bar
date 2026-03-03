@@ -105,7 +105,7 @@ class KeychainService {
 
         let attributes: [String: Any] = [
             kSecValueData as String: tokenData,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
 
         // Try to update existing item first

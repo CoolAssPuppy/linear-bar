@@ -17,15 +17,9 @@ struct AboutTab: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
-            VStack(spacing: 8) {
-                Text("Version 1.0.0")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Text("Build 1")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            Text("Version \(appVersion) (\(buildNumber))")
+                .font(.caption)
+                .foregroundColor(.secondary)
 
             Spacer()
 
@@ -33,5 +27,13 @@ struct AboutTab: View {
                 .font(.caption)
         }
         .padding(40)
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
     }
 }

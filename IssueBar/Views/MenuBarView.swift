@@ -21,8 +21,8 @@ struct MenuBarView: View {
 
             footerBar
         }
-        .frame(width: 400, height: 500)
-        .background(.ultraThinMaterial)
+        .frame(width: AppStyle.Layout.popoverWidth, height: AppStyle.Layout.popoverHeight)
+        .background(AppStyle.Colors.windowBackground)
         .onAppear {
             loadDefaultTab()
         }
@@ -44,28 +44,11 @@ struct MenuBarView: View {
 
     private var headerBar: some View {
         HStack(spacing: 12) {
-            // App icon with glow
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.accentColor.opacity(0.2),
-                                Color.purple.opacity(0.1)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 32, height: 32)
-                    .blur(radius: 8)
-
-                if let appIcon = NSImage(named: NSImage.applicationIconName) {
-                    Image(nsImage: appIcon)
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                        .clipShape(Circle())
-                }
+            if let appIcon = NSImage(named: NSImage.applicationIconName) {
+                Image(nsImage: appIcon)
+                    .resizable()
+                    .frame(width: 28, height: 28)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
             Text("IssueBar")
@@ -92,38 +75,15 @@ struct MenuBarView: View {
                     Label("New Initiative", systemImage: "target")
                 }
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.green, .mint],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Text("Add New")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.primary)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(.regularMaterial)
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .strokeBorder(Color.green.opacity(0.3), lineWidth: 1)
-                )
+                Label("Add New", systemImage: "plus")
+                    .font(.system(size: 12, weight: .medium))
             }
+            .buttonStyle(.bordered)
             .menuStyle(.borderlessButton)
             .help("Create New...")
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppStyle.Spacing.lg)
         .padding(.vertical, 14)
-        .background(
-            .regularMaterial,
-            in: RoundedRectangle(cornerRadius: 0)
-        )
     }
 
     // MARK: - Tab Bar
@@ -182,29 +142,17 @@ struct MenuBarView: View {
             Spacer()
 
             // Settings button
-            footerButton(
-                icon: "gearshape.fill",
-                title: "Settings",
-                gradient: [.blue, .cyan]
-            ) {
+            footerButton(icon: "gearshape.fill", title: "Settings") {
                 openSettings()
             }
 
             // Quit button
-            footerButton(
-                icon: "power",
-                title: "Quit",
-                gradient: [.red, .orange]
-            ) {
+            footerButton(icon: "power", title: "Quit") {
                 quitApp()
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            .regularMaterial,
-            in: RoundedRectangle(cornerRadius: 0)
-        )
+        .padding(.horizontal, AppStyle.Spacing.lg)
+        .padding(.vertical, AppStyle.Spacing.md)
     }
 
     private var refreshButton: some View {
@@ -220,57 +168,20 @@ struct MenuBarView: View {
                 }
             }
         }) {
-            ZStack {
-                Circle()
-                    .fill(.regularMaterial)
-                    .frame(width: 32, height: 32)
-
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.blue, .cyan],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-            }
-            .overlay(
-                Circle()
-                    .strokeBorder(Color.blue.opacity(0.2), lineWidth: 1)
-            )
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: 13, weight: .semibold))
+                .rotationEffect(.degrees(isRefreshing ? 360 : 0))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bordered)
         .help("Refresh all data")
     }
 
-    private func footerButton(icon: String, title: String, gradient: [Color], action: @escaping () -> Void) -> some View {
+    private func footerButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: gradient,
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.primary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(.thinMaterial)
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
-            )
+            Label(title, systemImage: icon)
+                .font(.system(size: 11, weight: .medium))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bordered)
     }
 
     // MARK: - Actions

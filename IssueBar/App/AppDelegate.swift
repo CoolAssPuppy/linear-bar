@@ -3,19 +3,21 @@ import SwiftUI
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusItem: NSStatusItem?
+    private let menuBarManager = MenuBarManager()
+    private let popoverManager = PopoverManager()
+    private let tokenScheduler = TokenRefreshScheduler()
     private var settingsWindow: NSWindow?
-    private var popover: NSPopover?
-    private var eventMonitor: Any?
-    private var tokenRefreshTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupCrashHandling()
-        setupMenuBar()
-        setupPopover()
+        menuBarManager.setup(target: self, action: #selector(menuBarButtonClicked))
+        popoverManager.setup()
         NSApp.setActivationPolicy(.accessory)
 
-        // Register for wake notifications to restart timer
+        tokenScheduler.onValidationComplete = { [weak self] in
+            self?.menuBarManager.updateIcon()
+        }
+
         NSWorkspace.shared.notificationCenter.addObserver(
             self,
             selector: #selector(handleWake),
@@ -23,17 +25,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        // Log app launch
         AppLogger.info("IssueBar launched successfully", log: AppLogger.app)
 
         #if DEBUG
-        // Load test data for UI testing screenshots
         if CommandLine.arguments.contains("--uitesting") {
             setupTestDataForUITesting()
         }
         #endif
 
-        // Register URL handler for OAuth callbacks
         NSAppleEventManager.shared().setEventHandler(
             self,
             andSelector: #selector(handleGetURLEvent(_:withReplyEvent:)),
@@ -41,7 +40,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             andEventID: AEEventID(kAEGetURL)
         )
 
-        // Listen for settings requests
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleSettingsRequest),
@@ -49,7 +47,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        // Listen for account updates to refresh menu bar icon
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAccountsDidUpdate),
@@ -57,62 +54,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        // Validate and refresh tokens on app launch (skip during UI testing)
         #if DEBUG
         if !CommandLine.arguments.contains("--uitesting") {
             Task {
                 await LinearAuthService.shared.validateAllAccountTokens()
             }
-            startTokenRefreshTimer()
+            tokenScheduler.start()
         }
         #else
         Task {
             await LinearAuthService.shared.validateAllAccountTokens()
         }
-        startTokenRefreshTimer()
+        tokenScheduler.start()
         #endif
-    }
-
-    // MARK: - Token Refresh Timer
-
-    /// Starts a timer to periodically check and refresh tokens
-    /// Runs every hour to ensure tokens are refreshed before expiration
-    private func startTokenRefreshTimer() {
-        // Invalidate existing timer if any
-        tokenRefreshTimer?.invalidate()
-
-        // Check tokens every hour (3600 seconds)
-        let timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self else { return }
-                AppLogger.info("Periodic token validation triggered", log: AppLogger.auth)
-                await LinearAuthService.shared.validateAllAccountTokens()
-                self.updateMenuBarIcon()
-            }
-        }
-
-        // Store and add to run loop
-        tokenRefreshTimer = timer
-        RunLoop.main.add(timer, forMode: .common)
-        AppLogger.info("Token refresh timer started", log: AppLogger.auth)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         AppLogger.info("IssueBar terminating", log: AppLogger.app)
-        tokenRefreshTimer?.invalidate()
-        tokenRefreshTimer = nil
+        tokenScheduler.stop()
     }
 
     // MARK: - Crash Handling
 
     private func setupCrashHandling() {
-        // Set up exception handler
         NSSetUncaughtExceptionHandler { exception in
             AppLogger.fault("Uncaught exception: \(exception.name.rawValue) - \(exception.reason ?? "unknown")")
             AppLogger.fault("Stack trace: \(exception.callStackSymbols.joined(separator: "\n"))")
         }
 
-        // Handle SIGABRT, SIGSEGV, SIGBUS, SIGILL
         signal(SIGABRT) { _ in
             AppLogger.fault("Received SIGABRT signal")
         }
@@ -123,131 +92,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func handleWake(_ notification: Notification) {
         AppLogger.info("System woke from sleep - restarting token refresh timer", log: AppLogger.app)
+        tokenScheduler.stop()
+        tokenScheduler.start()
 
-        // Restart the token refresh timer after wake
-        tokenRefreshTimer?.invalidate()
-        startTokenRefreshTimer()
-
-        // Proactively validate tokens after wake
         Task {
             await LinearAuthService.shared.validateAllAccountTokens()
         }
     }
 
-    // MARK: - Menu Bar Setup
-
-    private func setupMenuBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-
-        if let button = statusItem?.button {
-            // Use a template icon that works in both light and dark mode
-            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "IssueBar") {
-                image.isTemplate = true
-                button.image = image
-            } else {
-                button.title = "L"
-            }
-
-            button.action = #selector(menuBarButtonClicked)
-            button.target = self
-
-            // Check if we have accounts with auth issues
-            updateMenuBarIcon()
-        }
-    }
-
-    private func updateMenuBarIcon() {
-        guard let button = statusItem?.button else { return }
-
-        #if DEBUG
-        // In UI testing mode, always show the connected icon
-        if CommandLine.arguments.contains("--uitesting") {
-            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "IssueBar") {
-                image.isTemplate = true
-                button.image = image
-            }
-            return
-        }
-        #endif
-
-        // Check if any account has auth issues
-        let hasAuthIssues = AppSettings.shared.accounts.contains { $0.authStatus != .valid }
-
-        if hasAuthIssues {
-            // Show warning icon
-            if let image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "IssueBar - Authentication Issue") {
-                image.isTemplate = true
-                button.image = image
-            }
-        } else if AppSettings.shared.accounts.isEmpty {
-            // Show default icon
-            if let image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "IssueBar") {
-                image.isTemplate = true
-                button.image = image
-            }
-        } else {
-            // Show connected icon
-            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "IssueBar") {
-                image.isTemplate = true
-                button.image = image
-            }
-        }
-    }
-
-    private func setupPopover() {
-        popover = NSPopover()
-        popover?.contentViewController = NSHostingController(rootView: MenuBarView())
-        popover?.behavior = .transient
-    }
-
     // MARK: - Actions
 
     @objc private func menuBarButtonClicked() {
-        guard statusItem?.button != nil else { return }
+        guard menuBarManager.statusItem?.button != nil else { return }
 
-        if popover?.isShown == true {
-            closePopover()
-        } else {
-            showPopover()
-        }
-    }
-
-    private func showPopover() {
-        guard let button = statusItem?.button else { return }
-        popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-
-        // Activate the app and make the popover window key to give it focus
-        NSApp.activate(ignoringOtherApps: true)
-        popover?.contentViewController?.view.window?.makeKey()
-
-        startMonitoringForClicksOutsidePopover()
-    }
-
-    private func closePopover() {
-        popover?.performClose(nil)
-        stopMonitoringForClicksOutsidePopover()
-    }
-
-    private func startMonitoringForClicksOutsidePopover() {
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            if self?.popover?.isShown == true {
-                self?.closePopover()
-            }
-        }
-    }
-
-    private func stopMonitoringForClicksOutsidePopover() {
-        if let monitor = eventMonitor {
-            NSEvent.removeMonitor(monitor)
-            eventMonitor = nil
+        if popoverManager.isShown {
+            popoverManager.close()
+        } else if let button = menuBarManager.statusItem?.button {
+            popoverManager.show(relativeTo: button)
         }
     }
 
     // MARK: - URL Handling
 
     @objc func handleGetURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
-        // URL scheme callbacks are now handled directly by ASWebAuthenticationSession
-        // This handler is kept for potential future use or deep linking
         guard let urlString = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
               let url = URL(string: urlString) else {
             return
@@ -259,7 +126,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Settings
 
     @objc private func handleSettingsRequest() {
-        closePopover()
+        popoverManager.close()
         openSettings()
     }
 
@@ -276,7 +143,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            // Check if there's an existing window
             for window in NSApp.windows {
                 if window.styleMask.contains(.borderless) {
                     continue
@@ -287,7 +153,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            // Create new settings window
             let settingsView = SettingsView()
 
             let newWindow = NSWindow(
@@ -309,7 +174,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func handleAccountsDidUpdate() {
         Task { @MainActor in
-            updateMenuBarIcon()
+            menuBarManager.updateIcon()
         }
     }
 
@@ -317,9 +182,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     #if DEBUG
     private func setupTestDataForUITesting() {
-        print("🎬 Setting up test data for UI testing (AI Ski Goggles Co.)")
+        print("Setting up test data for UI testing (AI Ski Goggles Co.)")
 
-        // Create a mock test account
         let testAccount = LinearAccount(
             email: "sarah@aiskigoggles.ai",
             name: "Sarah Chen",
@@ -329,14 +193,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             color: "#5E6AD2"
         )
 
-        // Note: This won't persist since we're in a test environment,
-        // but it will show in the UI for screenshots
         AppSettings.shared.accounts = [testAccount]
-
-        // Notify that we have a valid account
         NotificationCenter.default.post(name: .accountsDidUpdate, object: nil)
 
-        print("✅ Test data loaded successfully")
+        print("Test data loaded successfully")
     }
     #endif
 }
