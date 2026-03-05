@@ -369,6 +369,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = FF0002 /* Build configuration list for PBXNativeTarget "IssueBar" */;
 			buildPhases = (
+				AA0099 /* Validate Secrets */,
 				DD0002 /* Sources */,
 				DD0001 /* Frameworks */,
 				DD0003 /* Resources */,
@@ -505,6 +506,28 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		AA0099 /* Validate Secrets */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/IssueBar/Services/LinearAuthSecrets.swift",
+			);
+			name = "Validate Secrets";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "SECRETS_FILE=\"${SRCROOT}/IssueBar/Services/LinearAuthSecrets.swift\"\n\nif [ ! -f \"$SECRETS_FILE\" ]; then\n    echo \"error: LinearAuthSecrets.swift is missing. Copy LinearAuthSecrets.swift.sample to LinearAuthSecrets.swift and add your credentials.\"\n    exit 1\nfi\n\nif grep -q \"YOUR_LINEAR_CLIENT_ID\" \"$SECRETS_FILE\"; then\n    echo \"error: LinearAuthSecrets.swift contains placeholder credentials. Replace YOUR_LINEAR_CLIENT_ID with your actual Linear OAuth client ID.\"\n    exit 1\nfi\n\nif grep -q \"YOUR_LINEAR_CLIENT_SECRET\" \"$SECRETS_FILE\"; then\n    echo \"error: LinearAuthSecrets.swift contains placeholder credentials. Replace YOUR_LINEAR_CLIENT_SECRET with your actual Linear OAuth client secret.\"\n    exit 1\nfi\n\nif grep -q '11111111111111111111111111111111' \"$SECRETS_FILE\"; then\n    echo \"error: LinearAuthSecrets.swift contains sample placeholder values. Replace them with your actual Linear OAuth credentials.\"\n    exit 1\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXTargetDependency section */
 		8F4D7E702EBCB8CC00AB44F0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -518,11 +541,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 955GSY56UT;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBarUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -538,11 +561,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 955GSY56UT;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBarUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -686,7 +709,7 @@
 				CODE_SIGN_ENTITLEMENTS = IssueBar/Resources/IssueBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -703,7 +726,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -720,7 +743,7 @@
 				CODE_SIGN_ENTITLEMENTS = IssueBar/Resources/IssueBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -737,7 +760,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.strategicnerds.IssueBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
