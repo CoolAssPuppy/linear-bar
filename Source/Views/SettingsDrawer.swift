@@ -66,7 +66,7 @@ struct SettingsDrawer: View {
                 Text("Settings")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(theme.foreground)
-                Text("Preferences for Linear Bar · ⌘, to toggle")
+                Text("Preferences for Menu Bar for Linear · ⌘, to toggle")
                     .font(.system(size: 11))
                     .foregroundStyle(theme.muted)
             }

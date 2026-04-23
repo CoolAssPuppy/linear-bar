@@ -91,7 +91,7 @@ class MenuBarManager {
     private func tooltip(for state: MenuBarIconState) -> String {
         switch state {
         case .quiet:
-            return "Linear Bar"
+            return "Menu Bar for Linear"
         case .unread(let count):
             return count == 1 ? "1 unread notification" : "\(count) unread notifications"
         case .urgent(let count):

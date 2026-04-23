@@ -51,7 +51,7 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 AppSettingRow(
                     "Launch at login",
-                    description: "Start Linear Bar when you log in."
+                    description: "Start Menu Bar for Linear when you log in."
                 ) {
                     Toggle("", isOn: $launchAtLogin)
                         .labelsHidden()
@@ -99,7 +99,7 @@ struct SettingsView: View {
     private var keyboardCard: some View {
         AppCard("Keyboard Shortcuts") {
             AppSettingRow(
-                "Toggle Linear Bar",
+                "Toggle Menu Bar for Linear",
                 description: "Global shortcut to open the menu bar popover from any app."
             ) {
                 KeyboardShortcuts.Recorder(for: .toggleLinearBar)
@@ -178,7 +178,7 @@ struct SettingsView: View {
     private var supportCard: some View {
         AppCard("Support") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Linear Bar is built by one person on nights and weekends. If it saves you time, consider buying me a coffee or starring the repo.")
+                Text("Menu Bar for Linear is built by one person on nights and weekends. If it saves you time, consider buying me a coffee or starring the repo.")
                     .font(.system(size: 11))
                     .foregroundStyle(theme.foregroundSoft)
                     .lineSpacing(3)

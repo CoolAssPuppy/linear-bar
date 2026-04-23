@@ -172,15 +172,25 @@ struct SearchView: View {
                 accessToken: session.accessToken,
                 accountEmail: session.accountEmail
             )
+            async let initiativesResult = LinearAPI.shared.searchInitiatives(
+                term: query,
+                accessToken: session.accessToken,
+                accountEmail: session.accountEmail
+            )
 
-            let (issues, projects) = try await (issuesResult, projectsResult)
+            let issues = try await issuesResult
+            // Let project/initiative searches fail soft; initiatives filter
+            // uses containsIgnoreCase which some orgs reject.
+            let projects = (try? await projectsResult) ?? []
+            let initiatives = (try? await initiativesResult) ?? []
 
             var combined: [any LinearItem] = []
             for issue in issues.prefix(7) { combined.append(issue) }
-            for project in projects.prefix(3) { combined.append(project) }
+            for project in projects.prefix(2) { combined.append(project) }
+            for initiative in initiatives.prefix(2) { combined.append(initiative) }
 
             await MainActor.run {
-                searchResults = Array(combined.prefix(10))
+                searchResults = Array(combined.prefix(12))
                 isSearching = false
             }
         } catch {

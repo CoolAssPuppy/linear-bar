@@ -51,7 +51,7 @@ struct PopoverWelcomeView: View {
             .frame(width: 64, height: 64)
 
             VStack(spacing: 8) {
-                Text("Linear Bar")
+                Text("Menu Bar for Linear")
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(theme.foreground)
 

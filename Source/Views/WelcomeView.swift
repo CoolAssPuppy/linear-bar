@@ -19,12 +19,12 @@ struct LinearWelcomeView: View {
                 heroBadge
 
                 VStack(spacing: 10) {
-                    Text("Welcome to Linear Bar")
+                    Text("Welcome to Menu Bar for Linear")
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(theme.foreground)
                         .fixedSize()
 
-                    Text("Connect a Linear workspace and Linear Bar will quietly keep your favorites, recent issues, and search one click away from the menu bar.")
+                    Text("Connect a Linear workspace and Menu Bar for Linear will quietly keep your favorites, recent issues, and search one click away from the menu bar.")
                         .font(.system(size: 14))
                         .foregroundStyle(theme.muted)
                         .multilineTextAlignment(.center)

@@ -405,7 +405,7 @@ private struct BottomBar: View {
 
             Spacer(minLength: 0)
 
-            AppIconButton(systemName: "power", help: "Quit Linear Bar", action: onQuit)
+            AppIconButton(systemName: "power", help: "Quit Menu Bar for Linear", action: onQuit)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)

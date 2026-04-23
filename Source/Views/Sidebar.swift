@@ -42,7 +42,7 @@ struct LinearSidebar: View {
             BrandMark()
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Linear Bar")
+                Text("Menu Bar for Linear")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(theme.foreground)
                 Text(subtitleText)

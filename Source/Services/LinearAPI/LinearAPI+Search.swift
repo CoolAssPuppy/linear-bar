@@ -110,4 +110,37 @@ extension LinearAPI {
 
         return data.searchProjects.nodes
     }
+
+    /// Searches workspace initiatives by name / description.
+    func searchInitiatives(term: String, accessToken: String, accountEmail: String? = nil) async throws -> [Initiative] {
+        let query = """
+        query($term: String!) {
+          initiatives(first: 50, filter: { name: { containsIgnoreCase: $term } }) {
+            nodes {
+              id
+              name
+              description
+              url
+              createdAt
+              updatedAt
+              icon
+              status
+              targetDate
+            }
+          }
+        }
+        """
+
+        let variables: [String: Any] = ["term": term]
+
+        struct Response: Decodable {
+            struct Conn: Decodable { let nodes: [Initiative] }
+            let initiatives: Conn
+        }
+
+        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken, accountEmail: accountEmail)
+
+        guard let data = response.data else { throw LinearError.invalidResponse }
+        return data.initiatives.nodes
+    }
 }

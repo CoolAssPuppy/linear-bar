@@ -72,7 +72,7 @@ struct LinearAccountView: View {
                 settings.removeAccount(account)
             }
         } message: {
-            Text("This removes \(account.displayName) from Linear Bar along with all stored tokens.")
+            Text("This removes \(account.displayName) from Menu Bar for Linear along with all stored tokens.")
         }
     }
 
@@ -362,7 +362,7 @@ struct LinearAccountView: View {
             VStack(spacing: 0) {
                 AppSettingRow(
                     "Refresh interval",
-                    description: "How often Linear Bar checks this workspace for new data."
+                    description: "How often Menu Bar for Linear checks this workspace for new data."
                 ) {
                     Picker("", selection: Binding(
                         get: { settings.refreshInterval },
@@ -418,7 +418,7 @@ struct LinearAccountView: View {
             VStack(spacing: 0) {
                 AppSettingRow(
                     "Enable this workspace",
-                    description: "When off, Linear Bar will not sync or surface this workspace."
+                    description: "When off, Menu Bar for Linear will not sync or surface this workspace."
                 ) {
                     Toggle("", isOn: Binding(
                         get: { account.isEnabled },

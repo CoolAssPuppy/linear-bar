@@ -228,7 +228,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         window.contentView = NSHostingView(rootView: LinearMainViewWrapper())
-        window.title = "Linear Bar"
+        window.title = "Menu Bar for Linear"
         window.toolbar = nil
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
