@@ -137,6 +137,19 @@ credentials.json
 *.xcarchive
 *.pkg
 
+# xcodegen regenerates this from project.yml; source of truth is project.yml.
+LinearBar.xcodeproj/
+
+# Release artifacts live in dist/. Keep appcast.xml (canonical release record).
+dist/*.dmg
+dist/*.sparkle.txt
+dist/export-*/
+dist/debug/
+dist/*.xcarchive
+
+# Cloudflare R2 (wrangler) local cache
+.wrangler/
+
 # Testing
 *.coverage
 *.lcov

@@ -25,7 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        AppLogger.info("IssueBar launched successfully", log: AppLogger.app)
+        AppLogger.info("Linear Bar launched successfully", log: AppLogger.app)
 
         #if DEBUG
         if CommandLine.arguments.contains("--uitesting") {
@@ -70,7 +70,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        AppLogger.info("IssueBar terminating", log: AppLogger.app)
+        AppLogger.info("Linear Bar terminating", log: AppLogger.app)
         tokenScheduler.stop()
     }
 
@@ -162,7 +162,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 defer: false
             )
             newWindow.contentView = NSHostingView(rootView: settingsView)
-            newWindow.title = "IssueBar Settings"
+            newWindow.title = "Linear Bar Settings"
             newWindow.isReleasedWhenClosed = false
             newWindow.center()
             newWindow.makeKeyAndOrderFront(nil)
