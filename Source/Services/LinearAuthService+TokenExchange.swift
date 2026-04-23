@@ -39,7 +39,7 @@ extension LinearAuthService {
         guard (200...299).contains(httpResponse.statusCode) else {
             var errorMessage = "Failed to refresh token (HTTP \(httpResponse.statusCode))"
             if let errorBody = String(data: data, encoding: .utf8) {
-                AppLogger.error("Error response: \(errorBody)", log: AppLogger.auth)
+                AppLogger.privateError("Error response: \(errorBody)", log: AppLogger.auth)
 
                 if let jsonObject = try? JSONSerialization.jsonObject(with: data),
                    let errorData = jsonObject as? [String: Any] {
@@ -127,7 +127,7 @@ extension LinearAuthService {
         guard (200...299).contains(httpResponse.statusCode) else {
             var errorMessage = "Failed to exchange code for token (HTTP \(httpResponse.statusCode))"
             if let errorBody = String(data: data, encoding: .utf8) {
-                AppLogger.error("Error response: \(errorBody)", log: AppLogger.auth)
+                AppLogger.privateError("Error response: \(errorBody)", log: AppLogger.auth)
 
                 if let jsonObject = try? JSONSerialization.jsonObject(with: data),
                    let errorData = jsonObject as? [String: Any] {

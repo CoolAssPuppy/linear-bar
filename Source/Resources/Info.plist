@@ -20,19 +20,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>com.strategicnerds.LinearBarApp</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>linearbar</string>
-			</array>
-		</dict>
-	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>

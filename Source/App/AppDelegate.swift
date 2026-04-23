@@ -48,12 +48,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
 
-        NSAppleEventManager.shared().setEventHandler(
-            self,
-            andSelector: #selector(handleGetURLEvent(_:withReplyEvent:)),
-            forEventClass: AEEventClass(kInternetEventClass),
-            andEventID: AEEventID(kAEGetURL)
-        )
+        // Note: we intentionally do NOT register a kAEGetURL handler. OAuth
+        // callbacks arrive via ASWebAuthenticationSession (callbackURLScheme)
+        // which intercepts them without needing the scheme registered on the
+        // app's AppleEvent manager. Removing this handler also removes an
+        // external deep-link attack surface — the linearbar:// URL type has
+        // been stripped from Info.plist for the same reason.
 
         NotificationCenter.default.addObserver(
             self,
@@ -176,15 +176,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - URL Handling
-
-    @objc func handleGetURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
-        guard let urlString = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
-              let url = URL(string: urlString) else {
-            return
-        }
-
-        AppLogger.debug("Received URL: \(url.absoluteString)", log: AppLogger.auth)
-    }
 
     // MARK: - Settings
 

@@ -65,4 +65,12 @@ extension Notification.Name {
     static let accountsDidUpdate = Notification.Name("accountsDidUpdate")
     static let settingsRequested = Notification.Name("settingsRequested")
     static let refreshAllData = Notification.Name("refreshAllData")
+
+    /// Posted to toggle the Settings drawer inside the main window.
+    /// Mirrors mail-notifier's `.openSettingsDrawer` mechanism.
+    static let openSettingsDrawer = Notification.Name("openSettingsDrawer")
+
+    /// Posted when the user has selected an account from the sidebar or
+    /// elsewhere. The object is the `LinearAccount` that should be shown.
+    static let accountSelected = Notification.Name("accountSelected")
 }

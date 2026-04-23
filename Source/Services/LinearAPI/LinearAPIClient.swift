@@ -88,7 +88,7 @@ class LinearAPI {
 
         guard (200...299).contains(httpResponse.statusCode) else {
             if let errorBody = String(data: data, encoding: .utf8) {
-                AppLogger.error("HTTP \(httpResponse.statusCode) error response: \(errorBody)", log: AppLogger.api)
+                AppLogger.privateError("HTTP \(httpResponse.statusCode) error response: \(errorBody)", log: AppLogger.api)
             }
             throw LinearError.networkError(NSError(domain: "LinearAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"]))
         }

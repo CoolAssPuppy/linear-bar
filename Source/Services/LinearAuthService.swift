@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import AuthenticationServices
+import Security
 import os.log
 
 /// Represents a pair of access and refresh tokens
@@ -27,20 +28,45 @@ class LinearAuthService: NSObject {
 
     private var authSession: ASWebAuthenticationSession?
 
+    /// CSRF-defense state parameter for the in-flight OAuth flow.
+    /// Generated fresh on every `authorize()` call and verified against
+    /// the `state` returned in the callback URL. Main-actor isolated so
+    /// there's no race between the callback handler reading it and a
+    /// concurrent authorize() overwriting it.
+    @MainActor private var pendingAuthState: String?
+
     private override init() {
         super.init()
     }
 
     // MARK: - Public Methods
 
+    /// Generates a cryptographically-secure random OAuth state token.
+    /// 32 bytes of entropy, base64url-encoded (no padding). Matches
+    /// what `SecRandomCopyBytes` guarantees: CSPRNG-quality randomness.
+    private static func generateOAuthState() -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
     /// Initiates the OAuth flow using ASWebAuthenticationSession
+    @MainActor
     func authorize(completion: @escaping (Result<TokenPair, Error>) -> Void) {
+        let state = Self.generateOAuthState()
+        pendingAuthState = state
+
         var components = URLComponents(string: authorizationURL)!
         components.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
-            URLQueryItem(name: "scope", value: "read,write")
+            URLQueryItem(name: "scope", value: "read,write"),
+            URLQueryItem(name: "state", value: state)
         ]
 
         guard let authURL = components.url else {
@@ -124,6 +150,21 @@ class LinearAuthService: NSObject {
 
         guard let code = queryItems.first(where: { $0.name == "code" })?.value else {
             completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authorization code in callback"])))
+            return
+        }
+
+        // CSRF defense: the callback must echo the exact `state` we sent
+        // in the authorize() request. A missing or mismatched state means
+        // the callback did not originate from our own authorize() call.
+        let returnedState = queryItems.first(where: { $0.name == "state" })?.value
+        let expected = pendingAuthState
+        pendingAuthState = nil
+
+        guard let expected = expected,
+              let returnedState = returnedState,
+              returnedState == expected else {
+            AppLogger.error("OAuth state mismatch or missing; rejecting callback", log: AppLogger.auth)
+            completion(.failure(NSError(domain: "LinearAuthService", code: -3, userInfo: [NSLocalizedDescriptionKey: "OAuth state verification failed"])))
             return
         }
 
