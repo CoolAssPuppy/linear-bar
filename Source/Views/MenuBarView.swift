@@ -9,19 +9,25 @@ struct MenuBarView: View {
     @State private var lastRefreshedAt: Date = Date()
     @ObservedObject private var themeStore = ThemeStore.shared
 
+    @ObservedObject private var appSettings = AppSettings.shared
+
     var body: some View {
         let theme = themeStore.palette
         return VStack(spacing: 0) {
-            HeaderBar(lastRefreshedAt: lastRefreshedAt,
-                      onCreate: openLinearCreate,
-                      isRefreshing: isRefreshing)
-            Divider().background(theme.divider)
+            if appSettings.accounts.isEmpty {
+                PopoverWelcomeView()
+            } else {
+                HeaderBar(lastRefreshedAt: lastRefreshedAt,
+                          onCreate: openLinearCreate,
+                          isRefreshing: isRefreshing)
+                Divider().background(theme.divider)
 
-            tabBar
-            Divider().background(theme.divider)
+                tabBar
+                Divider().background(theme.divider)
 
-            contentArea
-                .background(theme.background)
+                contentArea
+                    .background(theme.background)
+            }
 
             Divider().background(theme.divider)
             BottomBar(onRefresh: triggerRefresh,
