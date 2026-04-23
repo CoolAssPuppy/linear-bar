@@ -1,9 +1,12 @@
 import SwiftUI
 
-/// Pulse tab. Single cycle card plus a list of issues threatening that
-/// cycle, ranked by risk reason. See Paper artboard "Popover - Pulse".
+/// Pulse tab. One compact card per team with an active cycle, plus a
+/// shared "Threatening the cycle" list built from at-risk issues across
+/// every team shown. Respects the team filter chip — selecting a single
+/// team collapses to that team's card + at-risk list.
+/// See Paper artboard "Popover - Pulse".
 struct PulseView: View {
-    @State private var bundle: ActiveCycleBundle?
+    @State private var bundles: [ActiveCycleBundle] = []
     @State private var atRisk: [CycleIssue] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -18,20 +21,20 @@ struct PulseView: View {
             subHeader
 
             Group {
-                if isLoading && bundle == nil {
-                    LoadingStateView("Loading cycle…")
+                if isLoading && bundles.isEmpty {
+                    LoadingStateView("Loading cycles…")
                 } else if AppSettings.shared.accounts.isEmpty {
                     NoAccountView(message: "Connect your Linear account to see cycle health.")
                 } else if let error = errorMessage {
-                    ErrorStateView(title: "Could not load cycle", message: error, onRetry: loadData)
-                } else if let bundle, let cycle = bundle.cycle {
-                    contentView(team: bundle, cycle: cycle)
-                } else {
+                    ErrorStateView(title: "Could not load cycles", message: error, onRetry: loadData)
+                } else if bundles.isEmpty {
                     EmptyStateView(
                         icon: "waveform.path.ecg",
-                        title: "No active cycle",
-                        subtitle: "This team does not have cycles enabled, or there is no active cycle right now."
+                        title: "No active cycles",
+                        subtitle: "None of your teams have an active cycle right now."
                     )
+                } else {
+                    contentView
                 }
             }
         }
@@ -73,19 +76,27 @@ struct PulseView: View {
 
     // MARK: - Content
 
-    private func contentView(team: ActiveCycleBundle, cycle: LinearCycle) -> some View {
+    private var contentView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                CycleCard(team: team, cycle: cycle)
-                    .padding(.horizontal, 14)
-                    .padding(.top, 4)
-                    .padding(.bottom, 10)
+                VStack(spacing: 10) {
+                    ForEach(bundles, id: \.teamId) { bundle in
+                        if let cycle = bundle.cycle {
+                            CycleCard(team: bundle, cycle: cycle)
+                        }
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
 
-                PopoverSectionDivider(label: "Threatening the cycle", count: atRisk.count)
+                if !atRisk.isEmpty {
+                    PopoverSectionDivider(label: "Threatening the cycle", count: atRisk.count)
 
-                LazyVStack(spacing: 0) {
-                    ForEach(atRisk) { issue in
-                        CompactIssueRow(cycleIssue: issue)
+                    LazyVStack(spacing: 0) {
+                        ForEach(atRisk) { issue in
+                            CompactIssueRow(cycleIssue: issue)
+                        }
                     }
                 }
 
@@ -131,9 +142,19 @@ struct PulseView: View {
             teams = teamsStore.teams
         }
 
-        guard !teams.isEmpty else {
+        // Respect the shared team filter. Nil means "all teams" — fetch
+        // every team's active cycle in parallel.
+        let targetTeams: [Team]
+        if let pinned = settings.selectedTeamId,
+           let match = teams.first(where: { $0.id == pinned }) {
+            targetTeams = [match]
+        } else {
+            targetTeams = teams
+        }
+
+        guard !targetTeams.isEmpty else {
             await MainActor.run {
-                bundle = nil
+                bundles = []
                 atRisk = []
                 isLoading = false
                 errorMessage = "No teams available on this account."
@@ -141,48 +162,49 @@ struct PulseView: View {
             return
         }
 
-        // If the user picked a team via the shared picker, scope to that.
-        // Otherwise walk the team list looking for the first one that has an
-        // active cycle. This means Pulse still has something to show when
-        // the user hasn't explicitly chosen a team.
-        let candidateTeams: [Team]
-        if let pinned = settings.selectedTeamId,
-           let match = teams.first(where: { $0.id == pinned }) {
-            candidateTeams = [match]
-        } else {
-            candidateTeams = teams
-        }
+        let fetched = await fetchBundles(targetTeams: targetTeams, session: session)
+        let active = fetched.filter { $0.cycle != nil }
 
-        for team in candidateTeams {
-            let bundle = try await LinearAPI.shared.fetchActiveCycleWithIssues(
-                teamId: team.id,
-                accessToken: session.accessToken,
-                accountEmail: session.accountEmail
-            )
-            if bundle.cycle != nil {
-                let ranked = (bundle.cycle?.issues.nodes ?? [])
-                    .filter { $0.state?.isOpen ?? true }
-                    .sorted { $0.riskReason.severity < $1.riskReason.severity }
+        // Interleave at-risk issues across every active cycle, ranked by
+        // risk reason severity. SLA breaches surface above stale-3d
+        // regardless of which team owns them.
+        let ranked = active
+            .flatMap { $0.cycle?.issues.nodes ?? [] }
+            .filter { $0.state?.isOpen ?? true }
+            .sorted { $0.riskReason.severity < $1.riskReason.severity }
 
-                await MainActor.run {
-                    self.bundle = bundle
-                    self.atRisk = ranked
-                    self.isLoading = false
-                }
-                return
-            }
-        }
-
-        // Nothing matched — report the team we looked at so the empty state
-        // explains why it's blank rather than pretending the data isn't
-        // there.
-        let inspected = candidateTeams.first
         await MainActor.run {
-            bundle = inspected.map {
-                ActiveCycleBundle(teamId: $0.id, teamName: $0.name, teamKey: $0.key, cycle: nil)
-            }
-            atRisk = []
+            bundles = active
+            atRisk = ranked
             isLoading = false
+        }
+    }
+
+    /// Kicks off `fetchActiveCycleWithIssues` for every team concurrently
+    /// and gathers the bundles. Failures for individual teams are swallowed
+    /// so one bad team doesn't blank the whole tab.
+    private func fetchBundles(targetTeams: [Team], session: PopoverSession) async -> [ActiveCycleBundle] {
+        await withTaskGroup(of: ActiveCycleBundle?.self) { group in
+            for team in targetTeams {
+                group.addTask {
+                    try? await LinearAPI.shared.fetchActiveCycleWithIssues(
+                        teamId: team.id,
+                        accessToken: session.accessToken,
+                        accountEmail: session.accountEmail
+                    )
+                }
+            }
+            var result: [ActiveCycleBundle] = []
+            for await bundle in group {
+                if let bundle { result.append(bundle) }
+            }
+            // Stable display order: match the original team list so the UI
+            // doesn't reshuffle on every load based on network race.
+            return result.sorted { lhs, rhs in
+                let lhsIndex = targetTeams.firstIndex(where: { $0.id == lhs.teamId }) ?? .max
+                let rhsIndex = targetTeams.firstIndex(where: { $0.id == rhs.teamId }) ?? .max
+                return lhsIndex < rhsIndex
+            }
         }
     }
 }
@@ -213,12 +235,14 @@ private struct CycleCard: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(team.teamName)
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.3)
+                .textCase(.uppercase)
+                .foregroundStyle(theme.tertiary)
             Text(cycleTitle)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(theme.foreground)
-            Text(dateRangeLabel)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(theme.tertiary)
             Spacer(minLength: 0)
             Text(cycle.pace.label)
                 .font(.system(size: 11, weight: .semibold))
@@ -282,18 +306,8 @@ private struct CycleCard: View {
 
     private var cycleTitle: String {
         if let name = cycle.name, !name.isEmpty { return name }
-        return "\(team.teamKey) Cycle \(cycle.number)"
+        return "Cycle \(cycle.number)"
     }
-
-    private var dateRangeLabel: String {
-        "\(Self.monthDayFormatter.string(from: cycle.startsAt)) to \(Self.monthDayFormatter.string(from: cycle.endsAt))"
-    }
-
-    private static let monthDayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter
-    }()
 
     private var paceColor: Color {
         switch cycle.pace {
@@ -303,9 +317,6 @@ private struct CycleCard: View {
         }
     }
 
-    /// Current counts derived from the last entries of the three scope
-    /// arrays. Linear ships these pre-aggregated, so the derivation is
-    /// arithmetic rather than a query.
     private var counts: (done: Int, inProgress: Int, open: Int) {
         let done = Int(cycle.completedScopeHistory.last ?? 0)
         let inProgress = Int(cycle.inProgressScopeHistory.last ?? 0)

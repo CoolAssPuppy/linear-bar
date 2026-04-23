@@ -173,6 +173,62 @@ struct TestDataProvider {
     }
 
 
+    // MARK: - Projects
+
+    static func getRecentProjects() -> [Project] {
+        let calendar = Calendar.current
+        let now = Date()
+
+        return [
+            Project(
+                id: "proj-1",
+                name: "Payments 2.0",
+                description: "Reconciliation pipeline overhaul.",
+                url: "https://linear.app/aigoggles/project/payments-2",
+                createdAt: calendar.date(byAdding: .month, value: -2, to: now),
+                updatedAt: calendar.date(byAdding: .hour, value: -6, to: now),
+                state: "started",
+                progress: 0.48,
+                icon: "💳",
+                lead: User(name: "Sam Okafor"),
+                targetDate: "2026-05-30"
+            ),
+            Project(
+                id: "proj-2",
+                name: "Audit log",
+                description: nil,
+                url: "https://linear.app/aigoggles/project/audit-log",
+                createdAt: calendar.date(byAdding: .month, value: -1, to: now),
+                updatedAt: calendar.date(byAdding: .day, value: -1, to: now),
+                state: "started",
+                progress: 0.22,
+                icon: "📘",
+                lead: User(name: "Erin Wu"),
+                targetDate: "2026-06-15"
+            )
+        ]
+    }
+
+    static func getRecentInitiatives() -> [Initiative] {
+        let calendar = Calendar.current
+        let now = Date()
+
+        return [
+            Initiative(
+                id: "init-1",
+                name: "App Store launch",
+                description: "Cross-team push to ship the public release.",
+                url: "https://linear.app/aigoggles/initiative/app-store-launch",
+                createdAt: calendar.date(byAdding: .month, value: -3, to: now),
+                updatedAt: calendar.date(byAdding: .day, value: -2, to: now),
+                progress: 0.6,
+                icon: "🚀",
+                status: "active",
+                targetDate: "2026-05-15"
+            )
+        ]
+    }
+
     // MARK: - Notifications
 
     static func getUnreadNotifications() -> [LinearNotification] {

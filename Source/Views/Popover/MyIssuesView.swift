@@ -1,14 +1,17 @@
 import SwiftUI
 
-/// The Mine tab. Flat list of issues assigned to the viewer, sorted by
-/// updated or created date. See Paper artboard "Popover - My Issues".
+/// The Mine tab. Flat list of issues the viewer is on the hook for,
+/// filterable by the role the viewer plays: created by them, assigned to
+/// them (their work to ship), or the union of both. See Paper artboard
+/// "Popover - My Issues".
 struct MyIssuesView: View {
-    @State private var issues: [Issue] = []
+    @State private var assignedIssues: [Issue] = []
+    @State private var createdIssues: [Issue] = []
     @State private var openIssues: [Issue] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
-    @State private var sortMode: MineSort = .updated
+    @State private var mode: MineMode = .all
 
     @Environment(\.theme) private var theme
 
@@ -27,7 +30,7 @@ struct MyIssuesView: View {
                     EmptyStateView(
                         icon: "checkmark.circle",
                         title: "Nothing on your plate",
-                        subtitle: "Issues assigned to you will show up here."
+                        subtitle: emptySubtitle
                     )
                 } else {
                     contentView
@@ -40,7 +43,7 @@ struct MyIssuesView: View {
                 loadData()
             }
         }
-        .onChange(of: sortMode) { _, _ in rebuildOpen() }
+        .onChange(of: mode) { _, _ in rebuildOpen() }
         .onReceive(NotificationCenter.default.publisher(for: .teamFilterChanged)) { _ in
             rebuildOpen()
         }
@@ -55,9 +58,9 @@ struct MyIssuesView: View {
         HStack(spacing: 8) {
             PopoverTeamChip()
             PopoverChip(
-                prefix: "Sort:",
-                selection: $sortMode,
-                options: MineSort.allCases,
+                prefix: "Show:",
+                selection: $mode,
+                options: MineMode.allCases,
                 label: { $0.label }
             )
             Spacer(minLength: 0)
@@ -75,6 +78,14 @@ struct MyIssuesView: View {
         return "\(count) open"
     }
 
+    private var emptySubtitle: String {
+        switch mode {
+        case .all:      return "Issues you own or created will show up here."
+        case .assigned: return "Issues assigned to you will show up here."
+        case .created:  return "Issues you created will show up here."
+        }
+    }
+
     // MARK: - Content
 
     private var contentView: some View {
@@ -89,16 +100,33 @@ struct MyIssuesView: View {
     }
 
     private func rebuildOpen() {
+        let source: [Issue]
+        switch mode {
+        case .all:
+            // Dedupe on id — an issue I both created and am assigned to
+            // would otherwise appear twice.
+            var byId: [String: Issue] = [:]
+            for issue in assignedIssues + createdIssues { byId[issue.id] = issue }
+            source = Array(byId.values)
+        case .assigned:
+            source = assignedIssues
+        case .created:
+            source = createdIssues
+        }
+
         let selectedTeam = AppSettings.shared.selectedTeamId
-        let open = issues.filter { issue in
+        let filtered = source.filter { issue in
             guard issue.state?.isOpen ?? true else { return false }
             if let selectedTeam { return issue.team?.id == selectedTeam }
             return true
         }
-        openIssues = open.sorted { lhs, rhs in
-            let lhsDate = sortMode == .updated ? (lhs.updatedAt ?? .distantPast) : (lhs.createdAt ?? .distantPast)
-            let rhsDate = sortMode == .updated ? (rhs.updatedAt ?? .distantPast) : (rhs.createdAt ?? .distantPast)
-            return lhsDate > rhsDate
+
+        openIssues = filtered.sorted { lhs, rhs in
+            // "Created" mode sorts by created date (newest first) because
+            // that's the metric the user is eyeing. Everything else sorts
+            // by updated to keep fresh activity on top.
+            let key: (Issue) -> Date? = mode == .created ? { $0.createdAt } : { $0.updatedAt }
+            return (key(lhs) ?? .distantPast) > (key(rhs) ?? .distantPast)
         }
     }
 
@@ -118,12 +146,21 @@ struct MyIssuesView: View {
 
         Task {
             do {
-                let fetched = try await LinearAPI.shared.fetchAssignedIssues(
+                // Fetch both connections every time. The two queries cover
+                // the three Show modes without re-fetching when the user
+                // toggles between them.
+                async let assigned = LinearAPI.shared.fetchAssignedIssues(
                     accessToken: session.accessToken,
                     accountEmail: session.accountEmail
                 )
+                async let created = LinearAPI.shared.fetchMyIssues(
+                    accessToken: session.accessToken,
+                    accountEmail: session.accountEmail
+                )
+                let (a, c) = try await (assigned, created)
                 await MainActor.run {
-                    issues = fetched
+                    assignedIssues = a
+                    createdIssues = c
                     rebuildOpen()
                     isLoading = false
                 }
@@ -136,16 +173,16 @@ struct MyIssuesView: View {
         }
     }
 
-    enum MineSort: String, CaseIterable, Identifiable {
-        case updated, created
+    enum MineMode: String, CaseIterable, Identifiable {
+        case all, assigned, created
 
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .updated: return "Updated"
-            case .created: return "Created"
+            case .all:      return "All"
+            case .assigned: return "Assigned"
+            case .created:  return "Created"
             }
         }
     }
 }
-

@@ -1,16 +1,18 @@
 import SwiftUI
 
-/// Recent tab. Flat list of Linear artifacts the viewer has touched or
-/// watched, sorted by last-updated across authors. Reuses `CompactIssueRow`
-/// with the `.actorAndTime` trailing variant. See Paper artboard
-/// "Popover - Recent".
+/// Recent tab. Merges issues, projects, and initiatives into a single
+/// time-ordered list so the user sees every artifact that has moved
+/// recently, not just issues. See Paper artboard "Popover - Recent".
 struct RecentView: View {
-    @State private var items: [Issue] = []
-    @State private var filteredItems: [Issue] = []
+    @State private var issues: [Issue] = []
+    @State private var projects: [Project] = []
+    @State private var initiatives: [Initiative] = []
+    @State private var filtered: [RecentArtifact] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
     @State private var scope: Scope = .touched
+    @State private var typeFilter: TypeFilter = .all
 
     @Environment(\.theme) private var theme
 
@@ -19,17 +21,17 @@ struct RecentView: View {
             subHeader
 
             Group {
-                if isLoading && filteredItems.isEmpty {
+                if isLoading && filtered.isEmpty {
                     LoadingStateView("Loading recent activity…")
                 } else if AppSettings.shared.accounts.isEmpty {
                     NoAccountView(message: "Connect your Linear account to see recent activity.")
                 } else if let error = errorMessage {
                     ErrorStateView(title: "Could not load recent activity", message: error, onRetry: loadData)
-                } else if filteredItems.isEmpty {
+                } else if filtered.isEmpty {
                     EmptyStateView(
                         icon: "clock",
                         title: "Nothing recent",
-                        subtitle: "Issues you touch will show up here."
+                        subtitle: "Touched issues, projects, and initiatives will show up here."
                     )
                 } else {
                     contentView
@@ -43,6 +45,7 @@ struct RecentView: View {
             }
         }
         .onChange(of: scope) { _, _ in loadData() }
+        .onChange(of: typeFilter) { _, _ in rebuildFiltered() }
         .onReceive(NotificationCenter.default.publisher(for: .teamFilterChanged)) { _ in
             rebuildFiltered()
         }
@@ -56,6 +59,12 @@ struct RecentView: View {
     private var subHeader: some View {
         HStack(spacing: 8) {
             PopoverTeamChip()
+            PopoverChip(
+                prefix: nil,
+                selection: $typeFilter,
+                options: TypeFilter.allCases,
+                label: { $0.label }
+            )
             PopoverChip(
                 prefix: "Scope:",
                 selection: $scope,
@@ -73,8 +82,8 @@ struct RecentView: View {
     private var contentView: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(filteredItems) { issue in
-                    CompactIssueRow(recentIssue: issue)
+                ForEach(filtered) { item in
+                    RecentArtifactRow(item: item)
                 }
             }
             .padding(.bottom, 8)
@@ -97,13 +106,31 @@ struct RecentView: View {
 
         Task {
             do {
-                let fetched = try await LinearAPI.shared.fetchTouchedIssues(
+                async let fetchedIssues = LinearAPI.shared.fetchTouchedIssues(
                     accessToken: session.accessToken,
                     accountEmail: session.accountEmail,
                     since: scope.sinceDuration
                 )
+                async let fetchedProjects = LinearAPI.shared.fetchRecentProjects(
+                    accessToken: session.accessToken,
+                    accountEmail: session.accountEmail
+                )
+                async let fetchedInitiatives = LinearAPI.shared.fetchRecentInitiatives(
+                    accessToken: session.accessToken,
+                    accountEmail: session.accountEmail
+                )
+
+                // Projects and initiatives are workspace-wide; allow them to
+                // fail independently so a perm error on one type doesn't
+                // empty the whole tab.
+                let issuesResult = try await fetchedIssues
+                let projectsResult = (try? await fetchedProjects) ?? []
+                let initiativesResult = (try? await fetchedInitiatives) ?? []
+
                 await MainActor.run {
-                    items = fetched
+                    issues = issuesResult
+                    projects = projectsResult
+                    initiatives = initiativesResult
                     rebuildFiltered()
                     isLoading = false
                 }
@@ -118,11 +145,29 @@ struct RecentView: View {
 
     private func rebuildFiltered() {
         let selectedTeam = AppSettings.shared.selectedTeamId
-        let filtered = items.filter { issue in
-            guard let selectedTeam else { return true }
-            return issue.team?.id == selectedTeam
+
+        var bucket: [RecentArtifact] = []
+        if typeFilter.includesIssues {
+            bucket.append(contentsOf: issues.map(RecentArtifact.issue))
         }
-        filteredItems = filtered.sorted {
+        if typeFilter.includesProjects {
+            bucket.append(contentsOf: projects.map(RecentArtifact.project))
+        }
+        if typeFilter.includesInitiatives {
+            bucket.append(contentsOf: initiatives.map(RecentArtifact.initiative))
+        }
+
+        if let selectedTeam {
+            bucket = bucket.filter { item in
+                // Projects and initiatives aren't team-scoped; surface them
+                // regardless of the team filter. Issues still filter by
+                // team id.
+                if case .issue = item { return item.teamId == selectedTeam }
+                return true
+            }
+        }
+
+        filtered = bucket.sorted {
             ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast)
         }
     }
@@ -145,5 +190,22 @@ struct RecentView: View {
             case .month:   return "P1M"
             }
         }
+    }
+
+    enum TypeFilter: String, CaseIterable, Identifiable {
+        case all, issues, projects, initiatives
+
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .all:         return "All"
+            case .issues:      return "Issues"
+            case .projects:    return "Projects"
+            case .initiatives: return "Initiatives"
+            }
+        }
+        var includesIssues: Bool      { self == .all || self == .issues }
+        var includesProjects: Bool    { self == .all || self == .projects }
+        var includesInitiatives: Bool { self == .all || self == .initiatives }
     }
 }
