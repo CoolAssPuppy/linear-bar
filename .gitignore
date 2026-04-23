@@ -156,3 +156,5 @@ dist/*.xcarchive
 
 # UI Test Screenshots
 screenshots/
+*.profraw
+*.profdata
