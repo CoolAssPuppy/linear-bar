@@ -16,6 +16,10 @@ extension LinearAPI {
             return TestDataProvider.getRecentIssues()
         }
 
+        // Slimmed to the fields the Recent row actually renders — state,
+        // identifier, title, url, updatedAt, and the assignee's display name
+        // — plus the few Issue fields required to satisfy the Decodable
+        // synthesis (description, dueDate, etc. are decoded as nil).
         let query = """
         query Recent($since: DateTimeOrDuration!, $first: Int!) {
           issues(
@@ -40,37 +44,14 @@ extension LinearAPI {
               createdAt
               updatedAt
               dueDate
-              state {
-                name
-                type
-              }
+              state { name type }
               priority
               priorityLabel
-              assignee {
-                name
-              }
-              team {
-                id
-                name
-                key
-              }
-              labels {
-                nodes {
-                  id
-                  name
-                  color
-                }
-              }
-              project {
-                id
-                name
-                icon
-              }
-              parent {
-                id
-                identifier
-                title
-              }
+              assignee { name }
+              team { id name key }
+              labels { nodes { id name color } }
+              project { id name icon }
+              parent { id identifier title }
             }
           }
         }

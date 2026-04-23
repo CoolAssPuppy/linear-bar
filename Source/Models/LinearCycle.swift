@@ -35,14 +35,13 @@ struct LinearCycle: Codable, Hashable {
         return max(days, 0)
     }
 
-    /// Human label for the pace indicator. Favors `Behind pace` when the
-    /// completed fraction trails the elapsed fraction, `On pace` otherwise.
-    /// Returns `Done` once the cycle has effectively completed.
-    var paceLabel: String {
-        if progress >= 0.999 { return "Done" }
+    /// Classification of the cycle's progress relative to elapsed time.
+    /// Drives both the pace label text and the tint color on the card.
+    var pace: CyclePace {
+        if progress >= 0.999 { return .done }
         let elapsed = elapsedFraction
-        if elapsed <= 0 { return "Starting" }
-        return progress < elapsed - 0.05 ? "Behind pace" : "On pace"
+        if elapsed <= 0 { return .starting }
+        return progress < elapsed - 0.05 ? .behind : .onTrack
     }
 
     /// Fraction of the cycle window that has elapsed. Used to compare against
@@ -66,6 +65,25 @@ struct LinearCycle: Codable, Hashable {
     }
 }
 
+/// Pace classification derived from elapsed fraction vs. cycle progress.
+/// The `label` is the string the card shows; consumers also switch on the
+/// case directly to pick a tint.
+enum CyclePace {
+    case starting
+    case onTrack
+    case behind
+    case done
+
+    var label: String {
+        switch self {
+        case .starting: return "Starting"
+        case .onTrack:  return "On pace"
+        case .behind:   return "Behind pace"
+        case .done:     return "Done"
+        }
+    }
+}
+
 /// Lightweight issue record embedded in the cycle payload. Carries just what
 /// the at-risk list needs to render and rank — full issue detail is never
 /// required from this surface.
@@ -84,15 +102,17 @@ struct CycleIssue: Codable, Hashable, Identifiable {
 
     /// Classifies why this issue is threatening the cycle. Used to label the
     /// row (`SLA 47m`, `Unassigned`, `Blocked`, etc.) and to sort the list.
+    private static let secondsPerDay: TimeInterval = 24 * 60 * 60
+
     var riskReason: CycleRiskReason {
         if let slaBreachesAt = slaBreachesAt {
             let minutesLeft = Int(slaBreachesAt.timeIntervalSinceNow / 60)
             return .slaWarning(minutesLeft: minutesLeft)
         }
-        if state?.type == "started" {
-            if let updated = updatedAt, Date().timeIntervalSince(updated) > 3 * 24 * 60 * 60 {
-                let days = Int(Date().timeIntervalSince(updated) / (24 * 60 * 60))
-                return .stale(days: days)
+        if state?.kind == .started {
+            if let updated = updatedAt {
+                let idleDays = Int(Date().timeIntervalSince(updated) / Self.secondsPerDay)
+                if idleDays >= 3 { return .stale(days: idleDays) }
             }
             return .inProgress
         }

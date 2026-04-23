@@ -7,46 +7,25 @@ import AppKit
 class MenuBarManager {
     private(set) var statusItem: NSStatusItem?
 
-    /// True while a refresh is in flight. Higher in priority than auth/unread
-    /// states because it is visible feedback on a user-triggered action.
+    /// Last applied icon state, used to suppress redundant redraws when
+    /// multiple input properties change but resolve to the same visual state
+    /// (e.g. unread count ticking while `isOffline` is already true).
+    private var lastAppliedState: MenuBarIconState?
+
     var isSyncing: Bool = false {
-        didSet {
-            if isSyncing != oldValue {
-                updateIcon()
-            }
-        }
+        didSet { if isSyncing != oldValue { updateIcon() } }
     }
 
-    /// True when the system has reported no network. The app reports offline
-    /// separately from HTTP errors because the icon should change before any
-    /// query fires.
     var isOffline: Bool = false {
-        didSet {
-            if isOffline != oldValue {
-                updateIcon()
-            }
-        }
+        didSet { if isOffline != oldValue { updateIcon() } }
     }
 
-    /// Current unread notification count pulled from `notificationsUnreadCount`.
-    /// A number > 0 drives either `.unread` or `.urgent` depending on
-    /// `hasUrgentAlerts`.
     var unreadCount: Int = 0 {
-        didSet {
-            if unreadCount != oldValue {
-                updateIcon()
-            }
-        }
+        didSet { if unreadCount != oldValue { updateIcon() } }
     }
 
-    /// Set when at least one SLA breach is imminent or the viewer has been
-    /// pinged about an urgent issue. Promotes the icon to `.urgent`.
     var hasUrgentAlerts: Bool = false {
-        didSet {
-            if hasUrgentAlerts != oldValue {
-                updateIcon()
-            }
-        }
+        didSet { if hasUrgentAlerts != oldValue { updateIcon() } }
     }
 
     func setup(target: AnyObject, action: Selector) {
@@ -65,12 +44,17 @@ class MenuBarManager {
 
         #if DEBUG
         if CommandLine.arguments.contains("--uitesting") {
-            button.image = MenuBarIconRenderer.image(for: .unread(count: 3))
+            apply(.unread(count: 3), to: button)
             return
         }
         #endif
 
-        let state = currentState()
+        apply(currentState(), to: button)
+    }
+
+    private func apply(_ state: MenuBarIconState, to button: NSStatusBarButton) {
+        guard state != lastAppliedState else { return }
+        lastAppliedState = state
         button.image = MenuBarIconRenderer.image(for: state)
         button.toolTip = tooltip(for: state)
     }

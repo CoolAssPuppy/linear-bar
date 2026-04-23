@@ -1,10 +1,7 @@
 import SwiftUI
 
 /// Search tab. Single input that queries issues and projects in parallel
-/// and presents the combined list. Scope chips were dropped per the
-/// simplification brief — a global search covers the popover's need, and
-/// the ranked list surfaces the most-relevant artifact regardless of type.
-/// See Paper artboard "Popover - Search".
+/// and presents the combined list. See Paper artboard "Popover - Search".
 struct SearchView: View {
     @State private var searchText = ""
     @State private var searchResults: [any LinearItem] = []
@@ -49,7 +46,7 @@ struct SearchView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            PopoverTeamChip()
+            PopoverTeamPlaceholder()
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 14)
@@ -74,26 +71,24 @@ struct SearchView: View {
                     performSearch(query: newValue)
                 }
 
-            if !searchText.isEmpty {
+            if searchText.isEmpty {
+                KeyboardHintPill(text: "⌘K")
+            } else {
                 Button(action: { searchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(theme.tertiary)
                         .font(.system(size: 12))
                 }
                 .buttonStyle(.plain)
-            } else {
-                KeyboardHintPill(text: "⌘K")
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
         .background(
-            RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
-                .fill(theme.card)
+            RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous).fill(theme.card)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
-                .strokeBorder(theme.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous).strokeBorder(theme.border, lineWidth: 1)
         )
         .padding(.horizontal, 14)
         .padding(.bottom, 8)
@@ -151,22 +146,12 @@ struct SearchView: View {
     }
 
     private func executeSearch(query: String) async {
-        let accessToken: String
-        let accountEmail: String
-
-        if TestDataProvider.isUITesting {
-            accessToken = "demo-token"
-            accountEmail = "demo@example.com"
-        } else {
-            guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
-                  let token = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
-                await MainActor.run {
-                    errorMessage = "No authenticated account found. Please sign in."
-                }
-                return
-            }
-            accessToken = token
-            accountEmail = account.email
+        let session: PopoverSession
+        do {
+            session = try PopoverSession.resolve()
+        } catch {
+            await MainActor.run { errorMessage = error.localizedDescription }
+            return
         }
 
         await MainActor.run {
@@ -177,33 +162,29 @@ struct SearchView: View {
         do {
             async let issuesResult = LinearAPI.shared.searchIssues(
                 term: query,
-                accessToken: accessToken,
-                accountEmail: accountEmail
+                accessToken: session.accessToken,
+                accountEmail: session.accountEmail
             )
             async let projectsResult = LinearAPI.shared.searchProjects(
                 term: query,
-                accessToken: accessToken,
-                accountEmail: accountEmail
+                accessToken: session.accessToken,
+                accountEmail: session.accountEmail
             )
 
             let (issues, projects) = try await (issuesResult, projectsResult)
 
             var combined: [any LinearItem] = []
-            for issue in issues.prefix(7) {
-                combined.append(issue)
-            }
-            for project in projects.prefix(3) {
-                combined.append(project)
-            }
+            for issue in issues.prefix(7) { combined.append(issue) }
+            for project in projects.prefix(3) { combined.append(project) }
 
             await MainActor.run {
-                self.searchResults = Array(combined.prefix(10))
-                self.isSearching = false
+                searchResults = Array(combined.prefix(10))
+                isSearching = false
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isSearching = false
+                errorMessage = error.localizedDescription
+                isSearching = false
             }
         }
     }
@@ -220,8 +201,7 @@ private struct SearchResultRow: View {
     var body: some View {
         Button(action: openInLinear) {
             HStack(spacing: 10) {
-                leadingIcon
-                    .frame(width: 14, height: 14)
+                leadingIcon.frame(width: 14, height: 14)
 
                 if let issue = item as? Issue {
                     Text(issue.identifier)
@@ -260,9 +240,8 @@ private struct SearchResultRow: View {
     }
 
     private func openInLinear() {
-        if let url = URL(string: item.url) {
-            NSWorkspace.shared.open(url)
-        }
+        guard let url = URL(string: item.url) else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 
@@ -280,8 +259,7 @@ private struct KeyboardHintPill: View {
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
             .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(theme.cardInset)
+                RoundedRectangle(cornerRadius: 4, style: .continuous).fill(theme.cardInset)
             )
     }
 }

@@ -154,12 +154,19 @@ class AppSettings: ObservableObject {
 
     // MARK: - Computed Properties
 
+    /// First enabled account with a valid access token. Every popover tab
+    /// needs this to kick off a GraphQL query, so centralizing the predicate
+    /// avoids scattering the same `.first(where:)` across views.
+    var primaryValidAccount: LinearAccount? {
+        accounts.first { $0.isEnabled && $0.authStatus == .valid }
+    }
+
     var primaryAccountColor: String? {
-        accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })?.color
+        primaryValidAccount?.color
     }
 
     var primaryOrganizationSlug: String? {
-        accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })?.organizationSlug
+        primaryValidAccount?.organizationSlug
     }
 
     // MARK: - Private Methods

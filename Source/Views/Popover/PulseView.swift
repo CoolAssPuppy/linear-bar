@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// Pulse tab. Renders one cycle card (progress, pace, scope delta) plus a
-/// list of issues threatening that cycle, ranked by risk reason. Scoped to
-/// a single team because cycles are per-team. See Paper artboard
-/// "Popover - Pulse".
+/// Pulse tab. Single cycle card plus a list of issues threatening that
+/// cycle, ranked by risk reason. See Paper artboard "Popover - Pulse".
 struct PulseView: View {
     @State private var bundle: ActiveCycleBundle?
     @State private var availableTeams: [Team] = []
+    @State private var atRisk: [CycleIssue] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
@@ -50,7 +49,20 @@ struct PulseView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            PulseTeamChip(selectedTeam: selectedTeam, teams: availableTeams, onSelect: selectTeam)
+            if availableTeams.isEmpty {
+                PopoverTeamPlaceholder()
+            } else {
+                PopoverChip(
+                    prefix: nil,
+                    selection: Binding(
+                        get: { selectedTeam ?? availableTeams[0] },
+                        set: { selectTeam($0) }
+                    ),
+                    options: availableTeams,
+                    label: { $0.name },
+                    selectionWeight: .foreground
+                )
+            }
             Spacer(minLength: 0)
             liveIndicator
         }
@@ -60,9 +72,7 @@ struct PulseView: View {
 
     private var liveIndicator: some View {
         HStack(spacing: 5) {
-            Circle()
-                .fill(theme.success)
-                .frame(width: 6, height: 6)
+            Circle().fill(theme.success).frame(width: 6, height: 6)
             Text("Live")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(theme.tertiary)
@@ -79,34 +89,15 @@ struct PulseView: View {
                     .padding(.top, 4)
                     .padding(.bottom, 10)
 
-                atRiskSection(cycle: cycle)
+                PopoverSectionDivider(label: "Threatening the cycle", count: atRisk.count)
+
+                LazyVStack(spacing: 0) {
+                    ForEach(atRisk) { issue in
+                        CompactIssueRow(cycleIssue: issue)
+                    }
+                }
 
                 Spacer(minLength: 8)
-            }
-        }
-    }
-
-    private func atRiskSection(cycle: LinearCycle) -> some View {
-        let atRisk = cycle.issues.nodes.sorted { $0.riskReason.severity < $1.riskReason.severity }
-
-        return VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Text("THREATENING THE CYCLE")
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(0.8)
-                    .foregroundStyle(theme.tertiary)
-                Rectangle().fill(theme.divider).frame(height: 1)
-                Text("\(atRisk.count)")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(theme.tertiary)
-            }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 4)
-
-            LazyVStack(spacing: 0) {
-                ForEach(atRisk) { issue in
-                    CompactIssueRow(cycleIssue: issue)
-                }
             }
         }
     }
@@ -114,15 +105,11 @@ struct PulseView: View {
     // MARK: - Data
 
     private var selectedTeam: Team? {
-        guard let teamId = bundle?.teamId else {
-            return availableTeams.first(where: { $0.id == AppSettings.shared.selectedTeamId })
-                ?? availableTeams.first
+        if let teamId = bundle?.teamId,
+           let match = availableTeams.first(where: { $0.id == teamId }) {
+            return match
         }
-        return availableTeams.first(where: { $0.id == teamId })
-            ?? Team(id: bundle?.teamId ?? "",
-                    name: bundle?.teamName ?? "",
-                    key: bundle?.teamKey ?? "",
-                    icon: nil)
+        return availableTeams.first(where: { $0.id == AppSettings.shared.selectedTeamId })
     }
 
     private func selectTeam(_ team: Team) {
@@ -132,20 +119,12 @@ struct PulseView: View {
     }
 
     private func loadData() {
-        let accessToken: String
-        let accountEmail: String
-
-        if TestDataProvider.isUITesting {
-            accessToken = "demo-token"
-            accountEmail = "demo@example.com"
-        } else {
-            guard let account = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }),
-                  let token = KeychainService.shared.retrieveAccessToken(forAccount: account.email) else {
-                errorMessage = "No authenticated account found. Please sign in."
-                return
-            }
-            accessToken = token
-            accountEmail = account.email
+        let session: PopoverSession
+        do {
+            session = try PopoverSession.resolve()
+        } catch {
+            errorMessage = error.localizedDescription
+            return
         }
 
         isLoading = true
@@ -153,39 +132,7 @@ struct PulseView: View {
 
         Task {
             do {
-                // Fetch the team list first when we don't have one — the
-                // picker needs it regardless of whether the fetch succeeds.
-                let teams: [Team]
-                if availableTeams.isEmpty {
-                    teams = try await LinearAPI.shared.fetchTeams(accessToken: accessToken, accountEmail: accountEmail)
-                } else {
-                    teams = availableTeams
-                }
-
-                let targetTeamId = AppSettings.shared.selectedTeamId
-                    ?? teams.first?.id
-                    ?? ""
-
-                guard !targetTeamId.isEmpty else {
-                    await MainActor.run {
-                        availableTeams = teams
-                        isLoading = false
-                        errorMessage = "No teams available on this account."
-                    }
-                    return
-                }
-
-                let cycleBundle = try await LinearAPI.shared.fetchActiveCycleWithIssues(
-                    teamId: targetTeamId,
-                    accessToken: accessToken,
-                    accountEmail: accountEmail
-                )
-
-                await MainActor.run {
-                    availableTeams = teams
-                    bundle = cycleBundle
-                    isLoading = false
-                }
+                try await performFetch(session: session)
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription
@@ -193,6 +140,56 @@ struct PulseView: View {
                 }
             }
         }
+    }
+
+    private func performFetch(session: PopoverSession) async throws {
+        // Team list and cycle bundle can run in parallel on cold start; the
+        // cycle query only needs the selected team id, not the full list.
+        async let teamsTask = fetchTeamsIfNeeded(session: session)
+        async let cycleTask = fetchCycleBundle(session: session)
+
+        let teams = try await teamsTask
+        let cycleBundle = try await cycleTask
+
+        let ranked = (cycleBundle.cycle?.issues.nodes ?? [])
+            .sorted { $0.riskReason.severity < $1.riskReason.severity }
+
+        await MainActor.run {
+            availableTeams = teams
+            bundle = cycleBundle
+            atRisk = ranked
+            isLoading = false
+        }
+    }
+
+    private func fetchTeamsIfNeeded(session: PopoverSession) async throws -> [Team] {
+        if !availableTeams.isEmpty { return availableTeams }
+        return try await LinearAPI.shared.fetchTeams(
+            accessToken: session.accessToken,
+            accountEmail: session.accountEmail
+        )
+    }
+
+    private func fetchCycleBundle(session: PopoverSession) async throws -> ActiveCycleBundle {
+        let targetTeamId = AppSettings.shared.selectedTeamId
+            ?? availableTeams.first?.id
+            ?? ""
+
+        guard !targetTeamId.isEmpty else {
+            // If we don't yet have a team id, let the teams fetch resolve
+            // first and retry once it populates `selectedTeamId`.
+            throw NSError(
+                domain: "LinearBar.Pulse",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "No teams available on this account."]
+            )
+        }
+
+        return try await LinearAPI.shared.fetchActiveCycleWithIssues(
+            teamId: targetTeamId,
+            accessToken: session.accessToken,
+            accountEmail: session.accountEmail
+        )
     }
 }
 
@@ -213,12 +210,10 @@ private struct CycleCard: View {
         }
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
-                .fill(theme.card)
+            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous).fill(theme.card)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
-                .strokeBorder(theme.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous).strokeBorder(theme.border, lineWidth: 1)
         )
     }
 
@@ -231,7 +226,7 @@ private struct CycleCard: View {
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(theme.tertiary)
             Spacer(minLength: 0)
-            Text(cycle.paceLabel)
+            Text(cycle.pace.label)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(paceColor)
         }
@@ -284,16 +279,12 @@ private struct CycleCard: View {
 
     private func legendDot(color: Color, label: String) -> some View {
         HStack(spacing: 5) {
-            Circle()
-                .fill(color)
-                .frame(width: 6, height: 6)
+            Circle().fill(color).frame(width: 6, height: 6)
             Text(label)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(theme.muted)
         }
     }
-
-    // MARK: - Helpers
 
     private var cycleTitle: String {
         if let name = cycle.name, !name.isEmpty { return name }
@@ -301,23 +292,26 @@ private struct CycleCard: View {
     }
 
     private var dateRangeLabel: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return "\(formatter.string(from: cycle.startsAt)) to \(formatter.string(from: cycle.endsAt))"
+        "\(Self.monthDayFormatter.string(from: cycle.startsAt)) to \(Self.monthDayFormatter.string(from: cycle.endsAt))"
     }
 
+    private static let monthDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter
+    }()
+
     private var paceColor: Color {
-        switch cycle.paceLabel {
-        case "Behind pace": return theme.warning
-        case "On pace":     return theme.success
-        case "Done":        return theme.success
-        default:            return theme.muted
+        switch cycle.pace {
+        case .behind:               return theme.warning
+        case .onTrack, .done:       return theme.success
+        case .starting:             return theme.muted
         }
     }
 
-    /// Collapses the per-day scope arrays into three current counts. We use
-    /// the last sample of `completedScopeHistory` and `inProgressScopeHistory`,
-    /// then derive "open" as total scope minus those two buckets.
+    /// Current counts derived from the last entries of the three scope
+    /// arrays. Linear ships these pre-aggregated, so the derivation is
+    /// arithmetic rather than a query.
     private var counts: (done: Int, inProgress: Int, open: Int) {
         let done = Int(cycle.completedScopeHistory.last ?? 0)
         let inProgress = Int(cycle.inProgressScopeHistory.last ?? 0)
@@ -342,58 +336,13 @@ private struct ProgressBar: View {
             let width = proxy.size.width
 
             HStack(spacing: 0) {
-                Rectangle()
-                    .fill(theme.success)
-                    .frame(width: width * CGFloat(done / total))
-                Rectangle()
-                    .fill(theme.primary)
-                    .frame(width: width * CGFloat(inProgress / total))
-                Rectangle()
-                    .fill(theme.border)
+                Rectangle().fill(theme.success).frame(width: width * CGFloat(done / total))
+                Rectangle().fill(theme.primary).frame(width: width * CGFloat(inProgress / total))
+                Rectangle().fill(theme.border)
             }
             .frame(height: 6)
             .clipShape(Capsule())
         }
         .frame(height: 6)
-    }
-}
-
-// MARK: - Team chip (Pulse)
-
-private struct PulseTeamChip: View {
-    let selectedTeam: Team?
-    let teams: [Team]
-    let onSelect: (Team) -> Void
-
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        Menu {
-            ForEach(teams) { team in
-                Button(action: { onSelect(team) }) {
-                    HStack {
-                        Text(team.name)
-                        if team.id == selectedTeam?.id {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
-        } label: {
-            HStack(spacing: 5) {
-                Text(selectedTeam?.name ?? "Pick a team")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(theme.foreground)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(theme.tertiary)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .contentShape(Rectangle())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
     }
 }

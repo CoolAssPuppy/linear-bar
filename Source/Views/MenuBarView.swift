@@ -288,25 +288,16 @@ private struct BrandMark: View {
     }
 }
 
-/// SwiftUI path for the Linear-style mark: five parallel diagonals on a
-/// 12×12 grid. Used in the header brand mark and mirrored in the menu bar
-/// icon renderer so both surfaces visually match.
+/// SwiftUI path for the Linear-style brand mark. Geometry is shared with the
+/// menu bar icon renderer via `LinearGlyphStrokes` so both surfaces always
+/// match pixel-for-pixel.
 struct LinearGlyph: Shape {
     func path(in rect: CGRect) -> Path {
-        // Strokes expressed in the design's 12×12 coordinate space; rescale
-        // proportionally to whatever frame the caller supplies.
-        let scaleX = rect.width / 12
-        let scaleY = rect.height / 12
-        let strokes: [(CGPoint, CGPoint)] = [
-            (CGPoint(x: 1.2, y: 6.4),  CGPoint(x: 5.6, y: 10.8)),
-            (CGPoint(x: 1.2, y: 3.4),  CGPoint(x: 8.6, y: 10.8)),
-            (CGPoint(x: 2.2, y: 1.2),  CGPoint(x: 10.8, y: 9.8)),
-            (CGPoint(x: 5.2, y: 1.2),  CGPoint(x: 10.8, y: 6.8)),
-            (CGPoint(x: 8.2, y: 1.2),  CGPoint(x: 10.8, y: 3.8))
-        ]
+        let scaleX = rect.width / LinearGlyphStrokes.boxSize
+        let scaleY = rect.height / LinearGlyphStrokes.boxSize
 
         var path = Path()
-        for (from, to) in strokes {
+        for (from, to) in LinearGlyphStrokes.endpoints {
             path.move(to: CGPoint(x: from.x * scaleX, y: from.y * scaleY))
             path.addLine(to: CGPoint(x: to.x * scaleX, y: to.y * scaleY))
         }

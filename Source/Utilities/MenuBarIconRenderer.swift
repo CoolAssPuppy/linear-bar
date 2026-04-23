@@ -3,7 +3,7 @@ import AppKit
 /// Logical states the menu bar icon can display. `MenuBarManager` maps app
 /// state (unread count, auth status, reachability, sync activity) to one of
 /// these, and `MenuBarIconRenderer` produces the corresponding NSImage.
-enum MenuBarIconState: Equatable {
+enum MenuBarIconState: Hashable {
     /// Default idle state. No badge, no accent.
     case quiet
 
@@ -29,21 +29,32 @@ enum MenuBarIconState: Equatable {
 /// light/dark menu bars; non-template variants (urgent, needsAuth) draw their
 /// own colors because the accent is semantic.
 enum MenuBarIconRenderer {
-    /// Final rendered image is sized to 22×18 so the optional unread count
-    /// has room without forcing variable-width menu bar behavior on empty
-    /// states. Height matches Apple's typical menu bar icon height of 18pt.
+    /// Rendered size. 22 wide so the optional unread count has room without
+    /// forcing variable-width menu bar behavior on empty states; 18 tall to
+    /// match Apple's typical menu bar icon height.
     private static let iconSize = NSSize(width: 22, height: 18)
 
-    /// Glyph path drawn at 12×12. Five parallel strokes, matching the
-    /// Linear Bar brand mark used throughout the popover.
-    private static let glyphBoxSize: CGFloat = 12
-    private static let glyphStrokeWidth: CGFloat = 1.2
+    private static let glyphBoxSize = LinearGlyphStrokes.boxSize
+    private static let glyphStrokeWidth = LinearGlyphStrokes.strokeWidth
+
+    /// NSImage instances are immutable once drawn, so caching them per state
+    /// trivially avoids redrawing the same bezier on every `updateIcon()`
+    /// call. `.unread(count:)` and `.urgent(count:)` vary by count, so the
+    /// cache is keyed on the state value itself.
+    private static var cache: [MenuBarIconState: NSImage] = [:]
 
     static func image(for state: MenuBarIconState) -> NSImage {
+        if let cached = cache[state] { return cached }
+
         let image = NSImage(size: iconSize)
         image.lockFocus()
-        defer { image.unlockFocus() }
+        drawContents(for: state, in: image)
+        image.unlockFocus()
+        cache[state] = image
+        return image
+    }
 
+    private static func drawContents(for state: MenuBarIconState, in image: NSImage) {
         let context = NSGraphicsContext.current?.cgContext
         context?.saveGState()
         defer { context?.restoreGState() }
@@ -73,43 +84,20 @@ enum MenuBarIconRenderer {
             drawOfflineSlash()
             image.isTemplate = true
         }
-
-        return image
     }
 
     // MARK: - Glyph
 
-    /// Linear-style wordmark: five parallel diagonals on a 12×12 grid,
-    /// left-aligned inside the 22×18 icon box.
     private static func drawGlyph(alpha: CGFloat, color: NSColor) {
         let path = NSBezierPath()
-        // Coordinates here match the SVG used in the Paper design so the menu
-        // bar icon visually reads as the same mark as the popover brand.
-        let strokes: [(CGPoint, CGPoint)] = [
-            (CGPoint(x: 1.2, y: 6.4),  CGPoint(x: 5.6, y: 10.8)),
-            (CGPoint(x: 1.2, y: 3.4),  CGPoint(x: 8.6, y: 10.8)),
-            (CGPoint(x: 2.2, y: 1.2),  CGPoint(x: 10.8, y: 9.8)),
-            (CGPoint(x: 5.2, y: 1.2),  CGPoint(x: 10.8, y: 6.8)),
-            (CGPoint(x: 8.2, y: 1.2),  CGPoint(x: 10.8, y: 3.8))
-        ]
-
-        // Translate glyph into the icon's left side, vertically centered.
-        // NSImage coordinates put origin bottom-left; the SVG path uses
-        // top-left, so we mirror y against the glyph box.
         let originX: CGFloat = 3
+        // NSImage origin is bottom-left; design space is top-left, so mirror
+        // each y against `glyphBoxSize` before placing into the icon.
         let originY: CGFloat = (iconSize.height - glyphBoxSize) / 2
 
-        for (from, to) in strokes {
-            let fromPoint = CGPoint(
-                x: originX + from.x,
-                y: originY + (glyphBoxSize - from.y)
-            )
-            let toPoint = CGPoint(
-                x: originX + to.x,
-                y: originY + (glyphBoxSize - to.y)
-            )
-            path.move(to: fromPoint)
-            path.line(to: toPoint)
+        for (from, to) in LinearGlyphStrokes.endpoints {
+            path.move(to: CGPoint(x: originX + from.x, y: originY + (glyphBoxSize - from.y)))
+            path.line(to: CGPoint(x: originX + to.x,   y: originY + (glyphBoxSize - to.y)))
         }
 
         path.lineCapStyle = .round
@@ -132,26 +120,20 @@ enum MenuBarIconRenderer {
         let attributed = NSAttributedString(string: text, attributes: attributes)
         let textSize = attributed.size()
 
-        // Place count to the right of the glyph, vertically centered.
-        let glyphRightEdge: CGFloat = 3 + glyphBoxSize
-        let xOrigin = glyphRightEdge + 2
+        let xOrigin = 3 + glyphBoxSize + 2
         let yOrigin = (iconSize.height - textSize.height) / 2 + 0.5
         attributed.draw(at: CGPoint(x: xOrigin, y: yOrigin))
     }
 
     private static func drawUrgentDot() {
-        // Top-right of the glyph box. Red fill with a thin stroke so the dot
-        // reads on light and dark menu bars equally.
         let dotRect = NSRect(x: 3 + glyphBoxSize - 4, y: iconSize.height - 6, width: 5, height: 5)
         NSColor(srgbRed: 0xEB/255.0, green: 0x57/255.0, blue: 0x57/255.0, alpha: 1).setFill()
         NSBezierPath(ovalIn: dotRect).fill()
     }
 
     private static func drawAuthMark() {
-        // Small orange X in the top-right corner — re-auth required.
         let baseX: CGFloat = 3 + glyphBoxSize - 4
         let baseY: CGFloat = iconSize.height - 5
-        let stroke: CGFloat = 1.3
 
         let path = NSBezierPath()
         path.move(to: CGPoint(x: baseX, y: baseY))
@@ -159,13 +141,12 @@ enum MenuBarIconRenderer {
         path.move(to: CGPoint(x: baseX + 4, y: baseY))
         path.line(to: CGPoint(x: baseX, y: baseY + 4))
         path.lineCapStyle = .round
-        path.lineWidth = stroke
+        path.lineWidth = 1.3
         NSColor(srgbRed: 0xF2/255.0, green: 0x99/255.0, blue: 0x4A/255.0, alpha: 1).setStroke()
         path.stroke()
     }
 
     private static func drawOfflineSlash() {
-        // Diagonal slash across the glyph, indicating no network.
         let originX: CGFloat = 3
         let originY: CGFloat = (iconSize.height - glyphBoxSize) / 2
 
