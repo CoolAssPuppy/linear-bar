@@ -36,8 +36,9 @@ targets:
     type: application
     platform: macOS
     scheme:
-      testTargets: []
-      gatherCoverageData: false
+      testTargets:
+        - LinearBarTests
+      gatherCoverageData: true
     sources:
       - path: Source
     dependencies:
@@ -60,3 +61,20 @@ targets:
         LS_MINIMUM_SYSTEM_VERSION: "14.0"
         COMBINE_HIDPI_IMAGES: YES
         ENABLE_PREVIEWS: YES
+
+  LinearBarTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: LinearBar
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.strategicnerds.LinearBarTests
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Linear Bar.app/Contents/MacOS/Linear Bar"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "@executable_path/../Frameworks"
+          - "@loader_path/../Frameworks"

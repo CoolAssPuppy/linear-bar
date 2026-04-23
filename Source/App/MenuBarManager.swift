@@ -61,7 +61,9 @@ class MenuBarManager {
 
     // MARK: - State resolution
 
-    private func currentState() -> MenuBarIconState {
+    /// Exposed as `internal` so unit tests can verify the state priority
+    /// without bringing up an NSStatusItem. Not part of the public surface.
+    func currentState() -> MenuBarIconState {
         if isOffline {
             return .offline
         }
