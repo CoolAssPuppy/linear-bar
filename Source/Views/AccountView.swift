@@ -490,15 +490,15 @@ struct LinearAccountView: View {
         settings.updateAccount(account)
     }
 
+    private static let hexColorRegex = try? NSRegularExpression(pattern: "^#[0-9A-F]{6}$")
+
     private func commitColorHex() {
         var cleaned = colorHexDraft.trimmingCharacters(in: .whitespaces).uppercased()
         if !cleaned.hasPrefix("#") {
             cleaned = "#" + cleaned
         }
-        let pattern = "^#[0-9A-F]{6}$"
-        let regex = try? NSRegularExpression(pattern: pattern)
         let range = NSRange(location: 0, length: cleaned.utf16.count)
-        guard regex?.firstMatch(in: cleaned, range: range) != nil else {
+        guard Self.hexColorRegex?.firstMatch(in: cleaned, range: range) != nil else {
             colorHexDraft = account.color ?? "#5E6AD2"
             return
         }

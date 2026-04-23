@@ -94,28 +94,3 @@ struct IssueStateCircle: View {
     private var canceledTint: Color     { Color(hex: "#5E6076") }
 }
 
-/// Typed view of `IssueState.type`. Linear's canonical set is small and
-/// mostly stable; decoding once at the boundary keeps consumers away from
-/// raw string comparisons.
-enum IssueStateType: String {
-    case triage
-    case backlog
-    case unstarted
-    case started
-    case completed
-    case canceled
-}
-
-extension IssueState {
-    /// Strongly-typed classification of `type`. Returns nil for unknown
-    /// values so callers can fall back to treating the state as unstarted.
-    var kind: IssueStateType? { IssueStateType(rawValue: type) }
-
-    /// True when the issue is neither completed nor canceled.
-    var isOpen: Bool {
-        switch kind {
-        case .completed, .canceled: return false
-        default:                    return true
-        }
-    }
-}

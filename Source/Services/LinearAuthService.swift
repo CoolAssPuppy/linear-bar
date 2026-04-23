@@ -134,7 +134,10 @@ class LinearAuthService: NSObject {
             return
         }
 
-        AppLogger.debug("Received callback URL: \(callbackURL.absoluteString)", log: AppLogger.auth)
+        // Log only host + path — the query string carries `code=` and `state=`
+        // which are sensitive.
+        let sanitized = "\(callbackURL.scheme ?? "?")://\(callbackURL.host ?? "?")\(callbackURL.path)"
+        AppLogger.debug("Received callback URL: \(sanitized)", log: AppLogger.auth)
 
         guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else {

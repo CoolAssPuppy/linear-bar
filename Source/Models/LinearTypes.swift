@@ -1,7 +1,8 @@
 import Foundation
 
-// MARK: - Linear Item Protocol
-
+/// A Linear artifact that renders uniformly in the popover: issues,
+/// projects, and initiatives. The popover's Recent tab consumes the
+/// protocol through `RecentArtifact`.
 protocol LinearItem: Identifiable, Hashable {
     var id: String { get }
     var title: String { get }
@@ -27,7 +28,8 @@ struct Issue: LinearItem, Codable {
     let url: String
     let createdAt: Date?
     let updatedAt: Date?
-    let dueDate: String?  // ISO 8601 date string (YYYY-MM-DD)
+    /// ISO 8601 date string (`YYYY-MM-DD`). Absent when the issue has no due date.
+    let dueDate: String?
     let state: IssueState?
     let priority: Int?
     let priorityLabel: String?
@@ -39,35 +41,39 @@ struct Issue: LinearItem, Codable {
 
     var itemType: LinearItemType { .issue }
 
-    var displayIdentifier: String {
-        identifier
-    }
-
-    var stateColor: String {
-        state?.color ?? "#6B7280"
-    }
-
     var isOverdue: Bool {
-        guard let dueDate = dueDate else { return false }
-        guard let date = ISO8601DateFormatter().date(from: dueDate + "T00:00:00Z") else { return false }
+        guard let dueDate else { return false }
+        guard let date = DateParsing.startOfDay(fromISODate: dueDate) else { return false }
         return date < Date()
     }
 }
 
+/// State on an issue. `type` carries the Linear state classification
+/// (`triage`, `backlog`, `unstarted`, `started`, `completed`, `canceled`)
+/// — decoded on demand via `kind` so views don't hand-switch strings.
 struct IssueState: Codable, Hashable {
     let name: String
-    let type: String // "unstarted", "started", "completed", "canceled"
+    let type: String
+}
 
-    var color: String {
-        switch type {
-        case "completed":
-            return "#5E6AD2" // Linear purple
-        case "started":
-            return "#F59E0B" // orange
-        case "canceled":
-            return "#6B7280" // gray
-        default:
-            return "#94A3B8" // slate
+/// Typed view of the six canonical Linear issue state classifications.
+enum IssueStateType: String {
+    case triage
+    case backlog
+    case unstarted
+    case started
+    case completed
+    case canceled
+}
+
+extension IssueState {
+    var kind: IssueStateType? { IssueStateType(rawValue: type) }
+
+    /// True when the issue is neither completed nor canceled.
+    var isOpen: Bool {
+        switch kind {
+        case .completed, .canceled: return false
+        default:                    return true
         }
     }
 }
@@ -77,23 +83,24 @@ struct IssueState: Codable, Hashable {
 struct IssueLabel: Codable, Hashable, Identifiable {
     let id: String
     let name: String
-    let color: String  // Hex color like "#FF0000"
+    /// Linear hex color (`#RRGGBB`).
+    let color: String
 }
 
 struct LabelConnection: Codable, Hashable {
     let nodes: [IssueLabel]
 }
 
-// MARK: - Project Reference (lightweight version for issue.project)
+// MARK: - References
 
+/// Lightweight project record embedded on `Issue.project`.
 struct ProjectReference: Codable, Hashable {
     let id: String
     let name: String
     let icon: String?
 }
 
-// MARK: - Issue Reference (lightweight version for issue.parent)
-
+/// Lightweight issue record embedded on `Issue.parent`.
 struct IssueReference: Codable, Hashable {
     let id: String
     let identifier: String
@@ -109,31 +116,20 @@ struct Project: LinearItem, Codable {
     let url: String
     let createdAt: Date?
     let updatedAt: Date?
+    /// Linear's project state (`planned`, `started`, `paused`, `completed`, `canceled`).
     let state: String
     let progress: Double?
     let icon: String?
     let lead: User?
-    let targetDate: String?  // ISO 8601 date string (YYYY-MM-DD)
+    /// ISO 8601 date string (`YYYY-MM-DD`).
+    let targetDate: String?
 
     var title: String { name }
     var itemType: LinearItemType { .project }
 
-    var stateColor: String {
-        switch state.lowercased() {
-        case "completed":
-            return "#5E6AD2" // Linear purple
-        case "started", "in progress":
-            return "#F59E0B" // orange/yellow
-        case "canceled":
-            return "#6B7280" // gray
-        default:
-            return "#94A3B8" // slate
-        }
-    }
-
     var isOverdue: Bool {
-        guard let targetDate = targetDate else { return false }
-        guard let date = ISO8601DateFormatter().date(from: targetDate + "T00:00:00Z") else { return false }
+        guard let targetDate else { return false }
+        guard let date = DateParsing.startOfDay(fromISODate: targetDate) else { return false }
         return date < Date()
     }
 }
@@ -149,15 +145,17 @@ struct Initiative: LinearItem, Codable {
     let updatedAt: Date?
     let progress: Double?
     let icon: String?
-    let status: String? // "planned", "active", "completed"
-    let targetDate: String?  // ISO 8601 date string (YYYY-MM-DD)
+    /// Linear's initiative status (`planned`, `active`, `completed`).
+    let status: String?
+    /// ISO 8601 date string (`YYYY-MM-DD`).
+    let targetDate: String?
 
     var title: String { name }
     var itemType: LinearItemType { .initiative }
 
     var isOverdue: Bool {
-        guard let targetDate = targetDate else { return false }
-        guard let date = ISO8601DateFormatter().date(from: targetDate + "T00:00:00Z") else { return false }
+        guard let targetDate else { return false }
+        guard let date = DateParsing.startOfDay(fromISODate: targetDate) else { return false }
         return date < Date()
     }
 }
@@ -170,79 +168,13 @@ struct Team: Codable, Hashable, Identifiable {
     let key: String
     let icon: String?
 
-    var displayName: String {
-        "\(name) (\(key))"
-    }
+    var displayName: String { "\(name) (\(key))" }
 }
 
 // MARK: - User
 
 struct User: Codable, Hashable {
     let name: String
-}
-
-// MARK: - Favorite
-
-struct Favorite: Codable, Identifiable {
-    let id: String
-    let type: String?
-    let sortOrder: Double
-    let folderName: String?
-    let issue: Issue?
-    let project: Project?
-    let initiative: Initiative?
-    let customView: FavoriteItem?
-    let cycle: FavoriteItem?
-    let label: FavoriteItem?
-    let parent: FavoriteParent?
-    let children: FavoriteChildren?
-
-    struct FavoriteParent: Codable {
-        let id: String
-    }
-
-    struct FavoriteChildren: Codable {
-        struct ChildNode: Codable {
-            let id: String
-        }
-        let nodes: [ChildNode]
-    }
-
-    var item: (any LinearItem)? {
-        if let issue = issue {
-            return issue
-        } else if let project = project {
-            return project
-        } else if let initiative = initiative {
-            return initiative
-        }
-        return nil
-    }
-
-    var displayName: String? {
-        if let item = item {
-            return item.title
-        } else if let customView = customView {
-            return customView.name
-        } else if let cycle = cycle {
-            return cycle.name
-        } else if let label = label {
-            return label.name
-        }
-        return folderName
-    }
-}
-
-// MARK: - FavoriteItem (for roadmaps, views, cycles, labels, etc.)
-
-struct FavoriteItem: Codable {
-    let id: String
-    let name: String
-    let icon: String?
-    let url: String?
-    let color: String?
-    let startsAt: String?
-    let endsAt: String?
 }
 
 // MARK: - Viewer
@@ -257,10 +189,11 @@ struct Viewer: Codable {
 struct ViewerOrganization: Codable {
     let id: String
     let name: String
-    let urlKey: String  // This is the organization slug used in URLs
+    /// Organization slug used in Linear URLs.
+    let urlKey: String
 }
 
-// MARK: - GraphQL Responses
+// MARK: - GraphQL envelope
 
 struct GraphQLResponse<T: Decodable>: Decodable {
     let data: T?
@@ -269,49 +202,17 @@ struct GraphQLResponse<T: Decodable>: Decodable {
 
 struct GraphQLError: Decodable {
     let message: String
-    let path: [String]?
-    let extensions: [String: AnyCodable]?
 }
 
-// Helper to decode any JSON value
-struct AnyCodable: Codable {
-    let value: Any
+// MARK: - Shared date parsing
 
-    init(_ value: Any) {
-        self.value = value
+/// Shared ISO-8601 date-only parser. `Issue.isOverdue`, `Project.isOverdue`,
+/// and `Initiative.isOverdue` all call this — allocating a fresh
+/// `ISO8601DateFormatter` per access was measurable.
+enum DateParsing {
+    static func startOfDay(fromISODate date: String) -> Date? {
+        isoFormatter.date(from: date + "T00:00:00Z")
     }
 
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let intValue = try? container.decode(Int.self) {
-            value = intValue
-        } else if let doubleValue = try? container.decode(Double.self) {
-            value = doubleValue
-        } else if let boolValue = try? container.decode(Bool.self) {
-            value = boolValue
-        } else if let stringValue = try? container.decode(String.self) {
-            value = stringValue
-        } else if let arrayValue = try? container.decode([AnyCodable].self) {
-            value = arrayValue.map { $0.value }
-        } else if let dictValue = try? container.decode([String: AnyCodable].self) {
-            value = dictValue.mapValues { $0.value }
-        } else {
-            value = NSNull()
-        }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        if let intValue = value as? Int {
-            try container.encode(intValue)
-        } else if let doubleValue = value as? Double {
-            try container.encode(doubleValue)
-        } else if let boolValue = value as? Bool {
-            try container.encode(boolValue)
-        } else if let stringValue = value as? String {
-            try container.encode(stringValue)
-        } else {
-            try container.encodeNil()
-        }
-    }
+    private static let isoFormatter = ISO8601DateFormatter()
 }

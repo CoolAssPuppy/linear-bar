@@ -38,20 +38,18 @@ extension LinearAuthService {
 
         guard (200...299).contains(httpResponse.statusCode) else {
             var errorMessage = "Failed to refresh token (HTTP \(httpResponse.statusCode))"
-            if let errorBody = String(data: data, encoding: .utf8) {
-                AppLogger.privateError("Error response: \(errorBody)", log: AppLogger.auth)
-
-                if let jsonObject = try? JSONSerialization.jsonObject(with: data),
-                   let errorData = jsonObject as? [String: Any] {
-                    if let error = errorData["error"] as? String {
-                        errorMessage = error
-                    }
-                    if let errorDescription = errorData["error_description"] as? String {
-                        errorMessage = errorDescription
-                    }
-                } else {
-                    errorMessage += ": \(errorBody)"
-                }
+            // Parse the OAuth error envelope before logging. Logging the raw
+            // body here would risk writing refresh/access token fields to the
+            // system log if a provider ever returns a mixed payload.
+            if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+               let errorData = jsonObject as? [String: Any] {
+                let error = errorData["error"] as? String
+                let description = errorData["error_description"] as? String
+                AppLogger.privateError("OAuth refresh failed: \(error ?? "unknown") - \(description ?? "")", log: AppLogger.auth)
+                if let description { errorMessage = description }
+                else if let error { errorMessage = error }
+            } else {
+                AppLogger.privateError("OAuth refresh failed (HTTP \(httpResponse.statusCode), non-JSON body)", log: AppLogger.auth)
             }
 
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 400 {

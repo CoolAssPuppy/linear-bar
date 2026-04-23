@@ -192,6 +192,7 @@ struct AppIconButton: View {
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
         .help(help)
+        .accessibilityLabel(help.isEmpty ? Text("Button") : Text(help))
     }
 
     private var restingColor: Color {

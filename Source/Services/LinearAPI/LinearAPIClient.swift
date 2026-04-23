@@ -9,6 +9,15 @@ class LinearAPI {
     let endpoint = URL(string: "https://api.linear.app/graphql")!
     let session: URLSession
 
+    /// Shared decoder. Allocating a `JSONDecoder` per request showed up in
+    /// profile traces once the popover tabs started fanning out multiple
+    /// concurrent queries.
+    private let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
@@ -86,13 +95,9 @@ class LinearAPI {
             throw LinearError.rateLimitExceeded
         }
 
-        // Linear returns structured GraphQL errors inside the response body
-        // for validation / schema errors — sometimes with a 200 status code,
-        // sometimes with 400. Try to decode the body either way, so a field
-        // typo surfaces as a useful `graphQLError(message)` instead of an
-        // opaque HTTP 400.
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        // Try to decode the body as a GraphQL envelope regardless of status
+        // so schema errors surface as `.graphQLError(message)` instead of
+        // opaque HTTP codes.
         if let decoded = try? decoder.decode(GraphQLResponse<T>.self, from: data) {
             if let errors = decoded.errors, !errors.isEmpty {
                 let message = errors.map { $0.message }.joined(separator: ", ")

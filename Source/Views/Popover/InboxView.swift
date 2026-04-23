@@ -284,7 +284,7 @@ private struct NotificationAvatar: View {
     private var initialsCircle: some View {
         ZStack {
             Circle().fill(backgroundColor)
-            Text(notification.actor?.initials ?? "LI")
+            Text(PersonName.initials(from: notification.actor?.label))
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(Color.black.opacity(0.8))
         }

@@ -10,19 +10,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// + drawer overlay). Replaces the previous standalone Settings NSWindow.
     private var mainWindow: NSWindow?
 
-    /// In-flight token-validation tasks we launched. Tracked so that
-    /// `applicationWillTerminate` can cancel them instead of leaving the
-    /// process to tear them down mid-flight.
-    private var inFlightValidationTasks: [Task<Void, Never>] = []
+    /// Validation tasks in flight. `applicationWillTerminate` cancels these;
+    /// each task removes itself on completion so the array can't grow
+    /// unbounded over a long session.
+    private var inFlightValidationTasks: [UUID: Task<Void, Never>] = [:]
 
     private func launchValidationTask() {
+        let id = UUID()
         let task = Task { @MainActor in
+            defer { self.inFlightValidationTasks.removeValue(forKey: id) }
             await LinearAuthService.shared.validateAllAccountTokens()
         }
-        inFlightValidationTasks.append(task)
-        // Opportunistically drop tasks that have already finished so the
-        // array doesn't grow unbounded over a long session.
-        inFlightValidationTasks.removeAll { $0.isCancelled }
+        inFlightValidationTasks[id] = task
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -97,7 +96,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Cancel any in-flight validation tasks we launched so they don't
         // keep running past termination.
-        for task in inFlightValidationTasks {
+        for task in inFlightValidationTasks.values {
             task.cancel()
         }
         inFlightValidationTasks.removeAll()

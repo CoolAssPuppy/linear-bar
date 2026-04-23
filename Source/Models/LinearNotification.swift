@@ -77,16 +77,7 @@ struct NotificationActor: Codable, Hashable {
     let displayName: String?
     let avatarUrl: String?
 
-    var label: String {
-        displayName ?? name ?? "Linear"
-    }
-
-    var initials: String {
-        let source = displayName ?? name ?? "Linear"
-        let components = source.split(separator: " ").prefix(2)
-        let letters = components.compactMap { $0.first }.map { String($0) }
-        return letters.joined().uppercased()
-    }
+    var label: String { displayName ?? name ?? "Linear" }
 }
 
 struct NotificationIssueTarget: Codable, Hashable {
