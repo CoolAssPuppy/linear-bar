@@ -1,8 +1,8 @@
 //
 //  SettingsDrawer.swift
-//  Mail Notifier
+//  Linear Bar
 //
-//  Copyright (c) 2025 Strategic Nerds. All rights reserved.
+//  Copyright (c) 2026 Strategic Nerds. All rights reserved.
 //
 
 import SwiftUI
@@ -66,7 +66,7 @@ struct SettingsDrawer: View {
                 Text("Settings")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(theme.foreground)
-                Text("Preferences for Mail Notifier · ⌘, to toggle")
+                Text("Preferences for Linear Bar · ⌘, to toggle")
                     .font(.system(size: 11))
                     .foregroundStyle(theme.muted)
             }

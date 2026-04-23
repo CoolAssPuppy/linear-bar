@@ -6,7 +6,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let menuBarManager = MenuBarManager()
     private let popoverManager = PopoverManager()
     private let tokenScheduler = TokenRefreshScheduler()
-    private var settingsWindow: NSWindow?
+    /// The single main window that hosts `LinearMainView` (sidebar + content
+    /// + drawer overlay). Replaces the previous standalone Settings NSWindow.
+    private var mainWindow: NSWindow?
 
     /// In-flight token-validation tasks we launched. Tracked so that
     /// `applicationWillTerminate` can cancel them instead of leaving the
@@ -175,55 +177,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // MARK: - URL Handling
+    // MARK: - Main window + Settings drawer
 
-    // MARK: - Settings
-
+    /// Posting `.settingsRequested` from the popover gear (or elsewhere) lands
+    /// here. We open the single main window and then post
+    /// `.openSettingsDrawer`, which `LinearMainView` listens for and uses to
+    /// toggle the drawer. This mirrors mail-notifier's `showSettingsDrawer()`
+    /// path.
     @objc private func handleSettingsRequest() {
         popoverManager.close()
-        openSettings()
+        openMainWindow()
+        Task { @MainActor in
+            // Wait one runloop tick so the window is key and MainView has
+            // mounted its `.onReceive(…)` before we fire the toggle.
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            NotificationCenter.default.post(name: .openSettingsDrawer, object: nil)
+        }
     }
 
-    @objc private func openSettings() {
-        NSApp.setActivationPolicy(.regular)
+    /// Creates (or focuses) the single main window that hosts `LinearMainView`.
+    /// The window uses a transparent titlebar + full-size content view so
+    /// the sidebar and content read edge-to-edge.
+    @objc private func openMainWindow() {
+        // Stay .accessory — we never want a dock icon, even while the main
+        // window is open. .accessory apps can still own standard windows;
+        // makeKeyAndOrderFront + activate is enough to focus them.
+        NSApp.activate(ignoringOtherApps: true)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            guard let self = self else { return }
-
-            NSApp.activate(ignoringOtherApps: true)
-
-            if let existingWindow = self.settingsWindow {
-                existingWindow.makeKeyAndOrderFront(nil)
-                return
-            }
-
-            for window in NSApp.windows {
-                if window.styleMask.contains(.borderless) {
-                    continue
-                }
-                self.settingsWindow = window
-                window.delegate = self
-                window.makeKeyAndOrderFront(nil)
-                return
-            }
-
-            let settingsView = SettingsView()
-
-            let newWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 500, height: 600),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
-                backing: .buffered,
-                defer: false
-            )
-            newWindow.contentView = NSHostingView(rootView: settingsView)
-            newWindow.title = "Linear Bar Settings"
-            newWindow.isReleasedWhenClosed = false
-            newWindow.center()
-            newWindow.makeKeyAndOrderFront(nil)
-
-            self.settingsWindow = newWindow
-            newWindow.delegate = self
+        if let existingWindow = mainWindow {
+            existingWindow.makeKeyAndOrderFront(nil)
+            return
         }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1040, height: 680),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = NSHostingView(rootView: LinearMainViewWrapper())
+        window.title = "Linear Bar"
+        window.toolbar = nil
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.delegate = self
+
+        mainWindow = window
     }
 
     @objc private func handleAccountsDidUpdate() {
@@ -259,9 +261,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        if let window = notification.object as? NSWindow, window == settingsWindow {
-            settingsWindow = nil
-            NSApp.setActivationPolicy(.accessory)
+        if let window = notification.object as? NSWindow, window == mainWindow {
+            mainWindow = nil
         }
+    }
+}
+
+// MARK: - Main view wrapper
+
+/// Small wrapper so `@State var selection` is owned outside the NSWindow's
+/// content view and persists while the window lives.
+private struct LinearMainViewWrapper: View {
+    @State private var selection: String?
+
+    var body: some View {
+        LinearMainView(selection: $selection)
     }
 }
