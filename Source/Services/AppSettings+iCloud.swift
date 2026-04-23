@@ -23,6 +23,14 @@ extension AppSettings {
     }
 
     func setupiCloudSync() {
+        // Defensive: remove any existing registration before re-adding so that
+        // repeated calls (hot-reload, reinitialisation) cannot stack observers.
+        NotificationCenter.default.removeObserver(
+            self,
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: iCloudStore
+        )
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(iCloudStoreDidChange),
@@ -30,6 +38,16 @@ extension AppSettings {
             object: iCloudStore
         )
         iCloudStore.synchronize()
+    }
+
+    /// Removes the iCloud KVS observer. Must be called from
+    /// `applicationWillTerminate` to avoid leaking the observer registration.
+    func teardown() {
+        NotificationCenter.default.removeObserver(
+            self,
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: iCloudStore
+        )
     }
 
     @objc func iCloudStoreDidChange(_ notification: Notification) {

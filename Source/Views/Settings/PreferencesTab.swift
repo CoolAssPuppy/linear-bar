@@ -11,8 +11,6 @@ struct PreferencesTab: View {
 
     @Environment(\.theme) private var theme
 
-    @State private var showingCoffee = false
-
     private var defaultViewMode: Binding<ViewMode> {
         Binding(
             get: { ViewMode(rawValue: defaultViewModeRaw) ?? .createdByMe },
@@ -81,9 +79,6 @@ struct PreferencesTab: View {
             .padding(20)
         }
         .background(theme.background)
-        .sheet(isPresented: $showingCoffee) {
-            CoffeeView()
-        }
         .onChange(of: defaultViewModeRaw) { newValue in
             syncToiCloud(newValue, forKey: "defaultViewMode")
         }
@@ -218,23 +213,58 @@ struct PreferencesTab: View {
     // MARK: - Support Section
 
     private var buyMeCoffeeButton: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button(action: {
-                showingCoffee = true
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "cup.and.saucer.fill")
-                    Text("Buy Me Coffee")
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-            }
-            .buttonStyle(.bordered)
-            .tint(.orange)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Linear Bar is built by one person on nights and weekends. If it saves you time, consider buying me a coffee or starring the repo.")
+                .font(.system(size: 11))
+                .foregroundStyle(theme.foregroundSoft)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text("Support IssueBar development")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            HStack(spacing: 8) {
+                Link(destination: URL(string: "https://venmo.com/coolasspuppy")!) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "cup.and.saucer.fill")
+                            .font(.system(size: 11))
+                        Text("Buy me a coffee")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [theme.primary, theme.primaryDeep],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Link(destination: URL(string: "https://github.com/CoolAssPuppy/linear-bar")!) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "star")
+                            .font(.system(size: 11))
+                        Text("Star on GitHub")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundStyle(theme.foreground)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
+                            .fill(theme.cardInset)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
+                            .strokeBorder(theme.borderStrong, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 

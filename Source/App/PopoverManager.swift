@@ -3,14 +3,16 @@ import SwiftUI
 
 /// Manages the popover shown from the menu bar
 @MainActor
-class PopoverManager {
+class PopoverManager: NSObject {
     private(set) var popover: NSPopover?
     private var eventMonitor: Any?
 
     func setup() {
-        popover = NSPopover()
-        popover?.contentViewController = NSHostingController(rootView: MenuBarView())
-        popover?.behavior = .transient
+        let popover = NSPopover()
+        popover.contentViewController = NSHostingController(rootView: MenuBarView())
+        popover.behavior = .transient
+        popover.delegate = self
+        self.popover = popover
     }
 
     func show(relativeTo button: NSStatusBarButton) {
@@ -25,6 +27,13 @@ class PopoverManager {
         stopMonitoringForClicksOutside()
     }
 
+    /// Force-removes the global event monitor regardless of popover state.
+    /// Called during app termination so we never leave a dangling monitor
+    /// when the transient popover is closed by the system rather than by us.
+    func tearDown() {
+        stopMonitoringForClicksOutside()
+    }
+
     var isShown: Bool {
         popover?.isShown == true
     }
@@ -32,9 +41,17 @@ class PopoverManager {
     // MARK: - Click Outside Monitoring
 
     private func startMonitoringForClicksOutside() {
+        // Defensive: if a monitor is already installed (e.g. show() called
+        // twice without a matching close()), remove it before installing
+        // a new one. Otherwise every mouse event fires the handler twice.
+        stopMonitoringForClicksOutside()
+
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            if self?.isShown == true {
-                self?.close()
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if self.isShown {
+                    self.close()
+                }
             }
         }
     }
@@ -43,6 +60,19 @@ class PopoverManager {
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
             eventMonitor = nil
+        }
+    }
+}
+
+// MARK: - NSPopoverDelegate
+
+extension PopoverManager: NSPopoverDelegate {
+    // A .transient popover can be dismissed by the system (focus loss,
+    // app deactivation, termination) without our close() ever being called.
+    // Tear down the global mouse monitor here so it cannot leak.
+    nonisolated func popoverDidClose(_ notification: Notification) {
+        Task { @MainActor [weak self] in
+            self?.stopMonitoringForClicksOutside()
         }
     }
 }

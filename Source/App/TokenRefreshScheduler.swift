@@ -7,10 +7,14 @@ class TokenRefreshScheduler {
     var onValidationComplete: (() -> Void)?
 
     func start() {
+        // Ensure any previously scheduled timer is cancelled before we create
+        // and retain a new one. Without this, back-to-back start() calls (or a
+        // stop()+start() on wake) could leave a dangling RunLoop timer.
         timer?.invalidate()
+        timer = nil
 
         let newTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 guard let self = self else { return }
                 AppLogger.info("Periodic token validation triggered", log: AppLogger.auth)
                 await LinearAuthService.shared.validateAllAccountTokens()
@@ -26,5 +30,6 @@ class TokenRefreshScheduler {
     func stop() {
         timer?.invalidate()
         timer = nil
+        AppLogger.info("Token refresh timer stopped", log: AppLogger.auth)
     }
 }
