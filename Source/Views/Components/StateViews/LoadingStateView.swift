@@ -4,6 +4,8 @@ import SwiftUI
 struct LoadingStateView: View {
     let message: String
 
+    @Environment(\.theme) private var theme
+
     init(_ message: String = "Loading...") {
         self.message = message
     }
@@ -12,10 +14,11 @@ struct LoadingStateView: View {
         VStack {
             Spacer()
             ProgressView()
-                .controlSize(.large)
+                .controlSize(.regular)
+                .tint(theme.primary)
             Text(message)
                 .font(.system(size: 12))
-                .foregroundColor(.secondary)
+                .foregroundStyle(theme.muted)
                 .padding(.top, 8)
             Spacer()
         }

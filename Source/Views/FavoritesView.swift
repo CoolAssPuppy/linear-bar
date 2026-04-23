@@ -200,6 +200,7 @@ struct GenericFavoriteRowView: View {
     let accountColor: String?
     let onTap: () -> Void
 
+    @Environment(\.theme) private var theme
     @State private var isHovered = false
 
     var body: some View {
@@ -218,12 +219,12 @@ struct GenericFavoriteRowView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(name)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.primary)
+                                .foregroundStyle(theme.foreground)
                                 .lineLimit(1)
 
                             Text(type)
                                 .font(.system(size: 10))
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(theme.muted)
                         }
 
                         Spacer()
@@ -231,14 +232,16 @@ struct GenericFavoriteRowView: View {
                         if isHovered {
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(theme.muted)
                         }
                     }
                 }
                 .padding(.vertical, 8)
             }
-            .background(isHovered ? AppStyle.Colors.hoverHighlight : Color.clear)
-            .cornerRadius(AppStyle.Layout.rowCornerRadius)
+            .background(
+                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                    .fill(isHovered ? theme.primary.opacity(0.08) : Color.clear)
+            )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -255,12 +258,12 @@ struct GenericFavoriteRowView: View {
             } else {
                 Image(systemName: SFSymbolMapper.sfSymbol(for: icon))
                     .font(.system(size: 16))
-                    .foregroundColor(.purple)
+                    .foregroundStyle(theme.primary)
             }
         } else {
             Image(systemName: SFSymbolMapper.sfSymbolForFavoriteType(type))
                 .font(.system(size: 16))
-                .foregroundColor(.purple)
+                .foregroundStyle(theme.primary)
         }
     }
 }

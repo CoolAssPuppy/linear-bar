@@ -4,34 +4,43 @@ import SwiftUI
 struct NoAccountView: View {
     let message: String
 
+    @Environment(\.theme) private var theme
+
     init(message: String = "Connect your Linear account to get started.") {
         self.message = message
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             Spacer()
 
-            Image(systemName: "person.crop.circle.badge.plus")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-
-            Text("No Linear account")
-                .font(.headline)
-
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-
-            Button(action: openSettings) {
-                HStack(spacing: 6) {
-                    Image(systemName: "gearshape")
-                    Text("Open Settings")
-                }
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(theme.card)
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(theme.muted)
             }
-            .buttonStyle(.borderedProminent)
+            .frame(width: 56, height: 56)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(theme.border, lineWidth: 1)
+            )
+
+            VStack(spacing: 4) {
+                Text("No Linear account")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.foreground)
+
+                Text(message)
+                    .font(.system(size: 11))
+                    .foregroundStyle(theme.muted)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 260)
+            }
+
+            AppSecondaryButton(title: "Open Settings", systemImage: "gearshape", tint: .primary, action: openSettings)
+                .padding(.top, 4)
 
             Spacer()
         }

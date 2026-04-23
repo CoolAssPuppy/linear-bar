@@ -9,6 +9,8 @@ struct PreferencesTab: View {
     @AppStorage("showCanceledItems") private var showCanceledItems = false
     @AppStorage("launchAtLogin") private var launchAtLogin = false
 
+    @Environment(\.theme) private var theme
+
     @State private var showingCoffee = false
 
     private var defaultViewMode: Binding<ViewMode> {
@@ -78,7 +80,7 @@ struct PreferencesTab: View {
             }
             .padding(20)
         }
-        .background(AppStyle.Colors.windowBackground)
+        .background(theme.background)
         .sheet(isPresented: $showingCoffee) {
             CoffeeView()
         }
@@ -114,10 +116,10 @@ struct PreferencesTab: View {
         HStack(spacing: AppStyle.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(theme.muted)
             Text(title)
                 .font(AppStyle.Font.sectionHeader)
-                .foregroundColor(.primary)
+                .foregroundStyle(theme.foreground)
         }
     }
 

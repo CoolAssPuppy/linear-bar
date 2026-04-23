@@ -3,13 +3,17 @@ import SwiftUI
 /// Settings view for managing accounts and preferences
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var themeStore = ThemeStore.shared
     @State private var selectedTab = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
+        let theme = themeStore.palette
+        return VStack(spacing: 0) {
+            headerBar(theme: theme)
 
-            Divider()
+            Rectangle()
+                .fill(theme.divider)
+                .frame(height: 1)
 
             TabView(selection: $selectedTab) {
                 AccountsTab()
@@ -25,18 +29,21 @@ struct SettingsView: View {
                     .tag(1)
             }
         }
-        .background(AppStyle.Colors.windowBackground)
+        .background(theme.background)
         .frame(width: AppStyle.Layout.settingsWidth, height: AppStyle.Layout.settingsHeight)
+        .environment(\.theme, theme)
+        .environment(\.colorScheme, theme.isDark ? .dark : .light)
     }
 
-    private var headerBar: some View {
+    private func headerBar(theme: ThemePalette) -> some View {
         HStack {
-            Text("IssueBar Settings")
-                .font(.title2)
-                .fontWeight(.semibold)
+            Text("Linear Bar Settings")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(theme.foreground)
 
             Spacer()
         }
         .padding()
+        .background(theme.surface)
     }
 }

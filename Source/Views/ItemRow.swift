@@ -7,6 +7,7 @@ struct ItemRow: View {
     let initiative: Initiative?
     let accountColor: String?
 
+    @Environment(\.theme) private var theme
     @State private var isHovered = false
 
     init(issue: Issue, accountColor: String? = nil) {
@@ -56,7 +57,7 @@ struct ItemRow: View {
                         if isHovered {
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(theme.muted)
                         }
                     }
                 }
@@ -65,8 +66,10 @@ struct ItemRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(isHovered ? AppStyle.Colors.hoverHighlight : Color.clear)
-        .cornerRadius(AppStyle.Layout.rowCornerRadius)
+        .background(
+            RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                .fill(isHovered ? theme.primary.opacity(0.08) : Color.clear)
+        )
         .onHover { hovering in
             isHovered = hovering
         }

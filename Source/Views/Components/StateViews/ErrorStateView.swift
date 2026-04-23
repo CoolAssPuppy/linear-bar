@@ -6,6 +6,8 @@ struct ErrorStateView: View {
     let message: String
     let onRetry: () -> Void
 
+    @Environment(\.theme) private var theme
+
     init(title: String = "Error", message: String, onRetry: @escaping () -> Void) {
         self.title = title
         self.message = message
@@ -16,20 +18,33 @@ struct ErrorStateView: View {
         VStack(spacing: 12) {
             Spacer()
 
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundColor(.orange)
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(theme.destructive.opacity(0.1))
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(theme.destructive)
+            }
+            .frame(width: 56, height: 56)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(theme.destructive.opacity(0.3), lineWidth: 1)
+            )
 
-            Text(title)
-                .font(.headline)
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.foreground)
 
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+                Text(message)
+                    .font(.system(size: 11))
+                    .foregroundStyle(theme.muted)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 260)
+            }
 
-            Button("Retry", action: onRetry)
-                .buttonStyle(.borderedProminent)
+            AppSecondaryButton(title: "Retry", systemImage: "arrow.clockwise", tint: .primary, action: onRetry)
+                .padding(.top, 4)
 
             Spacer()
         }

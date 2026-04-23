@@ -7,6 +7,8 @@ struct ColorPickerView: View {
     @State private var hexInput: String = ""
     @State private var showInvalidHexError: Bool = false
 
+    @ObservedObject private var themeStore = ThemeStore.shared
+
     private let availableColors: [String] = [
         "#5E6AD2", // Linear purple
         "#10B981", // green
@@ -19,48 +21,51 @@ struct ColorPickerView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 20) {
+        let theme = themeStore.palette
+        return VStack(spacing: 20) {
             Text("Choose Account Color")
-                .font(.headline)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(theme.foreground)
                 .padding(.top, 8)
 
-            colorGrid
+            colorGrid(theme: theme)
 
-            Divider()
+            Rectangle()
+                .fill(theme.divider)
+                .frame(height: 1)
                 .padding(.horizontal, 16)
 
-            customHexInput
+            customHexInput(theme: theme)
 
-            Button("Cancel") {
-                closeWindow()
-            }
-            .buttonStyle(.bordered)
-            .padding(.bottom, 8)
+            AppSecondaryButton(title: "Cancel", action: closeWindow)
+                .padding(.bottom, 8)
         }
         .frame(width: 340, height: 360)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.background)
+        .environment(\.theme, theme)
+        .environment(\.colorScheme, theme.isDark ? .dark : .light)
     }
 
     // MARK: - Color Grid
 
-    private var colorGrid: some View {
+    private func colorGrid(theme: ThemePalette) -> some View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
                 ForEach(availableColors.prefix(4), id: \.self) { colorHex in
-                    colorButton(colorHex)
+                    colorButton(colorHex, theme: theme)
                 }
             }
 
             HStack(spacing: 16) {
                 ForEach(availableColors.suffix(4), id: \.self) { colorHex in
-                    colorButton(colorHex)
+                    colorButton(colorHex, theme: theme)
                 }
             }
         }
         .padding(.horizontal, 16)
     }
 
-    private func colorButton(_ colorHex: String) -> some View {
+    private func colorButton(_ colorHex: String, theme: ThemePalette) -> some View {
         Button(action: {
             AppSettings.shared.setAccountColor(colorHex, forAccount: account.email)
             closeWindow()
@@ -70,7 +75,7 @@ struct ColorPickerView: View {
                 .frame(width: 50, height: 50)
                 .overlay(
                     Circle()
-                        .stroke(account.color == colorHex ? Color.primary : Color.clear, lineWidth: 3)
+                        .stroke(account.color == colorHex ? theme.foreground : Color.clear, lineWidth: 3)
                 )
         }
         .buttonStyle(.plain)
@@ -78,11 +83,11 @@ struct ColorPickerView: View {
 
     // MARK: - Custom Hex Input
 
-    private var customHexInput: some View {
+    private func customHexInput(theme: ThemePalette) -> some View {
         VStack(spacing: 8) {
             Text("Or enter a hex code:")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.system(size: 11))
+                .foregroundStyle(theme.muted)
 
             HStack(spacing: 8) {
                 TextField("#5E6AD2", text: $hexInput)
@@ -93,16 +98,13 @@ struct ColorPickerView: View {
                         applyCustomHex()
                     }
 
-                Button("Apply") {
-                    applyCustomHex()
-                }
-                .buttonStyle(.borderedProminent)
+                AppSecondaryButton(title: "Apply", tint: .primary, action: applyCustomHex)
             }
 
             if showInvalidHexError {
                 Text("Invalid hex code")
-                    .font(.caption)
-                    .foregroundColor(.red)
+                    .font(.system(size: 11))
+                    .foregroundStyle(theme.destructive)
             }
         }
     }

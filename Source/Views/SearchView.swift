@@ -11,6 +11,8 @@ struct SearchView: View {
     @State private var showCanceledItems = false
     @State private var sortOrder: SortOrder = .updatedNewest
 
+    @Environment(\.theme) private var theme
+
     private var filteredResults: [any LinearItem] {
         let options = ItemFilter.FilterOptions(showCompleted: showCompletedItems, showCanceled: showCanceledItems)
         return ItemFilter.filterAndSort(searchResults, options: options, sortOrder: sortOrder)
@@ -62,12 +64,13 @@ struct SearchView: View {
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
+                .foregroundStyle(theme.muted)
                 .font(.system(size: 14))
 
             TextField("Search issues, projects, initiatives...", text: $searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
+                .foregroundStyle(theme.foreground)
                 .onChange(of: searchText) { newValue in
                     performSearch(query: newValue)
                 }
@@ -75,7 +78,7 @@ struct SearchView: View {
             if !searchText.isEmpty {
                 Button(action: { searchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(theme.muted)
                         .font(.system(size: 14))
                 }
                 .buttonStyle(.plain)

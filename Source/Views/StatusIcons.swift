@@ -5,27 +5,29 @@ import SwiftUI
 struct IssueStatusIcon: View {
     let issue: Issue
 
+    @Environment(\.theme) private var theme
+
     var body: some View {
         Group {
             switch issue.state?.name.lowercased() {
             case "triage":
-                Image(systemName: "circle.dashed").foregroundColor(.red)
+                Image(systemName: "circle.dashed").foregroundStyle(theme.destructive)
             case "draft":
-                Image(systemName: "circle.fill").foregroundColor(.secondary)
+                Image(systemName: "circle.fill").foregroundStyle(theme.muted)
             case "open for comments":
-                Image(systemName: "megaphone.fill").foregroundColor(.secondary)
+                Image(systemName: "megaphone.fill").foregroundStyle(theme.muted)
             case "approved":
-                Image(systemName: "checkmark.circle.fill").foregroundColor(.secondary)
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.muted)
             case "in progress":
-                Image(systemName: "circle.dashed").foregroundColor(.yellow)
+                Image(systemName: "circle.dashed").foregroundStyle(theme.warning)
             case "todo":
-                Image(systemName: "circle.dashed").foregroundColor(.primary)
+                Image(systemName: "circle.dashed").foregroundStyle(theme.foreground)
             case "backlog":
-                Image(systemName: "circle.dashed").foregroundColor(.secondary)
+                Image(systemName: "circle.dashed").foregroundStyle(theme.muted)
             case "completed", "done":
-                Image(systemName: "checkmark.circle.fill").foregroundColor(Color(hex: "#5E6AD2"))
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.primary)
             case "canceled", "cancelled":
-                Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.muted)
             default:
                 stateTypeBasedIcon
             }
@@ -36,13 +38,13 @@ struct IssueStatusIcon: View {
     private var stateTypeBasedIcon: some View {
         switch issue.state?.type {
         case "completed":
-            Image(systemName: "checkmark.circle.fill").foregroundColor(Color(hex: "#5E6AD2"))
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.primary)
         case "canceled":
-            Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+            Image(systemName: "xmark.circle.fill").foregroundStyle(theme.muted)
         case "started":
-            Image(systemName: "circle.dashed").foregroundColor(.yellow)
+            Image(systemName: "circle.dashed").foregroundStyle(theme.warning)
         default:
-            Image(systemName: "circle.dashed").foregroundColor(.secondary)
+            Image(systemName: "circle.dashed").foregroundStyle(theme.muted)
         }
     }
 }
@@ -51,6 +53,8 @@ struct IssueStatusIcon: View {
 
 struct ProjectStatusIcon: View {
     let project: Project
+
+    @Environment(\.theme) private var theme
 
     var body: some View {
         Group {
@@ -70,7 +74,7 @@ struct ProjectStatusIcon: View {
             let isActive = ["started", "in progress", "paused", "completed", "canceled", "cancelled"]
                 .contains(project.state.lowercased())
             Image(systemName: SFSymbolMapper.sfSymbol(for: icon))
-                .foregroundColor(isActive ? iconColor : .secondary)
+                .foregroundStyle(isActive ? iconColor : theme.muted)
         }
     }
 
@@ -78,30 +82,30 @@ struct ProjectStatusIcon: View {
     private var stateBasedIcon: some View {
         switch project.state.lowercased() {
         case "triage":
-            Image(systemName: "cube").foregroundColor(.red)
+            Image(systemName: "cube").foregroundStyle(theme.destructive)
         case "draft":
-            Image(systemName: "cube.fill").foregroundColor(.secondary)
+            Image(systemName: "cube.fill").foregroundStyle(theme.muted)
         case "planned":
-            Image(systemName: "cube").foregroundColor(.secondary)
+            Image(systemName: "cube").foregroundStyle(theme.muted)
         case "started", "in progress":
-            Image(systemName: "cube").foregroundColor(.yellow)
+            Image(systemName: "cube").foregroundStyle(theme.warning)
         case "paused":
-            Image(systemName: "cube").foregroundColor(.orange)
+            Image(systemName: "cube").foregroundStyle(theme.warning)
         case "completed":
-            Image(systemName: "checkmark.circle.fill").foregroundColor(Color(hex: "#5E6AD2"))
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.primary)
         case "canceled", "cancelled":
-            Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+            Image(systemName: "xmark.circle.fill").foregroundStyle(theme.muted)
         default:
-            Image(systemName: "cube").foregroundColor(.secondary)
+            Image(systemName: "cube").foregroundStyle(theme.muted)
         }
     }
 
     private var iconColor: Color {
         switch project.state.lowercased() {
-        case "started", "in progress": return .yellow
-        case "paused": return .orange
-        case "completed": return Color(hex: "#5E6AD2")
-        default: return .secondary
+        case "started", "in progress": return theme.warning
+        case "paused": return theme.warning
+        case "completed": return theme.primary
+        default: return theme.muted
         }
     }
 }
@@ -110,6 +114,8 @@ struct ProjectStatusIcon: View {
 
 struct InitiativeStatusIcon: View {
     let initiative: Initiative
+
+    @Environment(\.theme) private var theme
 
     var body: some View {
         Group {
@@ -128,7 +134,7 @@ struct InitiativeStatusIcon: View {
         } else {
             let isActive = ["active", "completed"].contains(initiative.status?.lowercased() ?? "")
             Image(systemName: SFSymbolMapper.sfSymbol(for: icon))
-                .foregroundColor(isActive ? iconColor : .secondary)
+                .foregroundStyle(isActive ? iconColor : theme.muted)
         }
     }
 
@@ -136,21 +142,21 @@ struct InitiativeStatusIcon: View {
     private var statusBasedIcon: some View {
         switch initiative.status?.lowercased() {
         case "planned":
-            Image(systemName: "scope").foregroundColor(.secondary)
+            Image(systemName: "scope").foregroundStyle(theme.muted)
         case "active":
-            Image(systemName: "scope").foregroundColor(.orange)
+            Image(systemName: "scope").foregroundStyle(theme.warning)
         case "completed":
-            Image(systemName: "checkmark.circle.fill").foregroundColor(Color(hex: "#5E6AD2"))
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.primary)
         default:
-            Image(systemName: "scope").foregroundColor(.secondary)
+            Image(systemName: "scope").foregroundStyle(theme.muted)
         }
     }
 
     private var iconColor: Color {
         switch initiative.status?.lowercased() {
-        case "active": return .orange
-        case "completed": return Color(hex: "#5E6AD2")
-        default: return .secondary
+        case "active": return theme.warning
+        case "completed": return theme.primary
+        default: return theme.muted
         }
     }
 }

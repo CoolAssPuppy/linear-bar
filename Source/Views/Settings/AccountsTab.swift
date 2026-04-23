@@ -9,6 +9,8 @@ struct AccountsTab: View {
     @State private var showingColorPicker = false
     @State private var selectedAccount: LinearAccount?
 
+    @Environment(\.theme) private var theme
+
     var body: some View {
         VStack(spacing: 16) {
             if settings.accounts.isEmpty {
@@ -26,6 +28,7 @@ struct AccountsTab: View {
             addAccountButton
         }
         .padding(20)
+        .background(theme.background)
         .alert("Remove Account", isPresented: $showingRemoveAlert, presenting: accountToRemove) { account in
             Button("Remove", role: .destructive) {
                 settings.removeAccount(account)
@@ -45,16 +48,26 @@ struct AccountsTab: View {
 
     private var emptyStateView: some View {
         VStack(spacing: 12) {
-            Image(systemName: "person.crop.circle.badge.plus")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(theme.card)
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(theme.muted)
+            }
+            .frame(width: 56, height: 56)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(theme.border, lineWidth: 1)
+            )
 
             Text("No accounts connected")
-                .font(.headline)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(theme.foreground)
 
             Text("Add a Linear account to get started")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.system(size: 11))
+                .foregroundStyle(theme.muted)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -63,22 +76,20 @@ struct AccountsTab: View {
     // MARK: - Account List
 
     private var accountListView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Connected Accounts")
-                .font(.headline)
-
-            ScrollView {
-                VStack(spacing: 8) {
-                    ForEach(settings.accounts) { account in
-                        AccountRowView(
-                            account: account,
-                            onColorTap: {
-                                selectedAccount = account
-                                showingColorPicker = true
-                            },
-                            onRemove: { removeAccount(account) },
-                            onReconnect: { reconnectAccount(account) }
-                        )
+        AppCard("Connected Accounts") {
+            VStack(spacing: 0) {
+                ForEach(Array(settings.accounts.enumerated()), id: \.element.id) { index, account in
+                    AccountRowView(
+                        account: account,
+                        onColorTap: {
+                            selectedAccount = account
+                            showingColorPicker = true
+                        },
+                        onRemove: { removeAccount(account) },
+                        onReconnect: { reconnectAccount(account) }
+                    )
+                    if index < settings.accounts.count - 1 {
+                        AppRowDivider()
                     }
                 }
             }
@@ -93,22 +104,14 @@ struct AccountsTab: View {
         }) {
             Text("View Demo Data")
                 .font(.system(size: 11))
-                .foregroundColor(.blue)
+                .foregroundStyle(theme.primary)
         }
         .buttonStyle(.plain)
         .padding(.bottom, 8)
     }
 
     private var addAccountButton: some View {
-        Button(action: addLinearAccount) {
-            HStack(spacing: 8) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 16))
-                Text("Add Linear Account")
-                    .font(.system(size: 13))
-            }
-        }
-        .buttonStyle(.bordered)
+        AppSecondaryButton(title: "Add Linear Account", systemImage: "plus.circle.fill", tint: .primary, action: addLinearAccount)
     }
 
     // MARK: - Actions
@@ -170,6 +173,8 @@ private struct AccountRowView: View {
     let onRemove: () -> Void
     let onReconnect: () -> Void
 
+    @Environment(\.theme) private var theme
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -179,7 +184,7 @@ private struct AccountRowView: View {
                         .frame(width: 20, height: 20)
                         .overlay(
                             Circle()
-                                .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+                                .stroke(theme.borderStrong, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
@@ -189,56 +194,51 @@ private struct AccountRowView: View {
                     if let name = account.name {
                         Text(name)
                             .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(theme.foreground)
                     }
                     Text(account.email)
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(theme.muted)
                 }
 
                 Spacer()
 
-                Button("Remove", action: onRemove)
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.red)
+                AppSecondaryButton(title: "Remove", tint: .destructive, action: onRemove)
             }
+            .padding(.vertical, 8)
 
             if account.authStatus != .valid {
                 authWarningView
             }
         }
-        .padding(12)
-        .background(account.authStatus != .valid ? Color.orange.opacity(0.1) : Color(nsColor: .controlBackgroundColor).opacity(0.5))
-        .cornerRadius(6)
     }
 
     private var authWarningView: some View {
-        VStack {
-            Divider()
+        VStack(spacing: 0) {
+            AppRowDivider()
                 .padding(.vertical, 8)
 
             HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
+                    .foregroundStyle(theme.warning)
                     .font(.system(size: 14))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(account.authStatus == .needsAuth ? "Sign in required" : "Authentication expired")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.orange)
+                        .foregroundStyle(theme.warning)
 
                     Text("Click Sign In to restore access")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()
 
-                Button("Sign In", action: onReconnect)
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
-                    .controlSize(.small)
+                AppSecondaryButton(title: "Sign In", tint: .primary, action: onReconnect)
             }
+            .padding(.bottom, 8)
         }
     }
 }

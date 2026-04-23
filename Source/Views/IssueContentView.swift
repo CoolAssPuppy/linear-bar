@@ -3,21 +3,23 @@ import SwiftUI
 struct IssueContentView: View {
     let issue: Issue
 
+    @Environment(\.theme) private var theme
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(issue.identifier)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.primary)
+                .foregroundStyle(theme.foreground)
 
             Text(issue.title)
                 .font(.system(size: 12))
-                .foregroundColor(.secondary)
+                .foregroundStyle(theme.foregroundSoft)
                 .lineLimit(1)
 
             if let description = issue.description, !description.isEmpty {
                 Text(description)
                     .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(theme.muted)
                     .lineLimit(2)
             }
 
@@ -50,7 +52,7 @@ struct IssueContentView: View {
                 if labels.count > 3 {
                     Text("+\(labels.count - 3)")
                         .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(theme.muted)
                 }
             }
         }
@@ -61,15 +63,15 @@ struct IssueContentView: View {
             if let state = issue.state {
                 Text(state.name)
                     .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(theme.muted)
             }
 
             if let assignee = issue.assignee {
                 Text("\u{2022}")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(theme.dim)
                 Text(assignee.name)
                     .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(theme.muted)
             }
         }
     }

@@ -13,6 +13,8 @@ struct RecentlyUpdatedView: View {
     @State private var showCanceledItems = false
     @State private var sortOrder: SortOrder = .updatedNewest
 
+    @Environment(\.theme) private var theme
+
     private var filteredItems: [any LinearItem] {
         let options = ItemFilter.FilterOptions(showCompleted: showCompletedItems, showCanceled: showCanceledItems)
         return ItemFilter.filterAndSort(items, options: options, sortOrder: sortOrder)
@@ -113,7 +115,7 @@ struct RecentlyUpdatedView: View {
         } label: {
             Image(systemName: "person.2.fill")
                 .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                .foregroundStyle(theme.muted)
         }
         .menuStyle(.borderlessButton)
         .help("Select Team")
@@ -137,7 +139,7 @@ struct RecentlyUpdatedView: View {
         } label: {
             Image(systemName: "arrow.up.arrow.down")
                 .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                .foregroundStyle(theme.muted)
         }
         .menuStyle(.borderlessButton)
         .help("Sort Order")
