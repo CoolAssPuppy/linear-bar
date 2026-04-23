@@ -67,6 +67,17 @@ class AppSettings: ObservableObject {
         }
     }
 
+    /// When on, every popover tab reads from `TestDataProvider` instead of
+    /// issuing live queries. Useful for demos and screenshots; the toggle
+    /// lives in Settings.
+    @Published var demoModeEnabled: Bool {
+        didSet {
+            TestDataProvider.isDemoModeEnabled = demoModeEnabled
+            UserDefaults.standard.set(demoModeEnabled, forKey: "demoModeEnabled")
+            NotificationCenter.default.post(name: .refreshAllData, object: nil)
+        }
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -106,6 +117,9 @@ class AppSettings: ObservableObject {
 
         let teamKey = UserDefaults.standard.string(forKey: "selectedTeamKey")
         self.selectedTeamKey = teamKey?.isEmpty == false ? teamKey : nil
+
+        self.demoModeEnabled = UserDefaults.standard.bool(forKey: "demoModeEnabled")
+        TestDataProvider.isDemoModeEnabled = self.demoModeEnabled
 
         loadAccounts()
         syncAllSettingsFromiCloudToUserDefaults()

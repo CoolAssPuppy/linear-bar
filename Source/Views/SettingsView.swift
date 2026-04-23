@@ -36,6 +36,7 @@ struct SettingsView: View {
 
                 VStack(spacing: 14) {
                     updatesCard
+                    demoModeCard
                     supportCard
                 }
                 .frame(maxWidth: .infinity)
@@ -105,6 +106,26 @@ struct SettingsView: View {
                 description: "Global shortcut to open the menu bar popover from any app."
             ) {
                 KeyboardShortcuts.Recorder(for: .toggleLinearBar)
+            }
+        }
+    }
+
+    // MARK: - Demo mode
+
+    private var demoModeCard: some View {
+        AppCard("Demo Mode") {
+            AppSettingRow(
+                "Show sample data",
+                description: "Replaces your live data with fictional content. Handy for screenshots or demos — no network calls are made while on."
+            ) {
+                Toggle("", isOn: Binding(
+                    get: { settings.demoModeEnabled },
+                    set: { settings.demoModeEnabled = $0 }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .tint(theme.primary)
             }
         }
     }
