@@ -1,11 +1,37 @@
-//
 //  SharedComponents.swift
-//  Mail Notifier
-//
-//  Copyright (c) 2025 Strategic Nerds. All rights reserved.
-//
 
 import SwiftUI
+
+// MARK: - Themed surface modifier
+
+/// Applies the standard rounded-rectangle fill + strokeBorder pair used
+/// throughout the app. Dozens of call sites hand-rolled this pattern — now
+/// they compose `.appSurface(radius: .lg)` instead.
+struct AppSurfaceStyle: ViewModifier {
+    let radius: CGFloat
+    let fill: Color
+    let border: Color
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(border, lineWidth: 1)
+            )
+    }
+}
+
+extension View {
+    /// Themed card chrome: rounded fill + matching 1pt border. Pass custom
+    /// colors to override the defaults (e.g., the search field uses
+    /// `theme.card` + `theme.border`; alert cards use tinted variants).
+    func appSurface(radius: CGFloat, fill: Color, border: Color) -> some View {
+        modifier(AppSurfaceStyle(radius: radius, fill: fill, border: border))
+    }
+}
 
 // MARK: - Card
 
@@ -32,14 +58,7 @@ struct AppCard<Trailing: View, Content: View>: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 18)
-        .background(
-            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
-                .fill(theme.card)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
-                .strokeBorder(theme.border, lineWidth: 1)
-        )
+        .appSurface(radius: AppRadius.xl, fill: theme.card, border: theme.border)
     }
 }
 

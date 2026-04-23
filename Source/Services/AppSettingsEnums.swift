@@ -59,7 +59,6 @@ extension Notification.Name {
     static let refreshAllData = Notification.Name("refreshAllData")
 
     /// Posted to toggle the Settings drawer inside the main window.
-    /// Mirrors mail-notifier's `.openSettingsDrawer` mechanism.
     static let openSettingsDrawer = Notification.Name("openSettingsDrawer")
 
     /// Posted when the user wants to open the main window without the

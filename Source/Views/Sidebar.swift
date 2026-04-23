@@ -1,15 +1,12 @@
-//
 //  Sidebar.swift
 //  Linear Bar
-//
 //  Copyright (c) 2026 Strategic Nerds. All rights reserved.
-//
 
 import SwiftUI
 
 /// Left-hand sidebar for the main window: brand header, workspaces list,
 /// and a footer that can open the Settings drawer.
-/// Mirrors `Sidebar` in mail-notifier.
+///
 struct LinearSidebar: View {
     @ObservedObject private var settings = AppSettings.shared
     @Environment(\.theme) private var theme

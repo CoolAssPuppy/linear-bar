@@ -1,9 +1,5 @@
-//
 //  UpdaterManager.swift
-//  Mail Notifier
-//
 //  Copyright (c) 2026 Strategic Nerds. All rights reserved.
-//
 
 import AppKit
 import Combine

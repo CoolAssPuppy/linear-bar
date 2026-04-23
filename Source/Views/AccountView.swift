@@ -1,16 +1,12 @@
-//
 //  AccountView.swift
 //  Linear Bar
-//
 //  Copyright (c) 2026 Strategic Nerds. All rights reserved.
-//
 
 import SwiftUI
 import AppKit
 
 /// Per-workspace detail view, shown on the right of the main window when a
 /// Linear workspace is selected in the sidebar.
-/// Mirrors `AccountView` in mail-notifier, adapted for Linear's domain.
 struct LinearAccountView: View {
     @ObservedObject private var settings = AppSettings.shared
     @Environment(\.theme) private var theme

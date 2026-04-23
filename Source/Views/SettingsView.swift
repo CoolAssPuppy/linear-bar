@@ -1,9 +1,6 @@
-//
 //  SettingsView.swift
 //  Linear Bar
-//
 //  Copyright (c) 2026 Strategic Nerds. All rights reserved.
-//
 
 import SwiftUI
 import AppKit
@@ -16,7 +13,7 @@ extension KeyboardShortcuts.Name {
 }
 
 /// Content of the Settings drawer (two-column card grid).
-/// Mirrors `SettingsView` in mail-notifier.
+///
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
     @StateObject private var updater = UpdaterManager.shared

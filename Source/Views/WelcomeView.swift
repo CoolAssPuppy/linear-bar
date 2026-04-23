@@ -1,16 +1,13 @@
-//
 //  WelcomeView.swift
 //  Linear Bar
-//
 //  Copyright (c) 2026 Strategic Nerds. All rights reserved.
-//
 
 import SwiftUI
 import AppKit
 
 /// Empty-state view shown when no Linear workspaces are connected, or when
 /// the user clicks the "Add workspace" button in the sidebar.
-/// Mirrors `WelcomeView` in mail-notifier.
+///
 struct LinearWelcomeView: View {
     @Environment(\.theme) private var theme
 

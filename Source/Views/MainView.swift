@@ -1,15 +1,12 @@
-//
 //  MainView.swift
 //  Linear Bar
-//
 //  Copyright (c) 2026 Strategic Nerds. All rights reserved.
-//
 
 import SwiftUI
 import AppKit
 
 /// The main window shell: sidebar + content + drawer overlay.
-/// Mirrors `MainView` in mail-notifier.
+///
 struct LinearMainView: View {
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var themeStore = ThemeStore.shared

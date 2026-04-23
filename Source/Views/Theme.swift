@@ -1,9 +1,4 @@
-//
 //  Theme.swift
-//  Mail Notifier
-//
-//  Copyright (c) 2025 Strategic Nerds. All rights reserved.
-//
 
 import SwiftUI
 

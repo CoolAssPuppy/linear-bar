@@ -188,8 +188,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Posting `.settingsRequested` from the popover gear (or elsewhere) lands
     /// here. We open the single main window and then post
     /// `.openSettingsDrawer`, which `LinearMainView` listens for and uses to
-    /// toggle the drawer. This mirrors mail-notifier's `showSettingsDrawer()`
-    /// path.
+    /// toggle the drawer.
     /// Popover bottom bar "macwindow" button: surface the main window
     /// without the settings drawer.
     @objc private func handleMainWindowRequest() {
