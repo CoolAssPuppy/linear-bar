@@ -52,7 +52,7 @@
 	<key>SUFeedURL</key>
 	<string>https://coolasspuppy.com/linear-bar-updates</string>
 	<key>SUPublicEDKey</key>
-	<string>REPLACE_WITH_ED25519_PUBLIC_KEY</string>
+	<string>loBHc/Xoge9RO8+ZItkDGWxt6CffronvRx3DllghNpA=</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUScheduledCheckInterval</key>
