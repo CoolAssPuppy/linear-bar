@@ -19,12 +19,6 @@ class AppSettings: ObservableObject {
         }
     }
 
-    @Published var defaultViewMode: ViewMode {
-        didSet {
-            saveSetting(defaultViewMode.rawValue, forKey: "defaultViewMode")
-        }
-    }
-
     @Published var refreshInterval: RefreshInterval {
         didSet {
             saveSetting(refreshInterval.rawValue, forKey: "refreshInterval")
@@ -79,11 +73,6 @@ class AppSettings: ObservableObject {
         self.accounts = []
 
         iCloudStore.synchronize()
-
-        let viewModeRaw = iCloudStore.string(forKey: "defaultViewMode")
-            ?? UserDefaults.standard.string(forKey: "defaultViewMode")
-            ?? ViewMode.createdByMe.rawValue
-        self.defaultViewMode = ViewMode(rawValue: viewModeRaw) ?? .createdByMe
 
         let refreshRaw = iCloudStore.string(forKey: "refreshInterval")
             ?? UserDefaults.standard.string(forKey: "refreshInterval")

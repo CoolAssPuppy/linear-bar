@@ -1,15 +1,5 @@
 import Foundation
 
-// MARK: - View Mode
-
-enum ViewMode: String, CaseIterable, Identifiable {
-    case createdByMe = "Created by Me"
-    case assignedToMe = "Assigned to Me"
-    case teamItems = "Team"
-
-    var id: String { rawValue }
-}
-
 // MARK: - Refresh Interval
 
 enum RefreshInterval: String, CaseIterable, Identifiable {

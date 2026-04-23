@@ -13,7 +13,7 @@ extension AppSettings {
     }
 
     func syncAllSettingsFromiCloudToUserDefaults() {
-        let settingsKeys = ["defaultViewMode", "refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder"]
+        let settingsKeys = ["refreshInterval", "launchAtLogin", "defaultTab", "showCompletedItems", "showCanceledItems", "sortOrder"]
 
         for key in settingsKeys {
             if let value = iCloudStore.object(forKey: key) {
@@ -65,10 +65,6 @@ extension AppSettings {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            if keys.contains("defaultViewMode") {
-                let viewModeRaw = UserDefaults.standard.string(forKey: "defaultViewMode") ?? ViewMode.createdByMe.rawValue
-                self.defaultViewMode = ViewMode(rawValue: viewModeRaw) ?? .createdByMe
-            }
             if keys.contains("refreshInterval") {
                 let refreshRaw = UserDefaults.standard.string(forKey: "refreshInterval") ?? RefreshInterval.fifteenMinutes.rawValue
                 self.refreshInterval = RefreshInterval(rawValue: refreshRaw) ?? .fifteenMinutes
