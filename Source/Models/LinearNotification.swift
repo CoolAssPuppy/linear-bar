@@ -22,10 +22,6 @@ struct LinearNotification: Identifiable, Codable, Hashable {
     let project: NotificationProjectTarget?
     let document: NotificationDocumentTarget?
 
-    // IssueNotification-only extras.
-    let commentId: String?
-    let reactionEmoji: String?
-
     /// Short verb phrase describing the notification reason. Rendered to the
     /// right of the actor's name in the inbox row.
     var reasonPhrase: String {
@@ -102,9 +98,6 @@ struct NotificationIssueTarget: Codable, Hashable {
     let priority: Int?
     let priorityLabel: String?
     let team: NotificationTeamRef?
-    /// Absolute timestamp when the SLA on the issue will breach. Matches
-    /// Linear's `Issue.slaBreachesAt`.
-    let slaBreachesAt: Date?
 }
 
 struct NotificationProjectTarget: Codable, Hashable {

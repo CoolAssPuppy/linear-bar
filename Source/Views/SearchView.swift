@@ -17,6 +17,9 @@ struct SearchView: View {
             subHeader
             searchField
 
+            // Group fills available space — otherwise a short prompt/empty
+            // state would leave leftover space that SwiftUI centers the whole
+            // column inside, pushing the search input away from the top.
             Group {
                 if isSearching {
                     LoadingStateView("Searching…")
@@ -34,6 +37,7 @@ struct SearchView: View {
                     resultsView
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -108,15 +112,13 @@ struct SearchView: View {
     }
 
     private var promptView: some View {
-        VStack(spacing: 8) {
-            Text("Start typing to search everything in this workspace.")
-                .font(.system(size: 11))
-                .foregroundStyle(theme.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-        }
-        .padding(.vertical, 28)
-        .frame(maxWidth: .infinity)
+        Text("Start typing to search everything in this workspace.")
+            .font(.system(size: 11))
+            .foregroundStyle(theme.tertiary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 32)
+            .padding(.top, 18)
     }
 
     private var emptyResultsView: some View {

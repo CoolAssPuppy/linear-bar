@@ -86,30 +86,46 @@ class LinearAPI {
             throw LinearError.rateLimitExceeded
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
-            if let errorBody = String(data: data, encoding: .utf8) {
-                AppLogger.privateError("HTTP \(httpResponse.statusCode) error response: \(errorBody)", log: AppLogger.api)
+        // Linear returns structured GraphQL errors inside the response body
+        // for validation / schema errors — sometimes with a 200 status code,
+        // sometimes with 400. Try to decode the body either way, so a field
+        // typo surfaces as a useful `graphQLError(message)` instead of an
+        // opaque HTTP 400.
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        if let decoded = try? decoder.decode(GraphQLResponse<T>.self, from: data) {
+            if let errors = decoded.errors, !errors.isEmpty {
+                let message = errors.map { $0.message }.joined(separator: ", ")
+                AppLogger.privateError("GraphQL error: \(message)", log: AppLogger.api)
+                throw LinearError.graphQLError(message)
             }
-            throw LinearError.networkError(NSError(domain: "LinearAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"]))
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw LinearError.networkError(NSError(
+                    domain: "LinearAPI",
+                    code: httpResponse.statusCode,
+                    userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"]
+                ))
+            }
+
+            return decoded
         }
 
-        do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let graphQLResponse = try decoder.decode(GraphQLResponse<T>.self, from: data)
+        // Body wasn't a GraphQL response at all — only log privately because
+        // the raw body can include arbitrary content.
+        if let body = String(data: data, encoding: .utf8) {
+            AppLogger.privateError("Non-GraphQL response (status \(httpResponse.statusCode)): \(body)", log: AppLogger.api)
+        }
 
-            if let errors = graphQLResponse.errors, !errors.isEmpty {
-                let errorMessage = errors.map { $0.message }.joined(separator: ", ")
-                throw LinearError.graphQLError(errorMessage)
-            }
-
-            return graphQLResponse
-        } catch let error as LinearError {
-            throw error
-        } catch {
-            AppLogger.error("Decoding error", log: AppLogger.api, error: error)
+        if (200...299).contains(httpResponse.statusCode) {
             throw LinearError.invalidResponse
         }
+
+        throw LinearError.networkError(NSError(
+            domain: "LinearAPI",
+            code: httpResponse.statusCode,
+            userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"]
+        ))
     }
 }
 

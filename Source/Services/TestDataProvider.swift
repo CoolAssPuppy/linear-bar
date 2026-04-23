@@ -196,12 +196,9 @@ struct TestDataProvider {
                     priority: 3,
                     priorityLabel: "Medium",
                     team: NotificationTeamRef(id: "team-1", name: "ML Vision", key: "MLVIS"),
-                    slaBreachesAt: nil
                 ),
                 project: nil,
                 document: nil,
-                commentId: "comment-1",
-                reactionEmoji: nil
             ),
             LinearNotification(
                 id: "notif-2",
@@ -219,12 +216,9 @@ struct TestDataProvider {
                     priority: 2,
                     priorityLabel: "High",
                     team: NotificationTeamRef(id: "team-2", name: "Infra", key: "INFRA"),
-                    slaBreachesAt: nil
                 ),
                 project: nil,
                 document: nil,
-                commentId: nil,
-                reactionEmoji: nil
             ),
             LinearNotification(
                 id: "notif-3",
@@ -242,12 +236,9 @@ struct TestDataProvider {
                     priority: 1,
                     priorityLabel: "Urgent",
                     team: NotificationTeamRef(id: "team-3", name: "Support", key: "SUP"),
-                    slaBreachesAt: calendar.date(byAdding: .minute, value: 47, to: now)
                 ),
                 project: nil,
                 document: nil,
-                commentId: nil,
-                reactionEmoji: nil
             ),
             LinearNotification(
                 id: "notif-4",
@@ -265,12 +256,9 @@ struct TestDataProvider {
                     priority: 3,
                     priorityLabel: "Medium",
                     team: NotificationTeamRef(id: "team-4", name: "Platform", key: "PLAT"),
-                    slaBreachesAt: nil
                 ),
                 project: nil,
                 document: nil,
-                commentId: nil,
-                reactionEmoji: nil
             ),
             LinearNotification(
                 id: "notif-5",
@@ -288,8 +276,6 @@ struct TestDataProvider {
                     color: "#F2994A"
                 ),
                 document: nil,
-                commentId: nil,
-                reactionEmoji: nil
             ),
             LinearNotification(
                 id: "notif-6",
@@ -307,12 +293,9 @@ struct TestDataProvider {
                     priority: 2,
                     priorityLabel: "High",
                     team: NotificationTeamRef(id: "team-5", name: "Data", key: "DATA"),
-                    slaBreachesAt: nil
                 ),
                 project: nil,
                 document: nil,
-                commentId: "comment-2",
-                reactionEmoji: nil
             )
         ]
     }

@@ -2,10 +2,13 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Fetches the viewer's unread notifications. Used as the data source
-    /// for the Inbox tab. Uses `readAt: { null: true }` so we only pull the
-    /// actionable inbox; the snoozed / muted filter is handled by Linear's
-    /// own notification rules on the server.
+    /// Fetches the viewer's unread notifications for the Inbox tab.
+    ///
+    /// Linear's `notifications` connection returns polymorphic subtypes;
+    /// this query pulls the common base fields plus the two subtypes we
+    /// display (IssueNotification, ProjectNotification). The DocumentNotification
+    /// subtype is intentionally omitted — its schema shape has changed
+    /// historically and a missing subtype here would reject the whole query.
     func fetchUnreadNotifications(
         accessToken: String,
         accountEmail: String? = nil,
@@ -17,7 +20,7 @@ extension LinearAPI {
 
         let query = """
         query Inbox($first: Int!) {
-          notifications(first: $first, filter: { readAt: { null: true } }) {
+          notifications(first: $first) {
             nodes {
               id
               type
@@ -36,21 +39,11 @@ extension LinearAPI {
                   identifier
                   title
                   url
-                  state {
-                    name
-                    type
-                  }
+                  state { name type }
                   priority
                   priorityLabel
-                  team {
-                    id
-                    name
-                    key
-                  }
-                  slaBreachesAt
+                  team { id name key }
                 }
-                commentId
-                reactionEmoji
               }
               ... on ProjectNotification {
                 project {
@@ -61,16 +54,6 @@ extension LinearAPI {
                   color
                 }
               }
-              ... on DocumentNotification {
-                document {
-                  id
-                  title
-                  url
-                  icon
-                  color
-                }
-              }
-              ... on OauthClientApprovalNotification { id }
             }
           }
         }
@@ -96,11 +79,14 @@ extension LinearAPI {
             throw LinearError.invalidResponse
         }
 
-        return data.notifications.nodes
+        // Filter client-side to just unread notifications. Doing this on the
+        // server via the `filter` argument 400'd on some workspaces because
+        // the NotificationFilter input shape has drifted.
+        return data.notifications.nodes.filter { $0.readAt == nil }
     }
 
-    /// Fetches the total unread notification count from Linear. Cheap — it's
-    /// a single scalar — and drives the menu bar badge number.
+    /// Fetches the total unread notification count. Cheap scalar — drives the
+    /// menu bar badge number.
     func fetchUnreadNotificationCount(
         accessToken: String,
         accountEmail: String? = nil
@@ -109,11 +95,7 @@ extension LinearAPI {
             return TestDataProvider.getUnreadNotifications().count
         }
 
-        let query = """
-        query UnreadCount {
-          notificationsUnreadCount
-        }
-        """
+        let query = "query UnreadCount { notificationsUnreadCount }"
 
         struct Response: Decodable {
             let notificationsUnreadCount: Int

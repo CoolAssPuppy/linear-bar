@@ -151,7 +151,10 @@ struct PulseView: View {
         let teams = try await teamsTask
         let cycleBundle = try await cycleTask
 
+        // The cycle's issues connection returns every issue, so filter
+        // completed / canceled out client-side before ranking by risk.
         let ranked = (cycleBundle.cycle?.issues.nodes ?? [])
+            .filter { $0.state?.isOpen ?? true }
             .sorted { $0.riskReason.severity < $1.riskReason.severity }
 
         await MainActor.run {

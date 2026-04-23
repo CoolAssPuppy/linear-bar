@@ -3,9 +3,10 @@ import Foundation
 extension LinearAPI {
 
     /// Fetches the active cycle for a specific team plus the at-risk issues
-    /// threatening it. Powers the Pulse tab. "At risk" means any non-done,
-    /// non-canceled issue assigned to the current cycle — the client then
-    /// ranks them by risk signal (SLA, unassigned, stale, blocked) for display.
+    /// threatening it. Powers the Pulse tab.
+    ///
+    /// Note: `slaBreachesAt` is included on Issue — not every workspace has
+    /// SLA enabled, but the field is schema-safe everywhere.
     func fetchActiveCycleWithIssues(
         teamId: String,
         accessToken: String,
@@ -31,7 +32,7 @@ extension LinearAPI {
               scopeHistory
               completedScopeHistory
               inProgressScopeHistory
-              issues(first: 100, filter: { state: { type: { nin: ["completed", "canceled"] } } }) {
+              issues(first: 100) {
                 nodes {
                   id
                   identifier
@@ -41,14 +42,8 @@ extension LinearAPI {
                   dueDate
                   priority
                   priorityLabel
-                  state {
-                    name
-                    type
-                  }
-                  assignee {
-                    name
-                  }
-                  slaBreachesAt
+                  state { name type }
+                  assignee { name }
                 }
               }
             }
@@ -88,9 +83,8 @@ extension LinearAPI {
     }
 }
 
-/// The complete Pulse payload for a single team: team identity plus either
-/// its active cycle (with embedded issues) or nil if the team has no active
-/// cycle configured.
+/// Bundle of team identity + its active cycle. `cycle` is nil when the team
+/// doesn't have cycles enabled or has no cycle currently active.
 struct ActiveCycleBundle {
     let teamId: String
     let teamName: String

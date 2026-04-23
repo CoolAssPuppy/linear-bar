@@ -26,6 +26,7 @@ struct MenuBarView: View {
                 Divider().background(theme.divider)
 
                 contentArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(theme.background)
             }
 

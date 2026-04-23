@@ -35,19 +35,17 @@ struct LinearAccountView: View {
             header
 
             ScrollView {
-                HStack(alignment: .top, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        identityCard
-                        teamsCard
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    VStack(alignment: .leading, spacing: 18) {
-                        notificationsCard
-                        managementCard
-                    }
-                    .frame(maxWidth: .infinity)
+                // Single column. A two-column layout at the default window
+                // width (~820pt content area) gave each card ~370pt and the
+                // AppSettingRow descriptions wrapped character-by-character.
+                // Stacking is less dense but actually readable.
+                VStack(alignment: .leading, spacing: 18) {
+                    identityCard
+                    teamsCard
+                    notificationsCard
+                    managementCard
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 28)
                 .padding(.vertical, 24)
             }

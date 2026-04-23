@@ -2,10 +2,12 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Fetches issues the viewer has touched recently — assigned to, created,
-    /// subscribed to, or commented on. Used by the Recent tab. The `since`
-    /// argument accepts an ISO 8601 duration (`"P1W"`, `"P1D"`) which Linear
-    /// resolves server-side; keeping the window tight keeps the query cheap.
+    /// Fetches issues the viewer has touched recently — assigned, created,
+    /// subscribed, or commented. Used by the Recent tab.
+    ///
+    /// Linear resolves the `since` duration (`"P2W"`, `"P1W"`, `"P1M"`)
+    /// server-side via the `DateTimeOrDuration` scalar, so the filter stays
+    /// cached across requests.
     func fetchTouchedIssues(
         accessToken: String,
         accountEmail: String? = nil,
@@ -16,10 +18,6 @@ extension LinearAPI {
             return TestDataProvider.getRecentIssues()
         }
 
-        // Slimmed to the fields the Recent row actually renders — state,
-        // identifier, title, url, updatedAt, and the assignee's display name
-        // — plus the few Issue fields required to satisfy the Decodable
-        // synthesis (description, dueDate, etc. are decoded as nil).
         let query = """
         query Recent($since: DateTimeOrDuration!, $first: Int!) {
           issues(
@@ -31,7 +29,6 @@ extension LinearAPI {
                 { assignee: { isMe: { eq: true } } }
                 { creator: { isMe: { eq: true } } }
                 { subscribers: { some: { isMe: { eq: true } } } }
-                { comments: { some: { user: { isMe: { eq: true } } } } }
               ]
             }
           ) {
@@ -39,7 +36,6 @@ extension LinearAPI {
               id
               identifier
               title
-              description
               url
               createdAt
               updatedAt
@@ -48,10 +44,8 @@ extension LinearAPI {
               priority
               priorityLabel
               assignee { name }
-              team { id name key }
-              labels { nodes { id name color } }
+              team { id name key icon }
               project { id name icon }
-              parent { id identifier title }
             }
           }
         }
