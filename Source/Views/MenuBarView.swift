@@ -32,7 +32,7 @@ struct MenuBarView: View {
 
             Divider().background(theme.divider)
             BottomBar(onRefresh: triggerRefresh,
-                      onOpenWindow: openSettings,
+                      onOpenWindow: openMainWindow,
                       onSettings: openSettings,
                       onQuit: quitApp)
         }
@@ -86,6 +86,10 @@ struct MenuBarView: View {
 
     private func openSettings() {
         NotificationCenter.default.post(name: .settingsRequested, object: nil)
+    }
+
+    private func openMainWindow() {
+        NotificationCenter.default.post(name: .mainWindowRequested, object: nil)
     }
 
     private func openLinearCreate(type: String) {
@@ -215,12 +219,21 @@ private struct HeaderBar: View {
     let onCreate: (String) -> Void
     let isRefreshing: Bool
 
+    @ObservedObject private var settings = AppSettings.shared
     @Environment(\.theme) private var theme
 
     var body: some View {
         HStack(spacing: 10) {
             BrandMark()
-            WorkspacePicker()
+
+            // Workspace picker only appears when multiple accounts are
+            // configured. With one account the header would just repeat the
+            // workspace name — wasted space in a 400pt popover.
+            if settings.accounts.count > 1 {
+                WorkspacePicker()
+            } else {
+                Spacer(minLength: 0)
+            }
 
             Menu {
                 Button { onCreate("issue") } label: {

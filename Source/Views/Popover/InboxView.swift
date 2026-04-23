@@ -40,6 +40,9 @@ struct InboxView: View {
                 loadData()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .teamFilterChanged)) { _ in
+            rebuildGroups()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
         }
@@ -49,7 +52,7 @@ struct InboxView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            PopoverTeamPlaceholder()
+            PopoverTeamChip()
             Spacer(minLength: 0)
             Text(unreadLabel)
                 .font(.system(size: 11, weight: .medium))
@@ -87,12 +90,25 @@ struct InboxView: View {
         let now = Date()
         let startOfToday = calendar.startOfDay(for: now)
         let startOfYesterday = calendar.date(byAdding: .day, value: -1, to: startOfToday) ?? startOfToday
+        let selectedTeam = AppSettings.shared.selectedTeamId
 
         var today: [LinearNotification] = []
         var yesterday: [LinearNotification] = []
         var earlier: [LinearNotification] = []
 
-        let sorted = notifications.sorted {
+        let filtered: [LinearNotification]
+        if let selectedTeam {
+            // Notifications about projects/documents don't carry a team id,
+            // so team filtering applies only to issue-targeted rows.
+            filtered = notifications.filter { notif in
+                if let teamId = notif.issue?.team?.id { return teamId == selectedTeam }
+                return false
+            }
+        } else {
+            filtered = notifications
+        }
+
+        let sorted = filtered.sorted {
             ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast)
         }
 
@@ -245,17 +261,38 @@ private struct NotificationAvatar: View {
 
     var body: some View {
         ZStack {
+            if let urlString = notification.actor?.avatarUrl,
+               let url = URL(string: urlString) {
+                AsyncImage(url: url, transaction: Transaction(animation: .default)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    default:
+                        initialsCircle
+                    }
+                }
+            } else {
+                initialsCircle
+            }
+        }
+        .frame(width: 22, height: 22)
+        .clipShape(Circle())
+    }
+
+    private var initialsCircle: some View {
+        ZStack {
             Circle().fill(backgroundColor)
             Text(notification.actor?.initials ?? "LI")
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(Color.black.opacity(0.8))
         }
-        .frame(width: 22, height: 22)
     }
 
-    /// Stable pseudo-random color per actor. Uses a run-invariant digest
-    /// (sum of UTF-8 bytes) instead of `Int.hashValue`, which is seeded per
-    /// process and would shuffle avatar colors on every launch.
+    /// Stable pseudo-random color per actor. UTF-8 sum instead of
+    /// `Int.hashValue` because the latter is re-seeded per process and
+    /// would shuffle avatar colors on every launch.
     private var backgroundColor: Color {
         let identity = notification.actor?.id
             ?? notification.actor?.displayName

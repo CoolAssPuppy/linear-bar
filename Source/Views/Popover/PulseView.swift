@@ -4,12 +4,13 @@ import SwiftUI
 /// cycle, ranked by risk reason. See Paper artboard "Popover - Pulse".
 struct PulseView: View {
     @State private var bundle: ActiveCycleBundle?
-    @State private var availableTeams: [Team] = []
     @State private var atRisk: [CycleIssue] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
 
+    @ObservedObject private var teamsStore = TeamsStore.shared
+    @ObservedObject private var settings = AppSettings.shared
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -35,10 +36,14 @@ struct PulseView: View {
             }
         }
         .onAppear {
+            teamsStore.loadIfNeeded()
             if !hasLoadedOnce {
                 hasLoadedOnce = true
                 loadData()
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .teamFilterChanged)) { _ in
+            loadData()
         }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
@@ -49,20 +54,7 @@ struct PulseView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            if availableTeams.isEmpty {
-                PopoverTeamPlaceholder()
-            } else {
-                PopoverChip(
-                    prefix: nil,
-                    selection: Binding(
-                        get: { selectedTeam ?? availableTeams[0] },
-                        set: { selectTeam($0) }
-                    ),
-                    options: availableTeams,
-                    label: { $0.name },
-                    selectionWeight: .foreground
-                )
-            }
+            PopoverTeamChip()
             Spacer(minLength: 0)
             liveIndicator
         }
@@ -104,20 +96,6 @@ struct PulseView: View {
 
     // MARK: - Data
 
-    private var selectedTeam: Team? {
-        if let teamId = bundle?.teamId,
-           let match = availableTeams.first(where: { $0.id == teamId }) {
-            return match
-        }
-        return availableTeams.first(where: { $0.id == AppSettings.shared.selectedTeamId })
-    }
-
-    private func selectTeam(_ team: Team) {
-        AppSettings.shared.selectedTeamId = team.id
-        AppSettings.shared.selectedTeamKey = team.key
-        loadData()
-    }
-
     private func loadData() {
         let session: PopoverSession
         do {
@@ -143,56 +121,69 @@ struct PulseView: View {
     }
 
     private func performFetch(session: PopoverSession) async throws {
-        // Team list and cycle bundle can run in parallel on cold start; the
-        // cycle query only needs the selected team id, not the full list.
-        async let teamsTask = fetchTeamsIfNeeded(session: session)
-        async let cycleTask = fetchCycleBundle(session: session)
+        let teams: [Team]
+        if teamsStore.teams.isEmpty {
+            teams = try await LinearAPI.shared.fetchTeams(
+                accessToken: session.accessToken,
+                accountEmail: session.accountEmail
+            )
+        } else {
+            teams = teamsStore.teams
+        }
 
-        let teams = try await teamsTask
-        let cycleBundle = try await cycleTask
+        guard !teams.isEmpty else {
+            await MainActor.run {
+                bundle = nil
+                atRisk = []
+                isLoading = false
+                errorMessage = "No teams available on this account."
+            }
+            return
+        }
 
-        // The cycle's issues connection returns every issue, so filter
-        // completed / canceled out client-side before ranking by risk.
-        let ranked = (cycleBundle.cycle?.issues.nodes ?? [])
-            .filter { $0.state?.isOpen ?? true }
-            .sorted { $0.riskReason.severity < $1.riskReason.severity }
+        // If the user picked a team via the shared picker, scope to that.
+        // Otherwise walk the team list looking for the first one that has an
+        // active cycle. This means Pulse still has something to show when
+        // the user hasn't explicitly chosen a team.
+        let candidateTeams: [Team]
+        if let pinned = settings.selectedTeamId,
+           let match = teams.first(where: { $0.id == pinned }) {
+            candidateTeams = [match]
+        } else {
+            candidateTeams = teams
+        }
 
+        for team in candidateTeams {
+            let bundle = try await LinearAPI.shared.fetchActiveCycleWithIssues(
+                teamId: team.id,
+                accessToken: session.accessToken,
+                accountEmail: session.accountEmail
+            )
+            if bundle.cycle != nil {
+                let ranked = (bundle.cycle?.issues.nodes ?? [])
+                    .filter { $0.state?.isOpen ?? true }
+                    .sorted { $0.riskReason.severity < $1.riskReason.severity }
+
+                await MainActor.run {
+                    self.bundle = bundle
+                    self.atRisk = ranked
+                    self.isLoading = false
+                }
+                return
+            }
+        }
+
+        // Nothing matched — report the team we looked at so the empty state
+        // explains why it's blank rather than pretending the data isn't
+        // there.
+        let inspected = candidateTeams.first
         await MainActor.run {
-            availableTeams = teams
-            bundle = cycleBundle
-            atRisk = ranked
+            bundle = inspected.map {
+                ActiveCycleBundle(teamId: $0.id, teamName: $0.name, teamKey: $0.key, cycle: nil)
+            }
+            atRisk = []
             isLoading = false
         }
-    }
-
-    private func fetchTeamsIfNeeded(session: PopoverSession) async throws -> [Team] {
-        if !availableTeams.isEmpty { return availableTeams }
-        return try await LinearAPI.shared.fetchTeams(
-            accessToken: session.accessToken,
-            accountEmail: session.accountEmail
-        )
-    }
-
-    private func fetchCycleBundle(session: PopoverSession) async throws -> ActiveCycleBundle {
-        let targetTeamId = AppSettings.shared.selectedTeamId
-            ?? availableTeams.first?.id
-            ?? ""
-
-        guard !targetTeamId.isEmpty else {
-            // If we don't yet have a team id, let the teams fetch resolve
-            // first and retry once it populates `selectedTeamId`.
-            throw NSError(
-                domain: "LinearBar.Pulse",
-                code: 0,
-                userInfo: [NSLocalizedDescriptionKey: "No teams available on this account."]
-            )
-        }
-
-        return try await LinearAPI.shared.fetchActiveCycleWithIssues(
-            teamId: targetTeamId,
-            accessToken: session.accessToken,
-            accountEmail: session.accountEmail
-        )
     }
 }
 

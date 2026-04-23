@@ -2,12 +2,15 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Fetches issues the viewer has touched recently — assigned, created,
-    /// subscribed, or commented. Used by the Recent tab.
+    /// Fetches issues the viewer has touched recently — assigned plus created.
+    /// Used by the Recent tab.
     ///
-    /// Linear resolves the `since` duration (`"P2W"`, `"P1W"`, `"P1M"`)
-    /// server-side via the `DateTimeOrDuration` scalar, so the filter stays
-    /// cached across requests.
+    /// Earlier attempts used a root `issues(filter: { or: [...] })` query to
+    /// merge assignee / creator / subscribers on the server, but the filter
+    /// shape rejected on at least one workspace tested. Issuing the two
+    /// documented per-user connections (`viewer.assignedIssues`,
+    /// `viewer.createdIssues`) and merging client-side is bulletproof and
+    /// cheap enough (two parallel requests instead of one).
     func fetchTouchedIssues(
         accessToken: String,
         accountEmail: String? = nil,
@@ -19,48 +22,55 @@ extension LinearAPI {
         }
 
         let query = """
-        query Recent($since: DateTimeOrDuration!, $first: Int!) {
-          issues(
-            first: $first
-            orderBy: updatedAt
-            filter: {
-              updatedAt: { gt: $since }
-              or: [
-                { assignee: { isMe: { eq: true } } }
-                { creator: { isMe: { eq: true } } }
-                { subscribers: { some: { isMe: { eq: true } } } }
-              ]
+        query Recent($first: Int!) {
+          viewer {
+            assignedIssues(first: $first, orderBy: updatedAt) {
+              nodes {
+                id
+                identifier
+                title
+                url
+                createdAt
+                updatedAt
+                dueDate
+                state { name type }
+                priority
+                priorityLabel
+                assignee { name }
+                team { id name key icon }
+                project { id name icon }
+              }
             }
-          ) {
-            nodes {
-              id
-              identifier
-              title
-              url
-              createdAt
-              updatedAt
-              dueDate
-              state { name type }
-              priority
-              priorityLabel
-              assignee { name }
-              team { id name key icon }
-              project { id name icon }
+            createdIssues(first: $first, orderBy: updatedAt) {
+              nodes {
+                id
+                identifier
+                title
+                url
+                createdAt
+                updatedAt
+                dueDate
+                state { name type }
+                priority
+                priorityLabel
+                assignee { name }
+                team { id name key icon }
+                project { id name icon }
+              }
             }
           }
         }
         """
 
-        let variables: [String: Any] = [
-            "since": since,
-            "first": limit
-        ]
+        let variables: [String: Any] = ["first": min(limit, 50)]
 
         struct Response: Decodable {
-            struct IssuesData: Decodable {
-                let nodes: [Issue]
+            struct ViewerData: Decodable {
+                struct Conn: Decodable { let nodes: [Issue] }
+                let assignedIssues: Conn
+                let createdIssues: Conn
             }
-            let issues: IssuesData
+            let viewer: ViewerData
         }
 
         let response: GraphQLResponse<Response> = try await execute(
@@ -74,6 +84,15 @@ extension LinearAPI {
             throw LinearError.invalidResponse
         }
 
-        return data.issues.nodes
+        // Merge, dedupe on id, keep the most recent version of each issue,
+        // sort by updatedAt.
+        var byId: [String: Issue] = [:]
+        for issue in data.viewer.assignedIssues.nodes + data.viewer.createdIssues.nodes {
+            byId[issue.id] = issue
+        }
+
+        return byId.values.sorted {
+            ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast)
+        }
     }
 }

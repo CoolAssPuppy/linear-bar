@@ -41,6 +41,9 @@ struct MyIssuesView: View {
             }
         }
         .onChange(of: sortMode) { _, _ in rebuildOpen() }
+        .onReceive(NotificationCenter.default.publisher(for: .teamFilterChanged)) { _ in
+            rebuildOpen()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
         }
@@ -50,7 +53,7 @@ struct MyIssuesView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            PopoverTeamPlaceholder()
+            PopoverTeamChip()
             PopoverChip(
                 prefix: "Sort:",
                 selection: $sortMode,
@@ -86,7 +89,12 @@ struct MyIssuesView: View {
     }
 
     private func rebuildOpen() {
-        let open = issues.filter { $0.state?.isOpen ?? true }
+        let selectedTeam = AppSettings.shared.selectedTeamId
+        let open = issues.filter { issue in
+            guard issue.state?.isOpen ?? true else { return false }
+            if let selectedTeam { return issue.team?.id == selectedTeam }
+            return true
+        }
         openIssues = open.sorted { lhs, rhs in
             let lhsDate = sortMode == .updated ? (lhs.updatedAt ?? .distantPast) : (lhs.createdAt ?? .distantPast)
             let rhsDate = sortMode == .updated ? (rhs.updatedAt ?? .distantPast) : (rhs.createdAt ?? .distantPast)

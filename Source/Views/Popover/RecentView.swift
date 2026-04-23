@@ -6,7 +6,7 @@ import SwiftUI
 /// "Popover - Recent".
 struct RecentView: View {
     @State private var items: [Issue] = []
-    @State private var sortedItems: [Issue] = []
+    @State private var filteredItems: [Issue] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
@@ -19,13 +19,13 @@ struct RecentView: View {
             subHeader
 
             Group {
-                if isLoading && sortedItems.isEmpty {
+                if isLoading && filteredItems.isEmpty {
                     LoadingStateView("Loading recent activity…")
                 } else if AppSettings.shared.accounts.isEmpty {
                     NoAccountView(message: "Connect your Linear account to see recent activity.")
                 } else if let error = errorMessage {
                     ErrorStateView(title: "Could not load recent activity", message: error, onRetry: loadData)
-                } else if sortedItems.isEmpty {
+                } else if filteredItems.isEmpty {
                     EmptyStateView(
                         icon: "clock",
                         title: "Nothing recent",
@@ -43,6 +43,9 @@ struct RecentView: View {
             }
         }
         .onChange(of: scope) { _, _ in loadData() }
+        .onReceive(NotificationCenter.default.publisher(for: .teamFilterChanged)) { _ in
+            rebuildFiltered()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
         }
@@ -52,7 +55,7 @@ struct RecentView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            PopoverTeamPlaceholder()
+            PopoverTeamChip()
             PopoverChip(
                 prefix: "Scope:",
                 selection: $scope,
@@ -70,7 +73,7 @@ struct RecentView: View {
     private var contentView: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(sortedItems) { issue in
+                ForEach(filteredItems) { issue in
                     CompactIssueRow(recentIssue: issue)
                 }
             }
@@ -101,7 +104,7 @@ struct RecentView: View {
                 )
                 await MainActor.run {
                     items = fetched
-                    sortedItems = fetched.sorted { ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast) }
+                    rebuildFiltered()
                     isLoading = false
                 }
             } catch {
@@ -110,6 +113,17 @@ struct RecentView: View {
                     isLoading = false
                 }
             }
+        }
+    }
+
+    private func rebuildFiltered() {
+        let selectedTeam = AppSettings.shared.selectedTeamId
+        let filtered = items.filter { issue in
+            guard let selectedTeam else { return true }
+            return issue.team?.id == selectedTeam
+        }
+        filteredItems = filtered.sorted {
+            ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast)
         }
     }
 

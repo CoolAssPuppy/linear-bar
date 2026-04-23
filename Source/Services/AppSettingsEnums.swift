@@ -62,7 +62,16 @@ extension Notification.Name {
     /// Mirrors mail-notifier's `.openSettingsDrawer` mechanism.
     static let openSettingsDrawer = Notification.Name("openSettingsDrawer")
 
+    /// Posted when the user wants to open the main window without the
+    /// Settings drawer — specifically the popover bottom bar's macwindow
+    /// button, which should just surface the accounts view.
+    static let mainWindowRequested = Notification.Name("mainWindowRequested")
+
     /// Posted when the user has selected an account from the sidebar or
     /// elsewhere. The object is the `LinearAccount` that should be shown.
     static let accountSelected = Notification.Name("accountSelected")
+
+    /// Posted when the user changes the team filter in any popover tab.
+    /// Other tabs observe this to re-filter their open data.
+    static let teamFilterChanged = Notification.Name("teamFilterChanged")
 }

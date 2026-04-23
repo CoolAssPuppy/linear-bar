@@ -66,6 +66,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NotificationCenter.default.addObserver(
             self,
+            selector: #selector(handleMainWindowRequest),
+            name: .mainWindowRequested,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
             selector: #selector(handleAccountsDidUpdate),
             name: .accountsDidUpdate,
             object: nil
@@ -184,6 +191,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// `.openSettingsDrawer`, which `LinearMainView` listens for and uses to
     /// toggle the drawer. This mirrors mail-notifier's `showSettingsDrawer()`
     /// path.
+    /// Popover bottom bar "macwindow" button: surface the main window
+    /// without the settings drawer.
+    @objc private func handleMainWindowRequest() {
+        popoverManager.close()
+        openMainWindow()
+    }
+
     @objc private func handleSettingsRequest() {
         popoverManager.close()
         openMainWindow()

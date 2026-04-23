@@ -50,7 +50,7 @@ struct SearchView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            PopoverTeamPlaceholder()
+            PopoverTeamChip()
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 14)

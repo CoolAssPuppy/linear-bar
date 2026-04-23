@@ -70,29 +70,66 @@ struct PopoverChip<Option: Hashable>: View {
     }
 }
 
-/// Placeholder team chip shown when the tab doesn't yet support filtering by
-/// team. Renders "All teams" with a chevron and no menu. Kept distinct from
-/// `PopoverChip` so the hover affordance matches the other tabs' chips
-/// without pretending there's an actionable menu behind it.
-struct PopoverTeamPlaceholder: View {
+/// Shared team filter chip. Backed by `TeamsStore`; writes the selection to
+/// `AppSettings.selectedTeamId` (nil = "All teams"). Every popover tab
+/// reads the same settings value so selecting a team in one tab scopes
+/// every other tab too.
+struct PopoverTeamChip: View {
+    @ObservedObject private var teams = TeamsStore.shared
+    @ObservedObject private var settings = AppSettings.shared
     @Environment(\.theme) private var theme
-    @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 5) {
-            Text("All teams")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(theme.muted)
-            Image(systemName: "chevron.down")
-                .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(theme.tertiary)
+        Menu {
+            Button(action: { select(nil) }) {
+                HStack {
+                    Text("All teams")
+                    if settings.selectedTeamId == nil {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+
+            if !teams.teams.isEmpty {
+                Divider()
+                ForEach(teams.teams) { team in
+                    Button(action: { select(team) }) {
+                        HStack {
+                            Text(team.name)
+                            if settings.selectedTeamId == team.id {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(currentLabel)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(theme.muted)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(theme.tertiary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(isHovered ? theme.cardInset : Color.clear)
-        )
-        .onHover { isHovered = $0 }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .onAppear { teams.loadIfNeeded() }
+    }
+
+    private var currentLabel: String {
+        guard let id = settings.selectedTeamId else { return "All teams" }
+        return teams.teams.first(where: { $0.id == id })?.name ?? "All teams"
+    }
+
+    private func select(_ team: Team?) {
+        settings.selectedTeamId = team?.id
+        settings.selectedTeamKey = team?.key
+        NotificationCenter.default.post(name: .teamFilterChanged, object: nil)
     }
 }
