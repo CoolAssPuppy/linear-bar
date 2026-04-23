@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Main popover view with tab navigation
+/// The popover view shown from the menu bar button. Hosts the chrome —
+/// title bar + tab bar + bottom bar — and swaps in the selected tab's
+/// content. All five tabs are live views; Inbox is the default.
 struct MenuBarView: View {
-    @State private var selectedTab: Tab = .favorites
+    @State private var selectedTab: Tab = .inbox
     @State private var isRefreshing = false
     @State private var lastRefreshedAt: Date = Date()
     @ObservedObject private var themeStore = ThemeStore.shared
@@ -12,8 +14,6 @@ struct MenuBarView: View {
         return VStack(spacing: 0) {
             HeaderBar(lastRefreshedAt: lastRefreshedAt,
                       onCreate: openLinearCreate,
-                      onRefresh: triggerRefresh,
-                      onSettings: openSettings,
                       isRefreshing: isRefreshing)
             Divider().background(theme.divider)
 
@@ -29,7 +29,7 @@ struct MenuBarView: View {
                       onSettings: openSettings,
                       onQuit: quitApp)
         }
-        .frame(width: 400, height: 500)
+        .frame(width: 400, height: 540)
         .background(theme.background)
         .environment(\.theme, theme)
         .environment(\.colorScheme, theme.isDark ? .dark : .light)
@@ -42,44 +42,37 @@ struct MenuBarView: View {
     }
 
     private func loadDefaultTab() {
-        let defaultTab = AppSettings.shared.defaultTab
-        switch defaultTab {
-        case .favorites:
-            selectedTab = .favorites
-        case .recent:
-            selectedTab = .recent
-        case .search:
-            selectedTab = .search
-        }
+        selectedTab = Tab(defaultTab: AppSettings.shared.defaultTab)
     }
 
-    // MARK: - Tab Bar
+    // MARK: - Tab bar
 
     private var tabBar: some View {
         HStack(spacing: 0) {
-            TabButton(tab: .favorites, icon: "star.fill", title: "Favorites", selectedTab: $selectedTab)
-            TabButton(tab: .recent, icon: "clock.arrow.circlepath", title: "Recent", selectedTab: $selectedTab)
-            TabButton(tab: .search, icon: "magnifyingglass", title: "Search", selectedTab: $selectedTab)
-        }
-        .padding(.horizontal, AppSpacing.xl)
-        .padding(.vertical, AppSpacing.md)
-        .frame(height: 44)
-    }
-
-    // MARK: - Content Area
-
-    private var contentArea: some View {
-        Group {
-            switch selectedTab {
-            case .favorites:
-                FavoritesView()
-            case .recent:
-                RecentlyUpdatedView()
-            case .search:
-                SearchView()
+            ForEach(Tab.allCases, id: \.self) { tab in
+                TabButton(tab: tab, selectedTab: $selectedTab)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 6)
+        .padding(.vertical, AppSpacing.sm)
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    private var contentArea: some View {
+        switch selectedTab {
+        case .inbox:
+            InboxView()
+        case .mine:
+            MyIssuesView()
+        case .recent:
+            RecentView()
+        case .pulse:
+            PulseView()
+        case .search:
+            SearchView()
+        }
     }
 
     // MARK: - Actions
@@ -94,8 +87,7 @@ struct MenuBarView: View {
         }
 
         let teamKey = AppSettings.shared.selectedTeamKey
-
-        var url: URL?
+        let url: URL?
 
         switch type {
         case "issue":
@@ -130,12 +122,40 @@ struct MenuBarView: View {
         NSApplication.shared.terminate(nil)
     }
 
-    // MARK: - Tab Enum
+    // MARK: - Tab enum
 
-    enum Tab {
-        case favorites
-        case recent
-        case search
+    enum Tab: String, CaseIterable {
+        case inbox, mine, recent, pulse, search
+
+        var label: String {
+            switch self {
+            case .inbox:  return "Inbox"
+            case .mine:   return "Mine"
+            case .recent: return "Recent"
+            case .pulse:  return "Pulse"
+            case .search: return "Search"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .inbox:  return "tray"
+            case .mine:   return "checkmark.circle"
+            case .recent: return "clock"
+            case .pulse:  return "waveform.path.ecg"
+            case .search: return "magnifyingglass"
+            }
+        }
+
+        init(defaultTab: DefaultTab) {
+            switch defaultTab {
+            case .inbox:  self = .inbox
+            case .mine:   self = .mine
+            case .recent: self = .recent
+            case .pulse:  self = .pulse
+            case .search: self = .search
+            }
+        }
     }
 }
 
@@ -143,27 +163,30 @@ struct MenuBarView: View {
 
 private struct TabButton: View {
     let tab: MenuBarView.Tab
-    let icon: String
-    let title: String
     @Binding var selectedTab: MenuBarView.Tab
     @Environment(\.theme) private var theme
     @State private var isHovered = false
 
     var body: some View {
         Button(action: { selectedTab = tab }) {
-            HStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
+            VStack(spacing: 5) {
+                HStack(spacing: 5) {
+                    Image(systemName: tab.icon)
+                        .font(.system(size: 11, weight: .medium))
+                    Text(tab.label)
+                        .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                }
+                .foregroundStyle(foregroundColor)
+                .padding(.horizontal, 6)
+                .padding(.top, 6)
+                .padding(.bottom, 4)
+
+                Rectangle()
+                    .fill(isSelected ? theme.primary : Color.clear)
+                    .frame(height: 1.5)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .foregroundStyle(foregroundColor)
-            .background(
-                RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
-                    .fill(backgroundFill)
-            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
@@ -172,25 +195,17 @@ private struct TabButton: View {
     private var isSelected: Bool { selectedTab == tab }
 
     private var foregroundColor: Color {
-        if isSelected { return theme.primary }
-        if isHovered { return theme.foreground }
+        if isSelected { return theme.foreground }
+        if isHovered { return theme.foregroundSoft }
         return theme.muted
-    }
-
-    private var backgroundFill: Color {
-        if isSelected { return theme.primary.opacity(0.12) }
-        if isHovered { return theme.cardElevated }
-        return .clear
     }
 }
 
-// MARK: - Header Bar
+// MARK: - Header bar
 
 private struct HeaderBar: View {
     let lastRefreshedAt: Date
     let onCreate: (String) -> Void
-    let onRefresh: () -> Void
-    let onSettings: () -> Void
     let isRefreshing: Bool
 
     @Environment(\.theme) private var theme
@@ -198,60 +213,49 @@ private struct HeaderBar: View {
     var body: some View {
         HStack(spacing: 10) {
             BrandMark()
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Linear Bar")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(theme.foreground)
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(theme.success)
-                        .frame(width: 6, height: 6)
-                        .shadow(color: theme.success.opacity(0.5), radius: 4)
-                    Text("Synced \(relativeLabel(for: lastRefreshedAt))")
-                        .font(.system(size: 10))
-                        .foregroundStyle(theme.muted)
-                }
-            }
-
-            Spacer(minLength: 8)
+            WorkspacePicker()
 
             Menu {
                 Button { onCreate("issue") } label: {
                     Label("New Issue", systemImage: "checkmark.circle")
                 }
                 Button { onCreate("project") } label: {
-                    Label("New Project", systemImage: "folder")
+                    Label("New Project", systemImage: "square.grid.2x2")
                 }
                 Button { onCreate("initiative") } label: {
-                    Label("New Initiative", systemImage: "target")
+                    Label("New Initiative", systemImage: "diamond")
                 }
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(theme.primaryForeground)
-                    .frame(width: 28, height: 26)
-                    .background(
-                        RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
-                            .fill(theme.primary)
-                    )
+                HStack(spacing: 5) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(theme.foreground)
+                    Text("New")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(theme.foreground)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(theme.tertiary)
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(
+                    RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                        .fill(theme.card)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                        .strokeBorder(theme.border, lineWidth: 1)
+                )
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("Create new item")
+            .help("Create new Linear item")
         }
-        .padding(.horizontal, AppSpacing.lg)
+        .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(theme.surface)
-    }
-
-    private func relativeLabel(for date: Date) -> String {
-        let seconds = Int(Date().timeIntervalSince(date))
-        if seconds < 60 { return "just now" }
-        if seconds < 3600 { return "\(seconds / 60)m ago" }
-        if seconds < 86400 { return "\(seconds / 3600)h ago" }
-        return "\(seconds / 86400)d ago"
     }
 }
 
@@ -268,15 +272,104 @@ private struct BrandMark: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            Image(systemName: "checkmark.square.fill")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
+                .shadow(color: theme.primary.opacity(0.28), radius: 4)
+
+            LinearGlyph()
+                .stroke(theme.primaryForeground, style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+                .frame(width: 12, height: 12)
         }
         .frame(width: 22, height: 22)
     }
 }
 
-// MARK: - Bottom Bar
+/// SwiftUI path for the Linear-style mark: five parallel diagonals on a
+/// 12×12 grid. Used in the header brand mark and mirrored in the menu bar
+/// icon renderer so both surfaces visually match.
+struct LinearGlyph: Shape {
+    func path(in rect: CGRect) -> Path {
+        // Strokes expressed in the design's 12×12 coordinate space; rescale
+        // proportionally to whatever frame the caller supplies.
+        let scaleX = rect.width / 12
+        let scaleY = rect.height / 12
+        let strokes: [(CGPoint, CGPoint)] = [
+            (CGPoint(x: 1.2, y: 6.4),  CGPoint(x: 5.6, y: 10.8)),
+            (CGPoint(x: 1.2, y: 3.4),  CGPoint(x: 8.6, y: 10.8)),
+            (CGPoint(x: 2.2, y: 1.2),  CGPoint(x: 10.8, y: 9.8)),
+            (CGPoint(x: 5.2, y: 1.2),  CGPoint(x: 10.8, y: 6.8)),
+            (CGPoint(x: 8.2, y: 1.2),  CGPoint(x: 10.8, y: 3.8))
+        ]
+
+        var path = Path()
+        for (from, to) in strokes {
+            path.move(to: CGPoint(x: from.x * scaleX, y: from.y * scaleY))
+            path.addLine(to: CGPoint(x: to.x * scaleX, y: to.y * scaleY))
+        }
+        return path
+    }
+}
+
+// MARK: - Workspace picker
+
+private struct WorkspacePicker: View {
+    @Environment(\.theme) private var theme
+    @ObservedObject private var settings = AppSettings.shared
+
+    var body: some View {
+        Menu {
+            ForEach(settings.accounts) { account in
+                Button {
+                    // Selecting an account from the popover is a placeholder
+                    // while multi-account picking lands. For now the chip
+                    // reflects whichever account is already "primary".
+                } label: {
+                    HStack {
+                        Text(account.name ?? account.email)
+                        if account.email == settings.accounts.first?.email {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(workspaceLabel)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.foreground)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(theme.tertiary)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                    .fill(theme.card)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                    .strokeBorder(theme.border, lineWidth: 1)
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("Switch workspace")
+    }
+
+    private var workspaceLabel: String {
+        if let first = settings.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }) {
+            return first.name ?? first.email
+        }
+        return "No workspace"
+    }
+}
+
+// MARK: - Bottom bar
 
 private struct BottomBar: View {
     let onRefresh: () -> Void
@@ -309,7 +402,7 @@ private struct BottomBar: View {
     }
 }
 
-// MARK: - Theme Strip
+// MARK: - Theme strip
 
 private struct ThemeStrip: View {
     @ObservedObject private var store = ThemeStore.shared

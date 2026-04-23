@@ -96,8 +96,8 @@ class AppSettings: ObservableObject {
 
         let defaultTabRaw = iCloudStore.string(forKey: "defaultTab")
             ?? UserDefaults.standard.string(forKey: "defaultTab")
-            ?? DefaultTab.favorites.rawValue
-        self.defaultTab = DefaultTab(rawValue: defaultTabRaw) ?? .favorites
+            ?? DefaultTab.inbox.rawValue
+        self.defaultTab = DefaultTab(rawValue: defaultTabRaw) ?? .inbox
 
         self.showCompletedItems = iCloudStore.object(forKey: "showCompletedItems") as? Bool
             ?? UserDefaults.standard.object(forKey: "showCompletedItems") as? Bool

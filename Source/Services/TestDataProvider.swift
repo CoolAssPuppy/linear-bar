@@ -353,6 +353,245 @@ struct TestDataProvider {
         ]
     }
 
+    // MARK: - Notifications
+
+    static func getUnreadNotifications() -> [LinearNotification] {
+        let calendar = Calendar.current
+        let now = Date()
+
+        return [
+            LinearNotification(
+                id: "notif-1",
+                type: "issueMention",
+                createdAt: calendar.date(byAdding: .minute, value: -3, to: now),
+                readAt: nil,
+                snoozedUntilAt: nil,
+                actor: NotificationActor(id: "user-1", name: "Marcus Kim", displayName: "Marcus Kim", avatarUrl: nil),
+                issue: NotificationIssueTarget(
+                    id: "issue-1",
+                    identifier: "MLVIS-284",
+                    title: "Cursor jumps to top when filtering",
+                    url: "https://linear.app/aigoggles/issue/MLVIS-284",
+                    state: IssueState(name: "In Progress", type: "started"),
+                    priority: 3,
+                    priorityLabel: "Medium",
+                    team: NotificationTeamRef(id: "team-1", name: "ML Vision", key: "MLVIS"),
+                    slaBreachesAt: nil
+                ),
+                project: nil,
+                document: nil,
+                commentId: "comment-1",
+                reactionEmoji: nil
+            ),
+            LinearNotification(
+                id: "notif-2",
+                type: "issueAssignedToYou",
+                createdAt: calendar.date(byAdding: .minute, value: -18, to: now),
+                readAt: nil,
+                snoozedUntilAt: nil,
+                actor: NotificationActor(id: "user-2", name: "Jordan Lee", displayName: "Jordan Lee", avatarUrl: nil),
+                issue: NotificationIssueTarget(
+                    id: "issue-2",
+                    identifier: "INFRA-902",
+                    title: "Migrate logging pipeline to Vector",
+                    url: "https://linear.app/aigoggles/issue/INFRA-902",
+                    state: IssueState(name: "Todo", type: "unstarted"),
+                    priority: 2,
+                    priorityLabel: "High",
+                    team: NotificationTeamRef(id: "team-2", name: "Infra", key: "INFRA"),
+                    slaBreachesAt: nil
+                ),
+                project: nil,
+                document: nil,
+                commentId: nil,
+                reactionEmoji: nil
+            ),
+            LinearNotification(
+                id: "notif-3",
+                type: "issueSlaHighRisk",
+                createdAt: calendar.date(byAdding: .minute, value: -47, to: now),
+                readAt: nil,
+                snoozedUntilAt: nil,
+                actor: NotificationActor(id: "system", name: "Linear", displayName: "Linear", avatarUrl: nil),
+                issue: NotificationIssueTarget(
+                    id: "issue-3",
+                    identifier: "SUP-4419",
+                    title: "Stripe webhook retries silently dropped",
+                    url: "https://linear.app/aigoggles/issue/SUP-4419",
+                    state: IssueState(name: "In Progress", type: "started"),
+                    priority: 1,
+                    priorityLabel: "Urgent",
+                    team: NotificationTeamRef(id: "team-3", name: "Support", key: "SUP"),
+                    slaBreachesAt: calendar.date(byAdding: .minute, value: 47, to: now)
+                ),
+                project: nil,
+                document: nil,
+                commentId: nil,
+                reactionEmoji: nil
+            ),
+            LinearNotification(
+                id: "notif-4",
+                type: "issueReviewRequested",
+                createdAt: calendar.date(byAdding: .hour, value: -2, to: now),
+                readAt: nil,
+                snoozedUntilAt: nil,
+                actor: NotificationActor(id: "user-3", name: "Rafa Patel", displayName: "Rafa Patel", avatarUrl: nil),
+                issue: NotificationIssueTarget(
+                    id: "issue-4",
+                    identifier: "PLAT-221",
+                    title: "Cache layer for per-team feature flags",
+                    url: "https://linear.app/aigoggles/issue/PLAT-221",
+                    state: IssueState(name: "In Review", type: "started"),
+                    priority: 3,
+                    priorityLabel: "Medium",
+                    team: NotificationTeamRef(id: "team-4", name: "Platform", key: "PLAT"),
+                    slaBreachesAt: nil
+                ),
+                project: nil,
+                document: nil,
+                commentId: nil,
+                reactionEmoji: nil
+            ),
+            LinearNotification(
+                id: "notif-5",
+                type: "projectUpdateCreated",
+                createdAt: calendar.date(byAdding: .hour, value: -22, to: now),
+                readAt: nil,
+                snoozedUntilAt: nil,
+                actor: NotificationActor(id: "user-4", name: "Sam Okafor", displayName: "Sam Okafor", avatarUrl: nil),
+                issue: nil,
+                project: NotificationProjectTarget(
+                    id: "proj-1",
+                    name: "Payments 2.0",
+                    url: "https://linear.app/aigoggles/project/payments-2",
+                    icon: nil,
+                    color: "#F2994A"
+                ),
+                document: nil,
+                commentId: nil,
+                reactionEmoji: nil
+            ),
+            LinearNotification(
+                id: "notif-6",
+                type: "issueNewComment",
+                createdAt: calendar.date(byAdding: .day, value: -1, to: now),
+                readAt: nil,
+                snoozedUntilAt: nil,
+                actor: NotificationActor(id: "user-5", name: "Erin Wu", displayName: "Erin Wu", avatarUrl: nil),
+                issue: NotificationIssueTarget(
+                    id: "issue-5",
+                    identifier: "DATA-77",
+                    title: "Incorrect aggregation in daily active users",
+                    url: "https://linear.app/aigoggles/issue/DATA-77",
+                    state: IssueState(name: "Todo", type: "unstarted"),
+                    priority: 2,
+                    priorityLabel: "High",
+                    team: NotificationTeamRef(id: "team-5", name: "Data", key: "DATA"),
+                    slaBreachesAt: nil
+                ),
+                project: nil,
+                document: nil,
+                commentId: "comment-2",
+                reactionEmoji: nil
+            )
+        ]
+    }
+
+    // MARK: - Active cycle (Pulse)
+
+    static func getActiveCycleBundle() -> ActiveCycleBundle {
+        let calendar = Calendar.current
+        let now = Date()
+        let cycleStart = calendar.date(byAdding: .day, value: -9, to: now) ?? now
+        let cycleEnd = calendar.date(byAdding: .day, value: 4, to: now) ?? now
+
+        let cycle = LinearCycle(
+            id: "cycle-1",
+            name: "Platform Cycle 24",
+            number: 24,
+            startsAt: cycleStart,
+            endsAt: cycleEnd,
+            progress: 0.67,
+            scopeHistory: [44, 46, 48, 50, 52, 53, 53, 54, 55],
+            completedScopeHistory: [0, 4, 9, 15, 22, 27, 32, 35, 37],
+            inProgressScopeHistory: [2, 3, 4, 4, 5, 5, 4, 5, 5],
+            issues: LinearCycle.IssueCollection(nodes: [
+                CycleIssue(
+                    id: "issue-3",
+                    identifier: "SUP-4419",
+                    title: "Stripe webhook retries silently dropped",
+                    url: "https://linear.app/aigoggles/issue/SUP-4419",
+                    updatedAt: calendar.date(byAdding: .hour, value: -1, to: now),
+                    dueDate: nil,
+                    priority: 1,
+                    priorityLabel: "Urgent",
+                    state: IssueState(name: "In Progress", type: "started"),
+                    assignee: User(name: "Marcus Kim"),
+                    slaBreachesAt: calendar.date(byAdding: .minute, value: 47, to: now)
+                ),
+                CycleIssue(
+                    id: "issue-4",
+                    identifier: "PLAT-221",
+                    title: "Cache layer for per-team feature flags",
+                    url: "https://linear.app/aigoggles/issue/PLAT-221",
+                    updatedAt: calendar.date(byAdding: .day, value: -3, to: now),
+                    dueDate: nil,
+                    priority: 3,
+                    priorityLabel: "Medium",
+                    state: IssueState(name: "In Review", type: "started"),
+                    assignee: User(name: "Rafa Patel"),
+                    slaBreachesAt: nil
+                ),
+                CycleIssue(
+                    id: "issue-2",
+                    identifier: "INFRA-902",
+                    title: "Migrate logging pipeline to Vector",
+                    url: "https://linear.app/aigoggles/issue/INFRA-902",
+                    updatedAt: calendar.date(byAdding: .hour, value: -4, to: now),
+                    dueDate: nil,
+                    priority: 2,
+                    priorityLabel: "High",
+                    state: IssueState(name: "Todo", type: "unstarted"),
+                    assignee: nil,
+                    slaBreachesAt: nil
+                ),
+                CycleIssue(
+                    id: "issue-5",
+                    identifier: "DATA-77",
+                    title: "Incorrect aggregation in daily active users",
+                    url: "https://linear.app/aigoggles/issue/DATA-77",
+                    updatedAt: calendar.date(byAdding: .hour, value: -6, to: now),
+                    dueDate: nil,
+                    priority: 2,
+                    priorityLabel: "High",
+                    state: IssueState(name: "Blocked", type: "started"),
+                    assignee: User(name: "Erin Wu"),
+                    slaBreachesAt: nil
+                ),
+                CycleIssue(
+                    id: "issue-6",
+                    identifier: "PLAT-240",
+                    title: "Audit log retention policy docs",
+                    url: "https://linear.app/aigoggles/issue/PLAT-240",
+                    updatedAt: calendar.date(byAdding: .day, value: -5, to: now),
+                    dueDate: nil,
+                    priority: 4,
+                    priorityLabel: "Low",
+                    state: IssueState(name: "Backlog", type: "backlog"),
+                    assignee: User(name: "Sarah Chen"),
+                    slaBreachesAt: nil
+                )
+            ])
+        )
+
+        return ActiveCycleBundle(
+            teamId: "team-4",
+            teamName: "Platform",
+            teamKey: "PLAT",
+            cycle: cycle
+        )
+    }
+
     // MARK: - Initiatives
 
     static func getInitiatives() -> [Initiative] {

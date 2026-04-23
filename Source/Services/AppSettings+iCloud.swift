@@ -77,8 +77,8 @@ extension AppSettings {
                 self.launchAtLogin = UserDefaults.standard.bool(forKey: "launchAtLogin")
             }
             if keys.contains("defaultTab") {
-                let tabRaw = UserDefaults.standard.string(forKey: "defaultTab") ?? DefaultTab.favorites.rawValue
-                self.defaultTab = DefaultTab(rawValue: tabRaw) ?? .favorites
+                let tabRaw = UserDefaults.standard.string(forKey: "defaultTab") ?? DefaultTab.inbox.rawValue
+                self.defaultTab = DefaultTab(rawValue: tabRaw) ?? .inbox
             }
             if keys.contains("showCompletedItems") {
                 self.showCompletedItems = UserDefaults.standard.bool(forKey: "showCompletedItems")

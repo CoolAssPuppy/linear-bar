@@ -40,8 +40,10 @@ enum RefreshInterval: String, CaseIterable, Identifiable {
 // MARK: - Default Tab
 
 enum DefaultTab: String, CaseIterable, Identifiable {
-    case favorites = "Favorites"
+    case inbox = "Inbox"
+    case mine = "Mine"
     case recent = "Recent"
+    case pulse = "Pulse"
     case search = "Search"
 
     var id: String { rawValue }
