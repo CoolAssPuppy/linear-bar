@@ -140,7 +140,14 @@ class AppSettings: ObservableObject {
         TestDataProvider.isDemoModeEnabled = self.demoModeEnabled
 
         loadAccounts()
-        syncAllSettingsFromiCloudToUserDefaults()
+        // Only pull from iCloud when the user has opted into sync. Previously
+        // this ran unconditionally, which meant a stale empty-accounts blob in
+        // iCloud KVS (from a machine that once had sync on, or a dev build)
+        // would overwrite the local UserDefaults["accounts"] on every launch
+        // and silently wipe every account after the next restart.
+        if iCloudSyncEnabled {
+            syncAllSettingsFromiCloudToUserDefaults()
+        }
         setupiCloudSync()
     }
 
@@ -216,7 +223,11 @@ class AppSettings: ObservableObject {
                 AppLogger.error("Error loading accounts", log: AppLogger.settings, error: error)
             }
         } else {
-            AppLogger.debug("No account data found in UserDefaults", log: AppLogger.settings)
+            // Release builds redact .debug lines, so the "UserDefaults has no
+            // accounts blob" case used to be invisible in logs — forcing us
+            // to guess at whether a persistence bug was a read miss or a
+            // wipe. Keep this at .info.
+            AppLogger.info("No account data found in UserDefaults", log: AppLogger.settings)
         }
     }
 

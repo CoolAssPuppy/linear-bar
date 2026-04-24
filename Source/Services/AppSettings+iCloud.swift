@@ -40,14 +40,43 @@ extension AppSettings {
     }
 
     /// Copies every synced key from iCloud into UserDefaults, one-way, at
-    /// launch. Called from init so a fresh install on a second device picks
-    /// up the user's prior settings.
+    /// launch. Called from init (gated on `iCloudSyncEnabled`) so a fresh
+    /// install on a second device picks up the user's prior settings.
+    ///
+    /// Belt-and-suspenders: refuse to overwrite a non-empty local accounts
+    /// list with an empty remote blob. Even with the caller gated on the
+    /// toggle, this protects against the historical wipe pattern where a
+    /// stale empty blob in iCloud KVS would silently clear every account
+    /// after one restart.
     func syncAllSettingsFromiCloudToUserDefaults() {
         for key in Self.iCloudPreferenceKeys + [Self.iCloudAccountsKey] {
-            if let value = iCloudStore.object(forKey: key) {
-                UserDefaults.standard.set(value, forKey: key)
+            guard let value = iCloudStore.object(forKey: key) else { continue }
+
+            if key == Self.iCloudAccountsKey, emptyAccountsBlobWouldWipeLocal(remote: value) {
+                AppLogger.info("Skipping iCloud accounts sync — remote blob is empty, local has entries", log: AppLogger.settings)
+                continue
             }
+
+            UserDefaults.standard.set(value, forKey: key)
         }
+    }
+
+    /// Returns true when `remote` is an encoded empty `[LinearAccount]` and
+    /// the local UserDefaults copy decodes to a non-empty list. Only in that
+    /// case do we refuse the overwrite — any other shape (nil, malformed,
+    /// non-empty remote) falls through to normal sync semantics.
+    private func emptyAccountsBlobWouldWipeLocal(remote: Any) -> Bool {
+        guard let remoteData = remote as? Data,
+              let remoteAccounts = try? JSONDecoder().decode([LinearAccount].self, from: remoteData),
+              remoteAccounts.isEmpty else {
+            return false
+        }
+        guard let localData = UserDefaults.standard.data(forKey: Self.iCloudAccountsKey),
+              let localAccounts = try? JSONDecoder().decode([LinearAccount].self, from: localData),
+              !localAccounts.isEmpty else {
+            return false
+        }
+        return true
     }
 
     func setupiCloudSync() {
