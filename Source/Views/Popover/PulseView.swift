@@ -1,21 +1,15 @@
 import SwiftUI
+import AppKit
 
-/// Pulse tab. Shows the selected team's recently edited issues, projects,
-/// and initiatives in updated order, with a 14-day activity bar chart at
-/// the top. Scoped strictly to one team — the team picker lives in the
-/// subheader. See Paper artboard "Popover - Pulse".
+/// Pulse tab. Mirrors Linear's web Pulse feed — a chronological stream
+/// of project status updates across the workspace, each tagged with the
+/// author's health classification (On track / At risk / Off track).
 struct PulseView: View {
-    @State private var issues: [Issue] = []
-    @State private var projects: [Project] = []
-    @State private var initiatives: [Initiative] = []
-    @State private var merged: [RecentArtifact] = []
-    @State private var buckets: [ActivitySpark.DayBucket] = []
+    @State private var updates: [LinearProjectUpdate] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
 
-    @ObservedObject private var teamsStore = TeamsStore.shared
-    @ObservedObject private var settings = AppSettings.shared
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -23,17 +17,17 @@ struct PulseView: View {
             subHeader
 
             Group {
-                if isLoading && merged.isEmpty {
-                    LoadingStateView("Loading activity…")
+                if isLoading && updates.isEmpty {
+                    LoadingStateView("Loading pulse…")
                 } else if AppSettings.shared.accounts.isEmpty {
-                    NoAccountView(message: "Connect your Linear account to see team activity.")
+                    NoAccountView(message: "Connect your Linear account to see workspace pulse.")
                 } else if let error = errorMessage {
-                    ErrorStateView(title: "Could not load activity", message: error, onRetry: loadData)
-                } else if merged.isEmpty {
+                    ErrorStateView(title: "Could not load pulse", message: error, onRetry: loadData)
+                } else if updates.isEmpty {
                     EmptyStateView(
                         icon: "waveform.path.ecg",
-                        title: "Nothing recent",
-                        subtitle: "No activity on this team in the last two weeks."
+                        title: "No recent updates",
+                        subtitle: "Project status updates will show up here as they're posted."
                     )
                 } else {
                     contentView
@@ -41,14 +35,10 @@ struct PulseView: View {
             }
         }
         .onAppear {
-            teamsStore.loadIfNeeded()
             if !hasLoadedOnce {
                 hasLoadedOnce = true
                 loadData()
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .teamFilterChanged)) { _ in
-            loadData()
         }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
@@ -59,20 +49,23 @@ struct PulseView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            PopoverTeamChip()
+            Text("Recent updates")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.foregroundSoft)
             Spacer(minLength: 0)
-            liveIndicator
+            Text(countLabel)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(theme.tertiary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
     }
 
-    private var liveIndicator: some View {
-        HStack(spacing: 5) {
-            Circle().fill(theme.success).frame(width: 6, height: 6)
-            Text("Live")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(theme.tertiary)
+    private var countLabel: String {
+        switch updates.count {
+        case 0:  return ""
+        case 1:  return "1 update"
+        default: return "\(updates.count) updates"
         }
     }
 
@@ -80,22 +73,13 @@ struct PulseView: View {
 
     private var contentView: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                ActivitySpark(buckets: buckets)
-                    .padding(.horizontal, 14)
-                    .padding(.top, 4)
-                    .padding(.bottom, 10)
-
-                PopoverSectionDivider(label: "Recently edited", count: merged.count)
-
-                LazyVStack(spacing: 0) {
-                    ForEach(merged) { item in
-                        RecentArtifactRow(item: item)
-                    }
+            LazyVStack(spacing: 0) {
+                ForEach(updates) { update in
+                    PulseRow(update: update)
+                    Divider().background(theme.dividerSubtle)
                 }
-
-                Spacer(minLength: 8)
             }
+            .padding(.bottom, 8)
         }
     }
 
@@ -115,27 +99,12 @@ struct PulseView: View {
 
         Task {
             do {
-                async let fetchedIssues = resolveIssues(session: session)
-                async let fetchedProjects = LinearAPI.shared.fetchRecentProjects(
+                let fetched = try await LinearAPI.shared.fetchPulseUpdates(
                     accessToken: session.accessToken,
                     accountEmail: session.accountEmail
                 )
-                async let fetchedInitiatives = LinearAPI.shared.fetchRecentInitiatives(
-                    accessToken: session.accessToken,
-                    accountEmail: session.accountEmail
-                )
-
-                // Projects/initiatives fail soft — some workspaces restrict
-                // either; an issue-only Pulse is still useful.
-                let issuesResult = try await fetchedIssues
-                let projectsResult = (try? await fetchedProjects) ?? []
-                let initiativesResult = (try? await fetchedInitiatives) ?? []
-
                 await MainActor.run {
-                    issues = issuesResult
-                    projects = projectsResult
-                    initiatives = initiativesResult
-                    rebuild()
+                    updates = fetched
                     isLoading = false
                 }
             } catch {
@@ -146,73 +115,150 @@ struct PulseView: View {
             }
         }
     }
+}
 
-    /// Selecting a specific team used to show more issues than "All teams"
-    /// because the two branches used different queries (per-team list vs
-    /// viewer-touched). Now both branches go through fetchTeamIssues — when
-    /// no team is selected, we fan out across every team the viewer is on
-    /// and merge. "All teams" is literally the union of the per-team lists.
-    private func resolveIssues(session: PopoverSession) async throws -> [Issue] {
-        if let teamId = settings.selectedTeamId {
-            return try await LinearAPI.shared.fetchTeamIssues(
-                teamId: teamId,
-                accessToken: session.accessToken,
-                accountEmail: session.accountEmail
-            )
-        }
+// MARK: - Row
 
-        let teams: [Team]
-        if teamsStore.teams.isEmpty {
-            teams = try await LinearAPI.shared.fetchTeams(
-                accessToken: session.accessToken,
-                accountEmail: session.accountEmail
-            )
-        } else {
-            teams = teamsStore.teams
-        }
+private struct PulseRow: View {
+    let update: LinearProjectUpdate
 
-        guard !teams.isEmpty else { return [] }
+    @Environment(\.theme) private var theme
+    @State private var isHovered = false
 
-        return await withTaskGroup(of: [Issue].self) { group in
-            for team in teams {
-                group.addTask {
-                    (try? await LinearAPI.shared.fetchTeamIssues(
-                        teamId: team.id,
-                        accessToken: session.accessToken,
-                        accountEmail: session.accountEmail
-                    )) ?? []
+    var body: some View {
+        Button(action: openInLinear) {
+            HStack(alignment: .top, spacing: 10) {
+                avatar
+
+                VStack(alignment: .leading, spacing: 4) {
+                    header
+                    bodyText
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Rectangle().fill(isHovered ? theme.cardInset : Color.clear))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+
+    private var header: some View {
+        HStack(spacing: 6) {
+            Text(update.user?.label ?? "Someone")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(theme.foreground)
+                .lineLimit(1)
+
+            Text("on")
+                .font(.system(size: 11))
+                .foregroundStyle(theme.muted)
+
+            if let project = update.project {
+                ProjectGlyph(color: project.color)
+                Text(project.name)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(theme.foregroundSoft)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
 
-            var byId: [String: Issue] = [:]
-            for await batch in group {
-                for issue in batch { byId[issue.id] = issue }
+            healthChip
+
+            Spacer(minLength: 6)
+
+            if let createdAt = update.createdAt {
+                Text(RelativeTimeFormatter.shortLabel(for: createdAt))
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(theme.tertiary)
+                    .fixedSize()
             }
-            return Array(byId.values)
         }
     }
 
-    private func rebuild() {
-        let visibleIssues = issues.filter { ListFilter.keep($0) }
-        let visibleProjects = projects.filter { ListFilter.keep($0) }
-        let visibleInitiatives = initiatives.filter { ListFilter.keep($0) }
+    private var healthChip: some View {
+        let health = ProjectUpdateHealth(rawValue: update.health)
+        return Text(health.label)
+            .font(.system(size: 9, weight: .semibold))
+            .tracking(0.2)
+            .foregroundStyle(healthForeground(for: health))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule().fill(healthBackground(for: health))
+            )
+            .overlay(
+                Capsule().strokeBorder(healthForeground(for: health).opacity(0.3), lineWidth: 0.5)
+            )
+            .fixedSize()
+    }
 
-        // Activity spark: all three types, regardless of team filter. Team
-        // scoping for projects/initiatives isn't available in the schema we
-        // query, so we show workspace-level activity for those.
-        buckets = ActivityBucketer.buckets(
-            issues: visibleIssues,
-            projects: visibleProjects,
-            initiatives: visibleInitiatives
-        )
+    private var bodyText: some View {
+        Text(bodyPreview)
+            .font(.system(size: 11))
+            .foregroundStyle(theme.foregroundSoft)
+            .lineLimit(3)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+    }
 
-        var combined: [RecentArtifact] = []
-        combined.append(contentsOf: visibleIssues.map(RecentArtifact.issue))
-        combined.append(contentsOf: visibleProjects.map(RecentArtifact.project))
-        combined.append(contentsOf: visibleInitiatives.map(RecentArtifact.initiative))
+    private var bodyPreview: String {
+        let trimmed = update.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "(no update body)" }
+        return trimmed
+    }
 
-        merged = combined.sorted {
-            ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast)
+    private var avatar: some View {
+        ZStack {
+            if let urlString = update.user?.avatarUrl,
+               let url = SafeExternalURL.httpsURL(from: urlString) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        initialsTile
+                    }
+                }
+            } else {
+                initialsTile
+            }
         }
+        .frame(width: 28, height: 28)
+        .clipShape(Circle())
+    }
+
+    private var initialsTile: some View {
+        ZStack {
+            Circle().fill(theme.card)
+            Text(PersonName.initials(from: update.user?.label))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.muted)
+        }
+    }
+
+    private func healthBackground(for health: ProjectUpdateHealth) -> Color {
+        switch health {
+        case .onTrack:            return theme.success.opacity(0.12)
+        case .atRisk:             return theme.warning.opacity(0.15)
+        case .offTrack:           return theme.destructive.opacity(0.14)
+        case .unknown:            return theme.card
+        }
+    }
+
+    private func healthForeground(for health: ProjectUpdateHealth) -> Color {
+        switch health {
+        case .onTrack:            return theme.success
+        case .atRisk:             return theme.warning
+        case .offTrack:           return theme.destructive
+        case .unknown:            return theme.muted
+        }
+    }
+
+    private func openInLinear() {
+        guard let urlString = update.project?.url else { return }
+        _ = SafeExternalURL.openLinearURL(from: urlString)
     }
 }

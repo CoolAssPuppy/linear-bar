@@ -643,6 +643,92 @@ struct TestDataProvider {
         )
     }
 
+    // MARK: - Pulse
+
+    static func getPulseUpdates() -> [LinearProjectUpdate] {
+        let calendar = Calendar.current
+        let now = Date()
+        func hoursAgo(_ h: Int) -> Date? { calendar.date(byAdding: .hour, value: -h, to: now) }
+        func daysAgo(_ d: Int) -> Date? { calendar.date(byAdding: .day, value: -d, to: now) }
+
+        return [
+            LinearProjectUpdate(
+                id: "upd-1",
+                body: """
+                Shipped the avalanche-risk detection flag this morning. Field test \
+                next week; all four test pairs are passing validation and battery \
+                draw is within our 5% budget.
+                """,
+                createdAt: hoursAgo(2),
+                health: "onTrack",
+                user: UpdateActor(id: "u-1", name: "Marcus Kim", displayName: "Marcus", avatarUrl: nil),
+                project: UpdateProjectRef(
+                    id: "project-1",
+                    name: "Self-serve onboarding",
+                    url: "https://linear.app/aigoggles/project/self-serve-onboarding",
+                    color: "#5E6AD2",
+                    icon: nil
+                )
+            ),
+            LinearProjectUpdate(
+                id: "upd-2",
+                body: "Migration is two weeks behind after the schema review flagged the refund flow. Reprioritizing the billing-team rotation next sprint to catch up.",
+                createdAt: hoursAgo(6),
+                health: "atRisk",
+                user: UpdateActor(id: "u-2", name: "Elena Rodriguez", displayName: "Elena", avatarUrl: nil),
+                project: UpdateProjectRef(
+                    id: "project-2",
+                    name: "Billing v2 migration",
+                    url: "https://linear.app/aigoggles/project/billing-v2",
+                    color: "#26B5CE",
+                    icon: nil
+                )
+            ),
+            LinearProjectUpdate(
+                id: "upd-3",
+                body: "AR overlay compositor crashed in cold-start QA. Rolling back to v3.1 on the fleet; cutting a hotfix against the root cause this week.",
+                createdAt: daysAgo(1),
+                health: "offTrack",
+                user: UpdateActor(id: "u-3", name: "Alex Morgan", displayName: "Alex", avatarUrl: nil),
+                project: UpdateProjectRef(
+                    id: "project-3",
+                    name: "AR overlay v4",
+                    url: "https://linear.app/aigoggles/project/ar-overlay-v4",
+                    color: "#8B5CF6",
+                    icon: nil
+                )
+            ),
+            LinearProjectUpdate(
+                id: "upd-4",
+                body: "Onboarding funnel live on 25% of new activations. Day-1 retention is up 4.2 points versus the old flow.",
+                createdAt: daysAgo(2),
+                health: "onTrack",
+                user: UpdateActor(id: "u-4", name: "Rafa Patel", displayName: "Rafa", avatarUrl: nil),
+                project: UpdateProjectRef(
+                    id: "project-1",
+                    name: "Self-serve onboarding",
+                    url: "https://linear.app/aigoggles/project/self-serve-onboarding",
+                    color: "#5E6AD2",
+                    icon: nil
+                )
+            ),
+            LinearProjectUpdate(
+                id: "upd-5",
+                body: "Vendor slipped on the sensor module; we'll have parts for the 200-unit build by Nov 5. Scheduling the all-hands hardware day for the 6th.",
+                createdAt: daysAgo(3),
+                health: "atRisk",
+                user: UpdateActor(id: "u-5", name: "Jordan Lee", displayName: "Jordan", avatarUrl: nil),
+                project: UpdateProjectRef(
+                    id: "project-4",
+                    name: "Winter 2026 Launch",
+                    url: "https://linear.app/aigoggles/project/winter-2026-launch",
+                    color: "#10B981",
+                    icon: nil
+                )
+            )
+        ]
+    }
+
     // MARK: - Favorites
 
     static func getFavorites() -> [LinearFavorite] {
