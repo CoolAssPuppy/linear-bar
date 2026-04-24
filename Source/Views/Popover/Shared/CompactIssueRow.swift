@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// Shared row used by Mine, Recent, Pulse, and Search result rows. Renders
-/// an issue state circle + ID + title + an optional trailing signal.
+/// Shared row used by Mine, Recent, and Search result rows. Renders an
+/// issue state circle + ID + title + an optional trailing signal.
 ///
-/// Three convenience initializers cover the cases that actually appear in
-/// the popover today:
-/// - `init(issue:)`         — Mine tab (due/review).
-/// - `init(cycleIssue:)`    — Pulse tab (risk reason).
-/// - `init(recentIssue:)`   — Recent tab (actor initials + relative time).
+/// Two convenience initializers cover the cases that appear today:
+/// - `init(issue:)`       — Mine tab (due-date label / "In Review" state).
+/// - `init(recentIssue:)` — Recent tab (actor initials + relative time).
 ///
 /// The generic `init(identifier:...)` is kept for surfaces that don't have
 /// a full Issue value but still want the same visual density.
@@ -40,17 +38,6 @@ struct CompactIssueRow: View {
             url: issue.url,
             state: issue.state,
             trailing: Self.defaultTrailing(for: issue)
-        )
-    }
-
-    init(cycleIssue: CycleIssue) {
-        let reason = cycleIssue.riskReason
-        self.init(
-            identifier: cycleIssue.identifier,
-            title: cycleIssue.title,
-            url: cycleIssue.url,
-            state: cycleIssue.state,
-            trailing: .riskReason(label: reason.label, isCritical: reason.isCritical)
         )
     }
 
@@ -98,11 +85,6 @@ struct CompactIssueRow: View {
             Text(label)
                 .font(.system(size: 10, weight: isOverdue ? .semibold : .medium))
                 .foregroundStyle(isOverdue ? theme.destructive : theme.muted)
-                .fixedSize()
-        case .riskReason(let label, let isCritical):
-            Text(label)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isCritical ? theme.destructive : theme.warning)
                 .fixedSize()
         case .stateLabel(let label):
             Text(label)
@@ -165,7 +147,6 @@ struct CompactIssueRow: View {
 enum IssueTrailing {
     case none
     case due(label: String, isOverdue: Bool)
-    case riskReason(label: String, isCritical: Bool)
     case stateLabel(label: String)
     case actorAndTime(initials: String, relative: String)
 }
