@@ -1,0 +1,80 @@
+name: LinearBar
+options:
+  bundleIdPrefix: com.strategicnerds
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: "1.0.0"
+  KeychainAccess:
+    url: https://github.com/kishikawakatsumi/KeychainAccess
+    from: "4.0.0"
+  LaunchAtLogin:
+    url: https://github.com/sindresorhus/LaunchAtLogin-Modern
+    from: "1.0.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ENABLE_HARDENED_RUNTIME: YES
+    ENABLE_APP_SANDBOX: NO
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 955GSY56UT
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
+    GCC_TREAT_WARNINGS_AS_ERRORS: NO
+
+targets:
+  LinearBar:
+    type: application
+    platform: macOS
+    scheme:
+      testTargets:
+        - LinearBarTests
+      gatherCoverageData: true
+    sources:
+      - path: Source
+    dependencies:
+      - package: Sparkle
+      - package: KeyboardShortcuts
+      - package: KeychainAccess
+      - package: LaunchAtLogin
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.strategicnerds.LinearBarApp
+        PRODUCT_NAME: "Linear Bar"
+        PRODUCT_MODULE_NAME: LinearBar
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "13"
+        INFOPLIST_FILE: Source/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Source/Resources/LinearBar.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+        LS_MINIMUM_SYSTEM_VERSION: "14.0"
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_PREVIEWS: YES
+
+  LinearBarTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: LinearBar
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.strategicnerds.LinearBarTests
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Linear Bar.app/Contents/MacOS/Linear Bar"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "@executable_path/../Frameworks"
+          - "@loader_path/../Frameworks"

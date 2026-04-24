@@ -1,0 +1,595 @@
+import SwiftUI
+
+/// The popover view shown from the menu bar button. Hosts the chrome —
+/// title bar + tab bar + bottom bar — and swaps in the selected tab's
+/// content. All five tabs are live views; Inbox is the default.
+struct MenuBarView: View {
+    @State private var selectedTab: Tab = .inbox
+    @State private var isRefreshing = false
+    @State private var lastRefreshedAt: Date = Date()
+    @ObservedObject private var themeStore = ThemeStore.shared
+
+    @ObservedObject private var appSettings = AppSettings.shared
+
+    var body: some View {
+        let theme = themeStore.palette
+        return VStack(spacing: 0) {
+            if appSettings.accounts.isEmpty {
+                PopoverWelcomeView()
+            } else {
+                HeaderBar(lastRefreshedAt: lastRefreshedAt,
+                          onCreate: openLinearCreate,
+                          isRefreshing: isRefreshing)
+                Divider().background(theme.divider)
+
+                tabBar
+                Divider().background(theme.divider)
+
+                contentArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(theme.background)
+            }
+
+            Divider().background(theme.divider)
+            BottomBar(onRefresh: triggerRefresh,
+                      onOpenWindow: openMainWindow,
+                      onSettings: openSettings,
+                      onQuit: quitApp)
+        }
+        .frame(width: 400, height: 540)
+        .background(theme.background)
+        .environment(\.theme, theme)
+        .environment(\.colorScheme, theme.isDark ? .dark : .light)
+        .onAppear {
+            loadDefaultTab()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
+            lastRefreshedAt = Date()
+        }
+    }
+
+    private func loadDefaultTab() {
+        selectedTab = Tab(defaultTab: AppSettings.shared.defaultTab)
+    }
+
+    // MARK: - Tab bar
+
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(Tab.allCases, id: \.self) { tab in
+                TabButton(tab: tab, selectedTab: $selectedTab)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, AppSpacing.sm)
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    private var contentArea: some View {
+        switch selectedTab {
+        case .inbox:
+            InboxView()
+        case .mine:
+            MyIssuesView()
+        case .recent:
+            RecentView()
+        case .pulse:
+            PulseView()
+        case .search:
+            SearchView()
+        }
+    }
+
+    // MARK: - Actions
+
+    private func openSettings() {
+        NotificationCenter.default.post(name: .settingsRequested, object: nil)
+    }
+
+    private func openMainWindow() {
+        NotificationCenter.default.post(name: .mainWindowRequested, object: nil)
+    }
+
+    private func openLinearCreate(type: String) {
+        guard let orgSlug = AppSettings.shared.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })?.organizationSlug else {
+            return
+        }
+
+        let teamKey = AppSettings.shared.selectedTeamKey
+        let url: URL?
+
+        switch type {
+        case "issue":
+            if let teamKey = teamKey {
+                url = URL(string: "https://linear.app/\(orgSlug)/team/\(teamKey)/new")
+            } else {
+                url = URL(string: "https://linear.app/\(orgSlug)/issue/new")
+            }
+        case "project":
+            url = URL(string: "https://linear.app/\(orgSlug)/projects/new")
+        case "initiative":
+            url = URL(string: "https://linear.app/\(orgSlug)/roadmap")
+        default:
+            return
+        }
+
+        if let url = url {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func triggerRefresh() {
+        isRefreshing = true
+        lastRefreshedAt = Date()
+        NotificationCenter.default.post(name: .refreshAllData, object: nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            isRefreshing = false
+        }
+    }
+
+    private func quitApp() {
+        NSApplication.shared.terminate(nil)
+    }
+
+    // MARK: - Tab enum
+
+    enum Tab: String, CaseIterable {
+        case inbox, mine, recent, pulse, search
+
+        var label: String {
+            switch self {
+            case .inbox:  return "Inbox"
+            case .mine:   return "Mine"
+            case .recent: return "Recent"
+            case .pulse:  return "Pulse"
+            case .search: return "Search"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .inbox:  return "tray"
+            case .mine:   return "checkmark.circle"
+            case .recent: return "clock"
+            case .pulse:  return "waveform.path.ecg"
+            case .search: return "magnifyingglass"
+            }
+        }
+
+        init(defaultTab: DefaultTab) {
+            switch defaultTab {
+            case .inbox:  self = .inbox
+            case .mine:   self = .mine
+            case .recent: self = .recent
+            case .pulse:  self = .pulse
+            case .search: self = .search
+            }
+        }
+    }
+}
+
+// MARK: - Tab button
+
+private struct TabButton: View {
+    let tab: MenuBarView.Tab
+    @Binding var selectedTab: MenuBarView.Tab
+    @Environment(\.theme) private var theme
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: { selectedTab = tab }) {
+            VStack(spacing: 5) {
+                HStack(spacing: 5) {
+                    Image(systemName: tab.icon)
+                        .font(.system(size: 11, weight: .medium))
+                    Text(tab.label)
+                        .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                }
+                .foregroundStyle(foregroundColor)
+                .padding(.horizontal, 6)
+                .padding(.top, 6)
+                .padding(.bottom, 4)
+
+                Rectangle()
+                    .fill(isSelected ? theme.primary : Color.clear)
+                    .frame(height: 1.5)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+
+    private var isSelected: Bool { selectedTab == tab }
+
+    private var foregroundColor: Color {
+        if isSelected { return theme.foreground }
+        if isHovered { return theme.foregroundSoft }
+        return theme.muted
+    }
+}
+
+// MARK: - Header bar
+
+private struct HeaderBar: View {
+    let lastRefreshedAt: Date
+    let onCreate: (String) -> Void
+    let isRefreshing: Bool
+
+    @ObservedObject private var settings = AppSettings.shared
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        // ZStack so the workspace sits dead-center regardless of what the
+        // side elements' widths end up being. An HStack with spacers would
+        // drift as soon as the workspace name grew longer than the brand +
+        // new button could balance.
+        ZStack {
+            if settings.accounts.count > 1 {
+                WorkspacePicker().fixedSize()
+            } else {
+                WorkspacePill().fixedSize()
+            }
+
+            HStack(spacing: 0) {
+                BrandMark()
+                Spacer(minLength: 0)
+                newMenu
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(theme.surface)
+    }
+
+    private var newMenu: some View {
+        Menu {
+            Button { onCreate("issue") } label: {
+                Label("New Issue", systemImage: "checkmark.circle")
+            }
+            Button { onCreate("project") } label: {
+                Label("New Project", systemImage: "square.grid.2x2")
+            }
+            Button { onCreate("initiative") } label: {
+                Label("New Initiative", systemImage: "diamond")
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(theme.foreground)
+                Text("New")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(theme.foreground)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(theme.tertiary)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                    .fill(theme.card)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                    .strokeBorder(theme.border, lineWidth: 1)
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Create new Linear item")
+    }
+}
+
+private struct BrandMark: View {
+    var body: some View {
+        CheckmarkBrandMark(size: 22, glyphSize: 14)
+    }
+}
+
+/// Reusable brand tile: dark square with a soft amber glow and the
+/// Strategic Nerds checkmark. Sized by the caller — popover header uses
+/// 22pt, Welcome hero uses 64pt.
+struct CheckmarkBrandMark: View {
+    let size: CGFloat
+    let glyphSize: CGFloat
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(hex: "#1E1E1E"), Color(hex: "#0A0A0A")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: Color(hex: "#FDB817").opacity(0.28), radius: size * 0.3)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color(hex: "#FDB817").opacity(0.22), Color.clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: size * 0.6
+                    )
+                )
+                .frame(width: size * 1.15, height: size * 1.15)
+
+            LinearGlyph()
+                .stroke(
+                    Color(hex: "#FDB817"),
+                    style: StrokeStyle(lineWidth: max(size * 0.09, 1.2), lineCap: .round, lineJoin: .round)
+                )
+                .frame(width: glyphSize, height: glyphSize)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+/// SwiftUI path for the Linear-style brand mark. Geometry is shared with the
+/// menu bar icon renderer via `LinearGlyphStrokes` so both surfaces always
+/// match pixel-for-pixel.
+struct LinearGlyph: Shape {
+    func path(in rect: CGRect) -> Path {
+        let scaleX = rect.width / LinearGlyphStrokes.boxSize
+        let scaleY = rect.height / LinearGlyphStrokes.boxSize
+
+        var path = Path()
+        for (from, to) in LinearGlyphStrokes.endpoints {
+            path.move(to: CGPoint(x: from.x * scaleX, y: from.y * scaleY))
+            path.addLine(to: CGPoint(x: to.x * scaleX, y: to.y * scaleY))
+        }
+        return path
+    }
+}
+
+// MARK: - Workspace picker
+
+private struct WorkspacePicker: View {
+    @Environment(\.theme) private var theme
+    @ObservedObject private var settings = AppSettings.shared
+
+    var body: some View {
+        Menu {
+            ForEach(settings.accounts) { account in
+                Button {
+                    // Selecting an account from the popover is a placeholder
+                    // while multi-account picking lands. For now the chip
+                    // reflects whichever account is already "primary".
+                } label: {
+                    HStack {
+                        Text(account.workspaceLabel)
+                        if account.email == settings.accounts.first?.email {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                WorkspaceLogo(account: primaryAccount, size: 18)
+
+                Text(workspaceLabel)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.foreground)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(theme.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("Switch workspace")
+    }
+
+    private var primaryAccount: LinearAccount? {
+        settings.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })
+    }
+
+    private var workspaceLabel: String {
+        primaryAccount?.workspaceLabel ?? "No workspace"
+    }
+}
+
+/// Read-only counterpart to `WorkspacePicker` used when only a single
+/// account is connected. Same logo + label, no chevron, no menu.
+private struct WorkspacePill: View {
+    @Environment(\.theme) private var theme
+    @ObservedObject private var settings = AppSettings.shared
+
+    var body: some View {
+        HStack(spacing: 6) {
+            WorkspaceLogo(account: account, size: 18)
+            Text(account?.workspaceLabel ?? "Workspace")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(theme.foreground)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+    }
+
+    private var account: LinearAccount? {
+        settings.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })
+    }
+}
+
+/// Renders the Linear workspace logo with a graceful fallback to the
+/// workspace initial in the account's tint color. Used in the popover
+/// header, sidebar, and account list so the same art appears everywhere.
+struct WorkspaceLogo: View {
+    let account: LinearAccount?
+    let size: CGFloat
+
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        ZStack {
+            if let urlString = account?.organizationLogoUrl,
+               let url = URL(string: urlString) {
+                AsyncImage(url: url, transaction: Transaction(animation: .default)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    default:
+                        initialTile
+                    }
+                }
+            } else {
+                initialTile
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+    }
+
+    private var initialTile: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                .fill(tintColor)
+            Text(String(initial))
+                .font(.system(size: size * 0.55, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.92))
+        }
+    }
+
+    private var initial: Character {
+        let label = account?.workspaceLabel ?? "?"
+        return label.first?.uppercased().first ?? "?"
+    }
+
+    private var tintColor: Color {
+        if let hex = account?.color { return Color(hex: hex) }
+        return theme.primary
+    }
+}
+
+// MARK: - Bottom bar
+
+private struct BottomBar: View {
+    let onRefresh: () -> Void
+    let onOpenWindow: () -> Void
+    let onSettings: () -> Void
+    let onQuit: () -> Void
+
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        HStack(spacing: 4) {
+            AppIconButton(systemName: "arrow.triangle.2.circlepath",
+                          help: "Refresh all data",
+                          spinOnTap: true,
+                          action: onRefresh)
+            AppIconButton(systemName: "macwindow", help: "Open main window", action: onOpenWindow)
+            AppIconButton(systemName: "gearshape", help: "Settings (⌘,)", action: onSettings)
+
+            Spacer(minLength: 0)
+
+            ThemeStrip()
+
+            Spacer(minLength: 0)
+
+            AppIconButton(systemName: "power", help: "Quit Menu Bar for Linear", action: onQuit)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(theme.surface)
+    }
+}
+
+// MARK: - Theme strip
+
+private struct ThemeStrip: View {
+    @ObservedObject private var store = ThemeStore.shared
+    @Environment(\.theme) private var theme
+    @State private var isExpanded = false
+
+    private static let bouncy: Animation = .spring(response: 0.35, dampingFraction: 0.6)
+    private static let dotSize: CGFloat = 10
+
+    var body: some View {
+        HStack(spacing: isExpanded ? 6 : 0) {
+            ForEach(AppTheme.allCases) { option in
+                let palette = option.palette
+                let isActive = store.current == option
+                let show = isExpanded || isActive
+
+                Button {
+                    withAnimation(Self.bouncy) {
+                        store.current = option
+                        isExpanded = false
+                    }
+                } label: {
+                    ZStack {
+                        dotFill(for: option, palette: palette)
+                        if isActive {
+                            Circle()
+                                .stroke(theme.foreground.opacity(0.9), lineWidth: 1.5)
+                                .padding(-2.5)
+                        }
+                    }
+                    .frame(width: Self.dotSize, height: Self.dotSize)
+                    .scaleEffect(show ? 1 : 0.01)
+                    .opacity(show ? 1 : 0)
+                }
+                .buttonStyle(.plain)
+                .frame(width: show ? Self.dotSize : 0)
+                .clipped()
+                .help(option.label)
+            }
+        }
+        .padding(.horizontal, isExpanded ? 9 : 6)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(theme.card))
+        .overlay(Capsule().strokeBorder(theme.border, lineWidth: 1))
+        .animation(Self.bouncy, value: isExpanded)
+        .onHover { hovering in
+            withAnimation(Self.bouncy) {
+                isExpanded = hovering
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func dotFill(for option: AppTheme, palette: ThemePalette) -> some View {
+        if option == .system {
+            ZStack {
+                Circle().fill(Color.white)
+                Circle()
+                    .fill(Color.black)
+                    .mask(
+                        Rectangle()
+                            .frame(width: Self.dotSize, height: Self.dotSize)
+                            .offset(x: Self.dotSize / 2)
+                    )
+            }
+        } else {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [palette.primary, palette.primaryDeep],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        }
+    }
+}
+
+struct MenuBarView_Previews: PreviewProvider {
+    static var previews: some View {
+        MenuBarView()
+    }
+}
