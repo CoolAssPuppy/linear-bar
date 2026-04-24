@@ -27,7 +27,7 @@ struct InboxView: View {
                     EmptyStateView(
                         icon: "tray",
                         title: "Inbox zero",
-                        subtitle: "No unread notifications right now."
+                        subtitle: "Nothing in your inbox right now."
                     )
                 } else {
                     contentView
@@ -63,10 +63,10 @@ struct InboxView: View {
     }
 
     private var unreadLabel: String {
-        let count = notifications.count
-        if count == 0 { return "No unread" }
-        if count == 1 { return "1 unread" }
-        return "\(count) unread"
+        let unread = notifications.filter { $0.readAt == nil }.count
+        if unread == 0 { return "No unread" }
+        if unread == 1 { return "1 unread" }
+        return "\(unread) unread"
     }
 
     // MARK: - Content

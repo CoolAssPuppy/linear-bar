@@ -122,13 +122,17 @@ struct FavesView: View {
     private func rebuildFiltered() {
         let selectedTeam = AppSettings.shared.selectedTeamId
 
-        // Drop favorites whose subtype we don't render yet (issue + project only).
-        let renderable = favorites.filter { $0.issue != nil || $0.project != nil }
+        // Drop favorites whose subtype we don't render yet (issue, project,
+        // customView). Folders, cycles, documents, labels, roadmaps, etc.
+        // come back with all three targets nil and get skipped.
+        let renderable = favorites.filter {
+            $0.issue != nil || $0.project != nil || $0.customView != nil
+        }
 
         let scoped: [LinearFavorite]
         if let selectedTeam {
-            // Issues filter by team; projects pass through (we don't have
-            // project-team info in the favorites query).
+            // Issues filter by team; projects and custom views pass through
+            // (no team info in our current selection for either).
             scoped = renderable.filter { fav in
                 guard let teamId = fav.issue?.team?.id else { return true }
                 return teamId == selectedTeam
@@ -159,6 +163,8 @@ private struct FavoriteRow: View {
                     IssueIdentifierLabel(identifier: issue.identifier, url: issue.url)
                 } else if let project = favorite.project {
                     IssueIdentifierLabel(identifier: "PROJ", url: project.url)
+                } else if let view = favorite.customView {
+                    IssueIdentifierLabel(identifier: "VIEW", url: view.url)
                 } else {
                     IssueIdentifierLabel(identifier: "FAV", url: nil)
                 }
@@ -192,17 +198,24 @@ private struct FavoriteRow: View {
             IssueStateCircle(state: issue.state)
         } else if let project = favorite.project {
             ProjectGlyph(color: project.color)
+        } else if let view = favorite.customView {
+            ProjectGlyph(color: view.color)
         } else {
             IssueStateCircle(state: nil)
         }
     }
 
     private var title: String {
-        favorite.issue?.title ?? favorite.project?.name ?? ""
+        favorite.issue?.title
+            ?? favorite.project?.name
+            ?? favorite.customView?.name
+            ?? ""
     }
 
     private var url: String? {
-        favorite.issue?.url ?? favorite.project?.url
+        favorite.issue?.url
+            ?? favorite.project?.url
+            ?? favorite.customView?.url
     }
 
     private func openInLinear() {

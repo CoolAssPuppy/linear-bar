@@ -427,6 +427,7 @@ struct TestDataProvider {
                 type: "issueMention",
                 createdAt: calendar.date(byAdding: .minute, value: -3, to: now),
                 readAt: nil,
+                archivedAt: nil,
                 snoozedUntilAt: nil,
                 actor: NotificationActor(id: "user-1", name: "Marcus Kim", displayName: "Marcus Kim", avatarUrl: nil),
                 issue: NotificationIssueTarget(
@@ -447,6 +448,7 @@ struct TestDataProvider {
                 type: "issueAssignedToYou",
                 createdAt: calendar.date(byAdding: .minute, value: -18, to: now),
                 readAt: nil,
+                archivedAt: nil,
                 snoozedUntilAt: nil,
                 actor: NotificationActor(id: "user-2", name: "Jordan Lee", displayName: "Jordan Lee", avatarUrl: nil),
                 issue: NotificationIssueTarget(
@@ -467,6 +469,7 @@ struct TestDataProvider {
                 type: "issueSlaHighRisk",
                 createdAt: calendar.date(byAdding: .minute, value: -47, to: now),
                 readAt: nil,
+                archivedAt: nil,
                 snoozedUntilAt: nil,
                 actor: NotificationActor(id: "system", name: "Linear", displayName: "Linear", avatarUrl: nil),
                 issue: NotificationIssueTarget(
@@ -487,6 +490,7 @@ struct TestDataProvider {
                 type: "issueReviewRequested",
                 createdAt: calendar.date(byAdding: .hour, value: -2, to: now),
                 readAt: nil,
+                archivedAt: nil,
                 snoozedUntilAt: nil,
                 actor: NotificationActor(id: "user-3", name: "Rafa Patel", displayName: "Rafa Patel", avatarUrl: nil),
                 issue: NotificationIssueTarget(
@@ -507,6 +511,7 @@ struct TestDataProvider {
                 type: "projectUpdateCreated",
                 createdAt: calendar.date(byAdding: .hour, value: -22, to: now),
                 readAt: nil,
+                archivedAt: nil,
                 snoozedUntilAt: nil,
                 actor: NotificationActor(id: "user-4", name: "Sam Okafor", displayName: "Sam Okafor", avatarUrl: nil),
                 issue: nil,
@@ -524,6 +529,7 @@ struct TestDataProvider {
                 type: "issueNewComment",
                 createdAt: calendar.date(byAdding: .day, value: -1, to: now),
                 readAt: nil,
+                archivedAt: nil,
                 snoozedUntilAt: nil,
                 actor: NotificationActor(id: "user-5", name: "Erin Wu", displayName: "Erin Wu", avatarUrl: nil),
                 issue: NotificationIssueTarget(
@@ -653,7 +659,8 @@ struct TestDataProvider {
                     state: IssueState(name: "In Progress", type: "started"),
                     team: Team(id: "team-3", name: "Support", key: "SUP", icon: nil)
                 ),
-                project: nil
+                project: nil,
+                customView: nil
             ),
             LinearFavorite(
                 id: "fav-2",
@@ -668,10 +675,25 @@ struct TestDataProvider {
                     color: "#5E6AD2",
                     state: "started",
                     progress: 0.42
-                )
+                ),
+                customView: nil
             ),
             LinearFavorite(
                 id: "fav-3",
+                type: "customView",
+                folderName: nil,
+                issue: nil,
+                project: nil,
+                customView: FavoriteCustomViewTarget(
+                    id: "view-1",
+                    name: "High priority bugs",
+                    url: "https://linear.app/aigoggles/view/high-priority-bugs",
+                    icon: nil,
+                    color: "#EF4444"
+                )
+            ),
+            LinearFavorite(
+                id: "fav-4",
                 type: "issue",
                 folderName: nil,
                 issue: FavoriteIssueTarget(
@@ -682,10 +704,11 @@ struct TestDataProvider {
                     state: IssueState(name: "In Progress", type: "started"),
                     team: Team(id: "team-5", name: "Developer Relations", key: "DEBR", icon: nil)
                 ),
-                project: nil
+                project: nil,
+                customView: nil
             ),
             LinearFavorite(
-                id: "fav-4",
+                id: "fav-5",
                 type: "project",
                 folderName: nil,
                 issue: nil,
@@ -697,7 +720,8 @@ struct TestDataProvider {
                     color: "#26B5CE",
                     state: "planned",
                     progress: 0.05
-                )
+                ),
+                customView: nil
             )
         ]
     }

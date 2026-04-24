@@ -45,6 +45,13 @@ extension LinearAPI {
                 state
                 progress
               }
+              customView {
+                id
+                name
+                url
+                icon
+                color
+              }
             }
           }
         }
@@ -65,14 +72,6 @@ extension LinearAPI {
         )
 
         guard let data = response.data else { throw LinearError.invalidResponse }
-        let nodes = data.favorites.nodes
-        let issueCount = nodes.filter { $0.issue != nil }.count
-        let projectCount = nodes.filter { $0.project != nil }.count
-        let typeCounts = Dictionary(grouping: nodes, by: { $0.type }).mapValues { $0.count }
-        AppLogger.info(
-            "Faves fetch: \(nodes.count) favorites (issues=\(issueCount), projects=\(projectCount), byType=\(typeCounts))",
-            log: AppLogger.api
-        )
-        return nodes
+        return data.favorites.nodes
     }
 }

@@ -13,6 +13,7 @@ struct LinearNotification: Identifiable, Codable, Hashable {
     let type: String
     let createdAt: Date?
     let readAt: Date?
+    let archivedAt: Date?
     let snoozedUntilAt: Date?
 
     let actor: NotificationActor?

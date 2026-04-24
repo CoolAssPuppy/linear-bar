@@ -37,6 +37,7 @@ extension LinearAPI {
               type
               createdAt
               readAt
+              archivedAt
               snoozedUntilAt
               actor {
                 id
@@ -81,13 +82,16 @@ extension LinearAPI {
         )
 
         guard let data = response.data else { throw LinearError.invalidResponse }
-        let all = data.notifications.nodes
-        let unread = all.filter { $0.readAt == nil }
-        AppLogger.info(
-            "Inbox fetch: \(all.count) notifications returned, \(unread.count) unread after readAt filter",
-            log: AppLogger.api
-        )
-        return unread
+        // Linear's web Inbox filters by `archivedAt == nil`, not `readAt`.
+        // A read-but-not-archived notification should still appear in the
+        // app's Inbox to match what the user sees on linear.app. We also
+        // hide notifications that are currently snoozed into the future.
+        let now = Date()
+        return data.notifications.nodes.filter { notif in
+            guard notif.archivedAt == nil else { return false }
+            if let snoozedUntil = notif.snoozedUntilAt, snoozedUntil > now { return false }
+            return true
+        }
     }
 
     /// Fetches the total unread notification count. Cheap scalar — drives
