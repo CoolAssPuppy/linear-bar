@@ -420,19 +420,24 @@ private struct WorkspacePicker: View {
             menu.addItem(item)
         }
 
-        // Position the menu in the popover's contentView coordinate space
-        // (AppKit bottom-left origin) so the upper-left of the menu lands
-        // at the lower-left of the chip. Fall back to the mouse location
-        // only if we can't get a handle on the window.
+        // Position the menu in the popover's contentView coordinate space.
+        // NSHostingView (which hosts our SwiftUI tree) is flipped — origin
+        // top-left, same as SwiftUI — so the chip's .global frame maps
+        // straight across. Falling back to the mouse location if we can't
+        // get a handle on the window, but that path shouldn't normally
+        // fire since the popover is key whenever the user can click this.
         guard let contentView = NSApp.keyWindow?.contentView else {
             menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
             return
         }
-        let location = NSPoint(
-            x: anchorFrame.minX,
-            y: contentView.bounds.height - anchorFrame.maxY
+        let yInView = contentView.isFlipped
+            ? anchorFrame.maxY
+            : contentView.bounds.height - anchorFrame.maxY
+        menu.popUp(
+            positioning: nil,
+            at: NSPoint(x: anchorFrame.minX, y: yInView),
+            in: contentView
         )
-        menu.popUp(positioning: nil, at: location, in: contentView)
     }
 
     private var primaryAccount: LinearAccount? {
@@ -446,35 +451,44 @@ private struct WorkspacePicker: View {
     /// Renders a small rounded-square initial tile for each workspace in
     /// the menu. Matches the in-app `WorkspaceLogo`'s fallback style so
     /// the menu reads as a continuation of the chip.
-    private static func workspaceIcon(for account: LinearAccount, size: CGFloat = 18) -> NSImage {
-        let pixelSize = NSSize(width: size, height: size)
+    ///
+    /// Uses the classic lockFocus / unlockFocus path; the block-based
+    /// NSImage(size:flipped:drawingHandler:) defers drawing until first
+    /// access, and NSMenuItem renders the image during menu layout —
+    /// we've seen items show blank when the deferred draw races the
+    /// menu's cached metrics.
+    private static func workspaceIcon(for account: LinearAccount, size: CGFloat = 20) -> NSImage {
+        let image = NSImage(size: NSSize(width: size, height: size))
+        image.lockFocus()
+
+        let rect = NSRect(x: 0, y: 0, width: size, height: size)
         let tint = Self.nsColorFromHex(account.color ?? "#5E6AD2")
+        let path = NSBezierPath(
+            roundedRect: rect,
+            xRadius: size * 0.22,
+            yRadius: size * 0.22
+        )
+        tint.setFill()
+        path.fill()
+
         let initial = account.workspaceLabel.first
             .map { String($0).uppercased() } ?? "?"
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: size * 0.55, weight: .bold),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.95)
+        ]
+        let attributed = NSAttributedString(string: initial, attributes: attributes)
+        let textSize = attributed.size()
+        attributed.draw(in: NSRect(
+            x: (size - textSize.width) / 2,
+            y: (size - textSize.height) / 2,
+            width: textSize.width,
+            height: textSize.height
+        ))
 
-        let image = NSImage(size: pixelSize, flipped: false) { rect in
-            let path = NSBezierPath(
-                roundedRect: rect,
-                xRadius: rect.width * 0.22,
-                yRadius: rect.height * 0.22
-            )
-            tint.setFill()
-            path.fill()
-
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: rect.width * 0.55, weight: .bold),
-                .foregroundColor: NSColor.white.withAlphaComponent(0.92)
-            ]
-            let attributed = NSAttributedString(string: initial, attributes: attributes)
-            let textSize = attributed.size()
-            attributed.draw(at: NSPoint(
-                x: (rect.width - textSize.width) / 2,
-                y: (rect.height - textSize.height) / 2
-            ))
-            return true
-        }
-        // Keep our tint intact — NSMenuItem otherwise treats single-tone
-        // images as templates and washes them out in dark mode.
+        image.unlockFocus()
+        // Keep our tint intact — NSMenuItem treats single-tone images as
+        // templates otherwise and washes the color out.
         image.isTemplate = false
         return image
     }
