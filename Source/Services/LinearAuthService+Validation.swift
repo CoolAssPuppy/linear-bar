@@ -32,9 +32,10 @@ extension LinearAuthService {
         }
 
         do {
-            _ = try await LinearAPI.shared.fetchViewer(accessToken: accessToken, accountEmail: email)
+            let viewer = try await LinearAPI.shared.fetchViewer(accessToken: accessToken, accountEmail: email)
             AppLogger.privateInfo("Token is valid for \(email)", log: AppLogger.auth)
             updateAccountAuthStatus(email: email, status: .valid)
+            await refreshOrganizationMetadata(email: email, viewer: viewer)
             return true
         } catch LinearError.authenticationRequired {
             AppLogger.privateError("Token validation failed for \(email) - authentication required", log: AppLogger.auth)
@@ -54,6 +55,30 @@ extension LinearAuthService {
         for account in accounts where account.isEnabled {
             _ = await validateAndRefreshToken(forAccount: account.email)
         }
+    }
+
+    /// Pulls `organization.name` and `organization.logoUrl` off a freshly
+    /// validated viewer and writes them to the stored account. Accounts
+    /// connected before the logo field shipped get the logo on first
+    /// successful validation after upgrade — no re-auth required.
+    @MainActor
+    private func refreshOrganizationMetadata(email: String, viewer: Viewer) async {
+        guard var account = AppSettings.shared.account(forEmail: email) else { return }
+
+        let incomingSlug = viewer.organization?.urlKey
+        let incomingName = viewer.organization?.name
+        let incomingLogo = viewer.organization?.logoUrl
+
+        guard account.organizationSlug != incomingSlug
+                || account.organizationName != incomingName
+                || account.organizationLogoUrl != incomingLogo else {
+            return
+        }
+
+        account.organizationSlug = incomingSlug
+        account.organizationName = incomingName
+        account.organizationLogoUrl = incomingLogo
+        AppSettings.shared.updateAccount(account)
     }
 
     /// Updates the auth status for an account

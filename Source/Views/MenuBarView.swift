@@ -223,59 +223,66 @@ private struct HeaderBar: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack(spacing: 10) {
-            BrandMark()
-
-            // Workspace picker only appears when multiple accounts are
-            // configured. With one account the header would just repeat the
-            // workspace name — wasted space in a 400pt popover.
+        // ZStack so the workspace sits dead-center regardless of what the
+        // side elements' widths end up being. An HStack with spacers would
+        // drift as soon as the workspace name grew longer than the brand +
+        // new button could balance.
+        ZStack {
             if settings.accounts.count > 1 {
-                WorkspacePicker()
+                WorkspacePicker().fixedSize()
             } else {
-                Spacer(minLength: 0)
+                WorkspacePill().fixedSize()
             }
 
-            Menu {
-                Button { onCreate("issue") } label: {
-                    Label("New Issue", systemImage: "checkmark.circle")
-                }
-                Button { onCreate("project") } label: {
-                    Label("New Project", systemImage: "square.grid.2x2")
-                }
-                Button { onCreate("initiative") } label: {
-                    Label("New Initiative", systemImage: "diamond")
-                }
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(theme.foreground)
-                    Text("New")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(theme.foreground)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(theme.tertiary)
-                }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
-                        .fill(theme.card)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
-                        .strokeBorder(theme.border, lineWidth: 1)
-                )
+            HStack(spacing: 0) {
+                BrandMark()
+                Spacer(minLength: 0)
+                newMenu
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("Create new Linear item")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(theme.surface)
+    }
+
+    private var newMenu: some View {
+        Menu {
+            Button { onCreate("issue") } label: {
+                Label("New Issue", systemImage: "checkmark.circle")
+            }
+            Button { onCreate("project") } label: {
+                Label("New Project", systemImage: "square.grid.2x2")
+            }
+            Button { onCreate("initiative") } label: {
+                Label("New Initiative", systemImage: "diamond")
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(theme.foreground)
+                Text("New")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(theme.foreground)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(theme.tertiary)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                    .fill(theme.card)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
+                    .strokeBorder(theme.border, lineWidth: 1)
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Create new Linear item")
     }
 }
 
@@ -358,7 +365,7 @@ private struct WorkspacePicker: View {
                     // reflects whichever account is already "primary".
                 } label: {
                     HStack {
-                        Text(account.name ?? account.email)
+                        Text(account.workspaceLabel)
                         if account.email == settings.accounts.first?.email {
                             Image(systemName: "checkmark")
                         }
@@ -367,40 +374,105 @@ private struct WorkspacePicker: View {
             }
         } label: {
             HStack(spacing: 6) {
+                WorkspaceLogo(account: primaryAccount, size: 18)
+
                 Text(workspaceLabel)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(theme.foreground)
                     .lineLimit(1)
                     .truncationMode(.tail)
 
-                Spacer(minLength: 0)
-
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .semibold))
                     .foregroundStyle(theme.tertiary)
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
-                    .fill(theme.card)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: AppRadius.sm, style: .continuous)
-                    .strokeBorder(theme.border, lineWidth: 1)
-            )
+            .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .help("Switch workspace")
     }
 
+    private var primaryAccount: LinearAccount? {
+        settings.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })
+    }
+
     private var workspaceLabel: String {
-        if let first = settings.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid }) {
-            return first.name ?? first.email
+        primaryAccount?.workspaceLabel ?? "No workspace"
+    }
+}
+
+/// Read-only counterpart to `WorkspacePicker` used when only a single
+/// account is connected. Same logo + label, no chevron, no menu.
+private struct WorkspacePill: View {
+    @Environment(\.theme) private var theme
+    @ObservedObject private var settings = AppSettings.shared
+
+    var body: some View {
+        HStack(spacing: 6) {
+            WorkspaceLogo(account: account, size: 18)
+            Text(account?.workspaceLabel ?? "Workspace")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(theme.foreground)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
-        return "No workspace"
+    }
+
+    private var account: LinearAccount? {
+        settings.accounts.first(where: { $0.isEnabled && $0.authStatus == .valid })
+    }
+}
+
+/// Renders the Linear workspace logo with a graceful fallback to the
+/// workspace initial in the account's tint color. Used in the popover
+/// header, sidebar, and account list so the same art appears everywhere.
+struct WorkspaceLogo: View {
+    let account: LinearAccount?
+    let size: CGFloat
+
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        ZStack {
+            if let urlString = account?.organizationLogoUrl,
+               let url = URL(string: urlString) {
+                AsyncImage(url: url, transaction: Transaction(animation: .default)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    default:
+                        initialTile
+                    }
+                }
+            } else {
+                initialTile
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+    }
+
+    private var initialTile: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                .fill(tintColor)
+            Text(String(initial))
+                .font(.system(size: size * 0.55, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.92))
+        }
+    }
+
+    private var initial: Character {
+        let label = account?.workspaceLabel ?? "?"
+        return label.first?.uppercased().first ?? "?"
+    }
+
+    private var tintColor: Color {
+        if let hex = account?.color { return Color(hex: hex) }
+        return theme.primary
     }
 }
 

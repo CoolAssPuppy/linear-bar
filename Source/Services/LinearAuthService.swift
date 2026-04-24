@@ -219,6 +219,8 @@ class LinearAuthService: NSObject {
                             email: viewer.email,
                             name: viewer.name,
                             organizationSlug: viewer.organization?.urlKey,
+                            organizationName: viewer.organization?.name,
+                            organizationLogoUrl: viewer.organization?.logoUrl,
                             isEnabled: true
                         )
 

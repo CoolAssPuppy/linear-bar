@@ -41,7 +41,8 @@ struct TestDataProvider {
             organization: ViewerOrganization(
                 id: "org-1",
                 name: "AI Ski Goggles Inc.",
-                urlKey: "aigoggles"
+                urlKey: "aigoggles",
+                logoUrl: nil
             )
         )
     }

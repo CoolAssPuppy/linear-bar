@@ -80,11 +80,10 @@ struct LinearAccountView: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 14) {
-            Circle()
-                .fill(Color(hex: account.color ?? "#5E6AD2"))
-                .frame(width: 38, height: 38)
+            WorkspaceLogo(account: account, size: 38)
                 .overlay(
-                    Circle().strokeBorder(theme.borderStrong, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 38 * 0.22, style: .continuous)
+                        .strokeBorder(theme.borderStrong, lineWidth: 1)
                 )
 
             VStack(alignment: .leading, spacing: 4) {

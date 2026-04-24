@@ -191,6 +191,8 @@ struct ViewerOrganization: Codable {
     let name: String
     /// Organization slug used in Linear URLs.
     let urlKey: String
+    /// Absolute URL to the workspace logo (Linear hosts it on its CDN).
+    let logoUrl: String?
 }
 
 // MARK: - GraphQL envelope

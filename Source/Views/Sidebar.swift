@@ -185,11 +185,9 @@ private struct SidebarAccountRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Circle()
-                .fill(Color(hex: account.color ?? "#5E6AD2"))
-                .frame(width: 22, height: 22)
+            WorkspaceLogo(account: account, size: 22)
                 .overlay(
-                    Circle()
+                    RoundedRectangle(cornerRadius: 22 * 0.22, style: .continuous)
                         .strokeBorder(theme.borderStrong, lineWidth: 1)
                 )
                 .opacity(account.isEnabled ? 1 : 0.55)

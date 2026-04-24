@@ -18,6 +18,7 @@ extension LinearAPI {
               id
               name
               urlKey
+              logoUrl
             }
           }
         }
