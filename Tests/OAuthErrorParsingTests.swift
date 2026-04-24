@@ -1,12 +1,13 @@
 import XCTest
 @testable import LinearBar
 
+@MainActor
 final class OAuthErrorParsingTests: XCTestCase {
 
     func testParseOAuthErrorPrefersErrorDescription() throws {
-        let payload = """
+        let payload = Data("""
         {"error":"invalid_grant","error_description":"Refresh token expired"}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let parsed = LinearAuthService.parseOAuthError(
             data: payload,
@@ -19,9 +20,9 @@ final class OAuthErrorParsingTests: XCTestCase {
     }
 
     func testParseOAuthErrorFallsBackToErrorField() throws {
-        let payload = """
+        let payload = Data("""
         {"error":"invalid_client"}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let parsed = LinearAuthService.parseOAuthError(
             data: payload,

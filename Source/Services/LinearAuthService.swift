@@ -23,8 +23,8 @@ class LinearAuthService: NSObject {
     let clientSecret = LinearAuthSecrets.clientSecret
     let callbackURLScheme = "linearbar"
     let redirectURI = "linearbar://oauth/callback"
-    private let authorizationURL = "https://linear.app/oauth/authorize"
-    let tokenURL = "https://api.linear.app/oauth/token"
+    private let authorizationURL = SafeExternalURL.mustParse("https://linear.app/oauth/authorize")
+    let tokenURL = SafeExternalURL.mustParse("https://api.linear.app/oauth/token")
 
     private var authSession: ASWebAuthenticationSession?
 
@@ -60,7 +60,11 @@ class LinearAuthService: NSObject {
         let state = Self.generateOAuthState()
         pendingAuthState = state
 
-        var components = URLComponents(string: authorizationURL)!
+        guard var components = URLComponents(url: authorizationURL, resolvingAgainstBaseURL: false) else {
+            completion(.failure(NSError(domain: "LinearAuthService", code: -1,
+                                        userInfo: [NSLocalizedDescriptionKey: "Failed to construct authorization URL"])))
+            return
+        }
         components.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: clientId),

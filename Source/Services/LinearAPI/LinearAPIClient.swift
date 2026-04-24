@@ -6,7 +6,7 @@ import os.log
 class LinearAPI {
     static let shared = LinearAPI()
 
-    let endpoint = URL(string: "https://api.linear.app/graphql")!
+    let endpoint = SafeExternalURL.mustParse("https://api.linear.app/graphql")
     let session: URLSession
 
     /// Shared decoder. Allocating a `JSONDecoder` per request showed up in

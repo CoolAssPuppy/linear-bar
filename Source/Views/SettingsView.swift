@@ -200,7 +200,7 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
-                    Link(destination: URL(string: "https://venmo.com/coolasspuppy")!) {
+                    Link(destination: SafeExternalURL.mustParse("https://venmo.com/coolasspuppy")) {
                         HStack(spacing: 7) {
                             Image(systemName: "cup.and.saucer.fill")
                                 .font(.system(size: 11))
@@ -223,7 +223,7 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Link(destination: URL(string: "https://github.com/CoolAssPuppy/linear-bar")!) {
+                    Link(destination: SafeExternalURL.mustParse("https://github.com/CoolAssPuppy/linear-bar")) {
                         HStack(spacing: 6) {
                             Image(systemName: "star")
                                 .font(.system(size: 11))

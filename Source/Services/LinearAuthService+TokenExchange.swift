@@ -104,7 +104,7 @@ extension LinearAuthService {
 
     /// Builds a URL-encoded token request with common parameters
     func buildTokenRequest(grantType: String, extraParams: [URLQueryItem]) -> URLRequest {
-        var request = URLRequest(url: URL(string: tokenURL)!)
+        var request = URLRequest(url: tokenURL)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 

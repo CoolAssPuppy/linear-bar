@@ -60,10 +60,10 @@ struct LinearAccountView: View {
                 }
             }
         }
-        .onChange(of: nameFieldFocused) { focused in
+        .onChange(of: nameFieldFocused) { _, focused in
             if !focused { commitDisplayName() }
         }
-        .onChange(of: hexFieldFocused) { focused in
+        .onChange(of: hexFieldFocused) { _, focused in
             if !focused { commitColorHex() }
         }
         .alert("Remove workspace?", isPresented: $showingDeleteAlert) {

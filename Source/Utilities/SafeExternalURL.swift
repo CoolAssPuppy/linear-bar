@@ -45,6 +45,16 @@ enum SafeExternalURL {
         return NSWorkspace.shared.open(url)
     }
 
+    /// Parses a compile-time constant URL string. Traps with a clear message
+    /// if the string is malformed. Use for URLs baked into the source, never
+    /// for runtime/user input.
+    static func mustParse(_ raw: StaticString) -> URL {
+        guard let url = URL(string: "\(raw)") else {
+            preconditionFailure("Invalid compile-time URL: \(raw)")
+        }
+        return url
+    }
+
     private static func validatedURL(from raw: String, allowedHosts: Set<String>) -> URL? {
         guard let components = URLComponents(string: raw),
               let scheme = components.scheme?.lowercased(),

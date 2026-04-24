@@ -154,8 +154,8 @@ struct PopoverWelcomeView: View {
 
     private func footerLink(_ title: String, url: String) -> some View {
         Button {
-            if let url = URL(string: url) {
-                NSWorkspace.shared.open(url)
+            if let parsed = SafeExternalURL.httpsURL(from: url) {
+                NSWorkspace.shared.open(parsed)
             }
         } label: {
             Text(title)

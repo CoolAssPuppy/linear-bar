@@ -6,7 +6,8 @@ import Foundation
 /// rule — the toggles are a single source of truth.
 @MainActor
 enum ListFilter {
-    static func keep(_ issue: Issue, settings: AppSettings = .shared) -> Bool {
+    static func keep(_ issue: Issue, settings: AppSettings? = nil) -> Bool {
+        let settings = settings ?? AppSettings.shared
         switch issue.state?.kind {
         case .completed: return settings.showCompletedItems
         case .canceled:  return settings.showCanceledItems
@@ -14,7 +15,8 @@ enum ListFilter {
         }
     }
 
-    static func keep(_ project: Project, settings: AppSettings = .shared) -> Bool {
+    static func keep(_ project: Project, settings: AppSettings? = nil) -> Bool {
+        let settings = settings ?? AppSettings.shared
         switch project.state {
         case "completed": return settings.showCompletedItems
         case "canceled":  return settings.showCanceledItems
@@ -22,7 +24,8 @@ enum ListFilter {
         }
     }
 
-    static func keep(_ initiative: Initiative, settings: AppSettings = .shared) -> Bool {
+    static func keep(_ initiative: Initiative, settings: AppSettings? = nil) -> Bool {
+        let settings = settings ?? AppSettings.shared
         switch initiative.status {
         case "completed"?: return settings.showCompletedItems
         case "canceled"?:  return settings.showCanceledItems

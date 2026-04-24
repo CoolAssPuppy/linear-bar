@@ -1,6 +1,7 @@
 import XCTest
 @testable import LinearBar
 
+@MainActor
 final class LinearAPIRetryAfterTests: XCTestCase {
 
     func testRetryAfterParsesIntegerSecondsAndCapsTo15() throws {
@@ -32,7 +33,7 @@ final class LinearAPIRetryAfterTests: XCTestCase {
 
     private func makeResponse(headers: [String: String]) throws -> HTTPURLResponse {
         guard let response = HTTPURLResponse(
-            url: URL(string: "https://api.linear.app/graphql")!,
+            url: SafeExternalURL.mustParse("https://api.linear.app/graphql"),
             statusCode: 429,
             httpVersion: nil,
             headerFields: headers

@@ -108,7 +108,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popoverManager.tearDown()
 
         // Stop listening for wake and notification-center observers we added.
+        // AppDelegate is the process-wide singleton; applicationWillTerminate
+        // is the functional equivalent of deinit here.
         NSWorkspace.shared.notificationCenter.removeObserver(self)
+        // swiftlint:disable:next notification_center_detachment
         NotificationCenter.default.removeObserver(self)
     }
 
