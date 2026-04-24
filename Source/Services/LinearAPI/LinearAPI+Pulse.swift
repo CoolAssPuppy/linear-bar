@@ -7,6 +7,26 @@ extension LinearAPI {
     /// without overfetching.
     private static let pulsePageSize = 30
 
+    /// Time window applied to every Pulse fetch via a server-side
+    /// `createdAt.gt` filter. Matches Linear's web Pulse default of
+    /// roughly two weeks of recent signal — enough to stay populated
+    /// on quiet workspaces without trailing into archive territory.
+    private static let pulseWindowDays = 14
+
+    /// ISO8601 formatter with fractional seconds disabled — Linear's
+    /// GraphQL `DateTimeComparator` accepts either form but fractional
+    /// seconds have been the more finicky format historically.
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    private static func windowStartIso(daysAgo: Int) -> String {
+        let date = Calendar(identifier: .gregorian).date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
+        return isoFormatter.string(from: date)
+    }
+
     /// Scope filter applied to the Pulse feed.
     enum PulseScope: String, CaseIterable, Identifiable {
         /// Every update across the workspace.
@@ -125,9 +145,14 @@ extension LinearAPI {
         accountEmail: String?,
         onlyMine: Bool
     ) async throws -> [LinearPulseUpdate] {
-        let filterArg = onlyMine
-            ? ", filter: { user: { isMe: { eq: true } } }"
-            : ""
+        let since = Self.windowStartIso(daysAgo: Self.pulseWindowDays)
+        let filterArg: String = {
+            if onlyMine {
+                return ", filter: { user: { isMe: { eq: true } }, createdAt: { gt: \"\(since)\" } }"
+            } else {
+                return ", filter: { createdAt: { gt: \"\(since)\" } }"
+            }
+        }()
         let query = """
         query FetchProjectUpdates($first: Int!) {
           projectUpdates(first: $first\(filterArg)) {
@@ -178,9 +203,14 @@ extension LinearAPI {
         accountEmail: String?,
         onlyMine: Bool
     ) async throws -> [LinearPulseUpdate] {
-        let filterArg = onlyMine
-            ? ", filter: { user: { isMe: { eq: true } } }"
-            : ""
+        let since = Self.windowStartIso(daysAgo: Self.pulseWindowDays)
+        let filterArg: String = {
+            if onlyMine {
+                return ", filter: { user: { isMe: { eq: true } }, createdAt: { gt: \"\(since)\" } }"
+            } else {
+                return ", filter: { createdAt: { gt: \"\(since)\" } }"
+            }
+        }()
         let query = """
         query FetchInitiativeUpdates($first: Int!) {
           initiativeUpdates(first: $first\(filterArg)) {

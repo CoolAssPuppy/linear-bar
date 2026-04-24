@@ -57,7 +57,8 @@ struct PulseView: View {
                 prefix: "Scope:",
                 selection: $scope,
                 options: LinearAPI.PulseScope.allCases,
-                label: { Self.scopeLabel(for: $0) }
+                label: { Self.scopeLabel(for: $0) },
+                selectionWeight: .foreground
             )
             Spacer(minLength: 0)
             Text(countLabel)
