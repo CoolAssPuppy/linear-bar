@@ -98,11 +98,15 @@ struct InboxView: View {
 
         let filtered: [LinearNotification]
         if let selectedTeam {
-            // Notifications about projects/documents don't carry a team id,
-            // so team filtering applies only to issue-targeted rows.
+            // Issue notifications scope by the issue's team id. Project and
+            // document notifications are workspace-level — we don't have
+            // enough schema coverage to team-scope them, so they always
+            // pass through when a team filter is active. Dropping them here
+            // silently hid unread rows from the user (workspace project
+            // updates disappeared whenever any team was selected).
             filtered = notifications.filter { notif in
-                if let teamId = notif.issue?.team?.id { return teamId == selectedTeam }
-                return false
+                guard let issueTeamId = notif.issue?.team?.id else { return true }
+                return issueTeamId == selectedTeam
             }
         } else {
             filtered = notifications
@@ -213,10 +217,10 @@ private struct NotificationRow: View {
 
             HStack(spacing: 6) {
                 if let identifier = notification.issue?.identifier {
-                    Text(identifier)
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(theme.primary)
-                        .fixedSize()
+                    IssueIdentifierLabel(identifier: identifier,
+                                         url: notification.issue?.url,
+                                         rowIsHovered: isHovered,
+                                         width: nil)
                 } else if let project = notification.project {
                     ProjectGlyph(color: project.color)
                     Text(project.name)

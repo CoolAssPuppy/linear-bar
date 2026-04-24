@@ -71,10 +71,9 @@ struct CompactIssueRow: View {
         Button(action: openInLinear) {
             HStack(spacing: 10) {
                 IssueStateCircle(state: state)
-                Text(identifier)
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(theme.primary)
-                    .frame(width: 70, alignment: .leading)
+                IssueIdentifierLabel(identifier: identifier,
+                                     url: url,
+                                     rowIsHovered: isHovered)
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(theme.foreground)

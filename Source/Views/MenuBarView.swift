@@ -13,28 +13,32 @@ struct MenuBarView: View {
 
     var body: some View {
         let theme = themeStore.palette
-        return VStack(spacing: 0) {
-            if appSettings.accounts.isEmpty {
-                PopoverWelcomeView()
-            } else {
-                HeaderBar(lastRefreshedAt: lastRefreshedAt,
-                          onCreate: openLinearCreate,
-                          isRefreshing: isRefreshing)
-                Divider().background(theme.divider)
+        return ZStack {
+            VStack(spacing: 0) {
+                if appSettings.accounts.isEmpty {
+                    PopoverWelcomeView()
+                } else {
+                    HeaderBar(lastRefreshedAt: lastRefreshedAt,
+                              onCreate: openLinearCreate,
+                              isRefreshing: isRefreshing)
+                    Divider().background(theme.divider)
 
-                tabBar
-                Divider().background(theme.divider)
+                    tabBar
+                    Divider().background(theme.divider)
 
-                contentArea
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(theme.background)
+                    contentArea
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(theme.background)
+                }
+
+                Divider().background(theme.divider)
+                BottomBar(onRefresh: triggerRefresh,
+                          onOpenWindow: openMainWindow,
+                          onSettings: openSettings,
+                          onQuit: quitApp)
             }
 
-            Divider().background(theme.divider)
-            BottomBar(onRefresh: triggerRefresh,
-                      onOpenWindow: openMainWindow,
-                      onSettings: openSettings,
-                      onQuit: quitApp)
+            ToastOverlay()
         }
         .frame(width: 400, height: 540)
         .background(theme.background)

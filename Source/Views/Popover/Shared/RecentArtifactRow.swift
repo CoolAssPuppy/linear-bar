@@ -15,10 +15,16 @@ struct RecentArtifactRow: View {
                 leadingGlyph
                     .frame(width: 14, alignment: .center)
 
-                Text(leadingLabel)
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(theme.primary)
-                    .frame(width: 70, alignment: .leading)
+                if case .issue(let issue) = item {
+                    IssueIdentifierLabel(identifier: issue.identifier,
+                                         url: issue.url,
+                                         rowIsHovered: isHovered)
+                } else {
+                    Text(leadingLabel)
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(theme.primary)
+                        .frame(width: 70, alignment: .leading)
+                }
 
                 Text(item.title)
                     .font(.system(size: 12, weight: .medium))
