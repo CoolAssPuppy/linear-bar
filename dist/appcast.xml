@@ -8,6 +8,24 @@
     <description>Linear Bar updates</description>
     <language>en</language>
     <item>
+      <title>Version 2.1.1</title>
+      <pubDate>Fri, 24 Apr 2026 10:14:44 +0000</pubDate>
+      <sparkle:version>18</sparkle:version>
+      <sparkle:shortVersionString>2.1.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <ul>
+          <li>Fixed a bug where Linear accounts could disappear on restart if iCloud sync was off and iCloud KVS held a stale empty-accounts blob.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://downloads.strategicnerds.com/apps/linear-bar/LinearBar-2.1.1.dmg"
+        sparkle:edSignature="UAh56HqjANowOs2h+tyTCmlyPpDRCip8qDKXEA74fch0pHlVdmt5WOfUIS1qQp+DLiCNG8IAt1pzQOHy40mEBw=="
+        length="4454122"
+        type="application/x-apple-diskimage" />
+    </item>
+
+    <item>
       <title>Version 2.1.0</title>
       <pubDate>Fri, 24 Apr 2026 09:52:19 +0000</pubDate>
       <sparkle:version>17</sparkle:version>
