@@ -637,4 +637,69 @@ struct TestDataProvider {
         )
     }
 
+    // MARK: - Favorites
+
+    static func getFavorites() -> [LinearFavorite] {
+        [
+            LinearFavorite(
+                id: "fav-1",
+                type: "issue",
+                folderName: "Daily",
+                issue: FavoriteIssueTarget(
+                    id: "issue-3",
+                    identifier: "SUP-4419",
+                    title: "Stripe webhook retries silently dropped",
+                    url: "https://linear.app/aigoggles/issue/SUP-4419",
+                    state: IssueState(name: "In Progress", type: "started"),
+                    team: Team(id: "team-3", name: "Support", key: "SUP", icon: nil)
+                ),
+                project: nil
+            ),
+            LinearFavorite(
+                id: "fav-2",
+                type: "project",
+                folderName: "Daily",
+                issue: nil,
+                project: FavoriteProjectTarget(
+                    id: "project-1",
+                    name: "Self-serve onboarding",
+                    url: "https://linear.app/aigoggles/project/self-serve-onboarding",
+                    icon: nil,
+                    color: "#5E6AD2",
+                    state: "started",
+                    progress: 0.42
+                )
+            ),
+            LinearFavorite(
+                id: "fav-3",
+                type: "issue",
+                folderName: nil,
+                issue: FavoriteIssueTarget(
+                    id: "issue-5",
+                    identifier: "DEBR-265",
+                    title: "Notion Database for /go pages",
+                    url: "https://linear.app/aigoggles/issue/DEBR-265",
+                    state: IssueState(name: "In Progress", type: "started"),
+                    team: Team(id: "team-5", name: "Developer Relations", key: "DEBR", icon: nil)
+                ),
+                project: nil
+            ),
+            LinearFavorite(
+                id: "fav-4",
+                type: "project",
+                folderName: nil,
+                issue: nil,
+                project: FavoriteProjectTarget(
+                    id: "project-2",
+                    name: "Billing v2 migration",
+                    url: "https://linear.app/aigoggles/project/billing-v2",
+                    icon: nil,
+                    color: "#26B5CE",
+                    state: "planned",
+                    progress: 0.05
+                )
+            )
+        ]
+    }
+
 }

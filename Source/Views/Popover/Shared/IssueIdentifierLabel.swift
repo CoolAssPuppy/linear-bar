@@ -62,9 +62,7 @@ struct IssueIdentifierLabel: View {
 
     private func copyLink() {
         guard let url else { return }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(url, forType: .string)
+        NSPasteboard.copyString(url)
         ToastCenter.shared.show("Link copied!")
     }
 }

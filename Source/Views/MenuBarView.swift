@@ -75,6 +75,8 @@ struct MenuBarView: View {
         switch selectedTab {
         case .inbox:
             InboxView()
+        case .faves:
+            FavesView()
         case .mine:
             MyIssuesView()
         case .recent:
@@ -140,11 +142,12 @@ struct MenuBarView: View {
     // MARK: - Tab enum
 
     enum Tab: String, CaseIterable {
-        case inbox, mine, recent, pulse, search
+        case inbox, faves, mine, recent, pulse, search
 
         var label: String {
             switch self {
             case .inbox:  return "Inbox"
+            case .faves:  return "Faves"
             case .mine:   return "Mine"
             case .recent: return "Recent"
             case .pulse:  return "Pulse"
@@ -155,6 +158,7 @@ struct MenuBarView: View {
         var icon: String {
             switch self {
             case .inbox:  return "tray"
+            case .faves:  return "star"
             case .mine:   return "checkmark.circle"
             case .recent: return "clock"
             case .pulse:  return "waveform.path.ecg"
@@ -165,6 +169,7 @@ struct MenuBarView: View {
         init(defaultTab: DefaultTab) {
             switch defaultTab {
             case .inbox:  self = .inbox
+            case .faves:  self = .faves
             case .mine:   self = .mine
             case .recent: self = .recent
             case .pulse:  self = .pulse

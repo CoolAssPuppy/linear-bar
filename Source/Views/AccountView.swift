@@ -247,9 +247,7 @@ struct LinearAccountView: View {
                             .foregroundStyle(theme.muted)
                             .textSelection(.enabled)
                         AppIconButton(systemName: "doc.on.doc", help: "Copy URL") {
-                            let pb = NSPasteboard.general
-                            pb.clearContents()
-                            pb.setString(workspaceURLString, forType: .string)
+                            NSPasteboard.copyString(workspaceURLString)
                         }
                     }
                 }
