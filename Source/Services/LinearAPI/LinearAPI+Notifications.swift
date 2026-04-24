@@ -81,7 +81,13 @@ extension LinearAPI {
         )
 
         guard let data = response.data else { throw LinearError.invalidResponse }
-        return data.notifications.nodes.filter { $0.readAt == nil }
+        let all = data.notifications.nodes
+        let unread = all.filter { $0.readAt == nil }
+        AppLogger.info(
+            "Inbox fetch: \(all.count) notifications returned, \(unread.count) unread after readAt filter",
+            log: AppLogger.api
+        )
+        return unread
     }
 
     /// Fetches the total unread notification count. Cheap scalar — drives

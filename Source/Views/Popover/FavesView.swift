@@ -157,11 +157,10 @@ private struct FavoriteRow: View {
 
                 if let issue = favorite.issue {
                     IssueIdentifierLabel(identifier: issue.identifier, url: issue.url)
+                } else if let project = favorite.project {
+                    IssueIdentifierLabel(identifier: "PROJ", url: project.url)
                 } else {
-                    Text("PROJ")
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(theme.primary)
-                        .frame(width: 70, alignment: .leading)
+                    IssueIdentifierLabel(identifier: "FAV", url: nil)
                 }
 
                 Text(title)

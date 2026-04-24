@@ -65,6 +65,14 @@ extension LinearAPI {
         )
 
         guard let data = response.data else { throw LinearError.invalidResponse }
-        return data.favorites.nodes
+        let nodes = data.favorites.nodes
+        let issueCount = nodes.filter { $0.issue != nil }.count
+        let projectCount = nodes.filter { $0.project != nil }.count
+        let typeCounts = Dictionary(grouping: nodes, by: { $0.type }).mapValues { $0.count }
+        AppLogger.info(
+            "Faves fetch: \(nodes.count) favorites (issues=\(issueCount), projects=\(projectCount), byType=\(typeCounts))",
+            log: AppLogger.api
+        )
+        return nodes
     }
 }

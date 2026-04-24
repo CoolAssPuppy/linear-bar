@@ -15,14 +15,7 @@ struct RecentArtifactRow: View {
                 leadingGlyph
                     .frame(width: 14, alignment: .center)
 
-                if case .issue(let issue) = item {
-                    IssueIdentifierLabel(identifier: issue.identifier, url: issue.url)
-                } else {
-                    Text(leadingLabel)
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(theme.primary)
-                        .frame(width: 70, alignment: .leading)
-                }
+                IssueIdentifierLabel(identifier: leadingLabel, url: item.url)
 
                 Text(item.title)
                     .font(.system(size: 12, weight: .medium))
