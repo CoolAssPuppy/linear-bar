@@ -367,7 +367,7 @@ private struct WorkspacePicker: View {
     @Environment(\.theme) private var theme
     @ObservedObject private var settings = AppSettings.shared
     @State private var coordinator = WorkspaceMenuCoordinator()
-    @State private var anchorFrame: CGRect = .zero
+    @StateObject private var anchorBox = MenuAnchorBox()
 
     var body: some View {
         // SwiftUI's `Menu` bridges to an NSPopUpButton-style control on macOS,
@@ -390,17 +390,15 @@ private struct WorkspacePicker: View {
                     .foregroundStyle(theme.tertiary)
             }
             .contentShape(Rectangle())
-            .background(
-                GeometryReader { geo in
-                    Color.clear
-                        .preference(key: WorkspaceAnchorKey.self,
-                                    value: geo.frame(in: .global))
-                }
-            )
+            // Invisible NSView stacked behind the chip serves as the menu's
+            // anchor. Using GeometryReader + PreferenceKey to capture a
+            // CGRect was unreliable on macOS — preferenceChange hadn't
+            // fired by the time the button action ran, so `.zero` leaked
+            // through and the menu popped at the popover's corner.
+            .background(MenuAnchorHost(box: anchorBox))
         }
         .buttonStyle(.plain)
         .help("Switch workspace")
-        .onPreferenceChange(WorkspaceAnchorKey.self) { anchorFrame = $0 }
     }
 
     private func presentMenu() {
@@ -420,24 +418,15 @@ private struct WorkspacePicker: View {
             menu.addItem(item)
         }
 
-        // Position the menu in the popover's contentView coordinate space.
-        // NSHostingView (which hosts our SwiftUI tree) is flipped — origin
-        // top-left, same as SwiftUI — so the chip's .global frame maps
-        // straight across. Falling back to the mouse location if we can't
-        // get a handle on the window, but that path shouldn't normally
-        // fire since the popover is key whenever the user can click this.
-        guard let contentView = NSApp.keyWindow?.contentView else {
+        // NSMenu positions its upper-left at `at:` in the anchor view's
+        // coordinate space. Default NSView is non-flipped (AppKit
+        // bottom-left origin), so (0, 0) is the anchor's bottom-left —
+        // exactly where we want the menu to hang from.
+        guard let anchor = anchorBox.view else {
             menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
             return
         }
-        let yInView = contentView.isFlipped
-            ? anchorFrame.maxY
-            : contentView.bounds.height - anchorFrame.maxY
-        menu.popUp(
-            positioning: nil,
-            at: NSPoint(x: anchorFrame.minX, y: yInView),
-            in: contentView
-        )
+        menu.popUp(positioning: nil, at: .zero, in: anchor)
     }
 
     private var primaryAccount: LinearAccount? {
@@ -452,14 +441,32 @@ private struct WorkspacePicker: View {
     /// the menu. Matches the in-app `WorkspaceLogo`'s fallback style so
     /// the menu reads as a continuation of the chip.
     ///
-    /// Uses the classic lockFocus / unlockFocus path; the block-based
-    /// NSImage(size:flipped:drawingHandler:) defers drawing until first
-    /// access, and NSMenuItem renders the image during menu layout —
-    /// we've seen items show blank when the deferred draw races the
-    /// menu's cached metrics.
-    private static func workspaceIcon(for account: LinearAccount, size: CGFloat = 20) -> NSImage {
-        let image = NSImage(size: NSSize(width: size, height: size))
-        image.lockFocus()
+    /// Draws into an explicit `NSBitmapImageRep` rather than relying on
+    /// `NSImage.lockFocus` (which lazily creates a cached rep that has
+    /// rendered blank for us when NSMenu reads pixels eagerly during
+    /// layout). Backed bitmap is guaranteed to be populated before the
+    /// NSImage returns.
+    private static func workspaceIcon(for account: LinearAccount, size: CGFloat = 18) -> NSImage {
+        let scale: CGFloat = 2
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: Int(size * scale),
+            pixelsHigh: Int(size * scale),
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) else {
+            return NSImage(size: NSSize(width: size, height: size))
+        }
+        rep.size = NSSize(width: size, height: size)
+
+        NSGraphicsContext.saveGraphicsState()
+        defer { NSGraphicsContext.restoreGraphicsState() }
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
         let rect = NSRect(x: 0, y: 0, width: size, height: size)
         let tint = Self.nsColorFromHex(account.color ?? "#5E6AD2")
@@ -486,9 +493,8 @@ private struct WorkspacePicker: View {
             height: textSize.height
         ))
 
-        image.unlockFocus()
-        // Keep our tint intact — NSMenuItem treats single-tone images as
-        // templates otherwise and washes the color out.
+        let image = NSImage(size: NSSize(width: size, height: size))
+        image.addRepresentation(rep)
         image.isTemplate = false
         return image
     }
@@ -504,13 +510,29 @@ private struct WorkspacePicker: View {
     }
 }
 
-/// Anchor-rect PreferenceKey used by WorkspacePicker to report the chip's
-/// on-screen position up to the parent so the NSMenu opens directly below
-/// the chip rather than at the mouse cursor.
-private struct WorkspaceAnchorKey: PreferenceKey {
-    static var defaultValue: CGRect = .zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
-        value = nextValue()
+/// Holds a strong reference to the invisible NSView we install behind the
+/// workspace chip. The chip's button action reads this reference to anchor
+/// NSMenu against the real view — passing the NSView to
+/// `menu.popUp(positioning:at:in:)` lets AppKit compute screen coordinates
+/// and handles edge collisions, which manual math had been getting wrong.
+@MainActor
+private final class MenuAnchorBox: ObservableObject {
+    var view: NSView?
+}
+
+/// NSViewRepresentable that installs a plain NSView as the chip's
+/// background and stashes a reference into the shared `MenuAnchorBox`.
+private struct MenuAnchorHost: NSViewRepresentable {
+    let box: MenuAnchorBox
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        box.view = view
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        box.view = nsView
     }
 }
 
