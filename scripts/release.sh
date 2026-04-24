@@ -103,15 +103,20 @@ echo "==> Regenerating Xcode project"
 ARCHIVE="$DIST/LinearBar-$VERSION.xcarchive"
 rm -rf "$ARCHIVE"
 echo "==> Archiving"
+# -allowProvisioningUpdates lets Xcode fetch/create the Developer ID
+# provisioning profile on demand — required because the app entitlements
+# include iCloud KVS, which can't be signed without a profile.
 xcodebuild -project "$REPO_ROOT/LinearBar.xcodeproj" \
   -scheme LinearBar \
   -configuration Release \
   -archivePath "$ARCHIVE" \
+  -allowProvisioningUpdates \
   archive | xcpretty 2>/dev/null || \
 xcodebuild -project "$REPO_ROOT/LinearBar.xcodeproj" \
   -scheme LinearBar \
   -configuration Release \
   -archivePath "$ARCHIVE" \
+  -allowProvisioningUpdates \
   archive >/dev/null
 
 #----------------------------------------------------------------------
@@ -123,7 +128,8 @@ echo "==> Exporting .app"
 xcodebuild -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportPath "$EXPORT_DIR" \
-  -exportOptionsPlist "$SCRIPTS/export-options.plist" >/dev/null
+  -exportOptionsPlist "$SCRIPTS/export-options.plist" \
+  -allowProvisioningUpdates >/dev/null
 
 APP_PATH="$EXPORT_DIR/Linear Bar.app"
 if [ ! -d "$APP_PATH" ]; then
