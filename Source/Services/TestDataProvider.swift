@@ -645,14 +645,14 @@ struct TestDataProvider {
 
     // MARK: - Pulse
 
-    static func getPulseUpdates() -> [LinearProjectUpdate] {
+    static func getPulseUpdates() -> [LinearPulseUpdate] {
         let calendar = Calendar.current
         let now = Date()
         func hoursAgo(_ h: Int) -> Date? { calendar.date(byAdding: .hour, value: -h, to: now) }
         func daysAgo(_ d: Int) -> Date? { calendar.date(byAdding: .day, value: -d, to: now) }
 
         return [
-            LinearProjectUpdate(
+            LinearPulseUpdate(
                 id: "upd-1",
                 body: """
                 Shipped the avalanche-risk detection flag this morning. Field test \
@@ -667,11 +667,28 @@ struct TestDataProvider {
                     name: "Self-serve onboarding",
                     url: "https://linear.app/aigoggles/project/self-serve-onboarding",
                     color: "#5E6AD2",
+                    icon: nil,
+                    teams: UpdateProjectTeamsRef(nodes: [UpdateProjectTeamsRef.Node(id: "team-3")])
+                ),
+                initiative: nil
+            ),
+            LinearPulseUpdate(
+                id: "upd-2",
+                body: "Q4 platform initiative now covers 4 of the 6 teams; storage + billing are next.",
+                createdAt: hoursAgo(4),
+                health: nil,
+                user: UpdateActor(id: "u-6", name: "Priya Shah", displayName: "Priya", avatarUrl: nil),
+                project: nil,
+                initiative: UpdateInitiativeRef(
+                    id: "initiative-1",
+                    name: "Platform consolidation",
+                    url: "https://linear.app/aigoggles/roadmap",
+                    color: "#F59E0B",
                     icon: nil
                 )
             ),
-            LinearProjectUpdate(
-                id: "upd-2",
+            LinearPulseUpdate(
+                id: "upd-3",
                 body: "Migration is two weeks behind after the schema review flagged the refund flow. Reprioritizing the billing-team rotation next sprint to catch up.",
                 createdAt: hoursAgo(6),
                 health: "atRisk",
@@ -681,11 +698,13 @@ struct TestDataProvider {
                     name: "Billing v2 migration",
                     url: "https://linear.app/aigoggles/project/billing-v2",
                     color: "#26B5CE",
-                    icon: nil
-                )
+                    icon: nil,
+                    teams: nil
+                ),
+                initiative: nil
             ),
-            LinearProjectUpdate(
-                id: "upd-3",
+            LinearPulseUpdate(
+                id: "upd-4",
                 body: "AR overlay compositor crashed in cold-start QA. Rolling back to v3.1 on the fleet; cutting a hotfix against the root cause this week.",
                 createdAt: daysAgo(1),
                 health: "offTrack",
@@ -695,11 +714,13 @@ struct TestDataProvider {
                     name: "AR overlay v4",
                     url: "https://linear.app/aigoggles/project/ar-overlay-v4",
                     color: "#8B5CF6",
-                    icon: nil
-                )
+                    icon: nil,
+                    teams: nil
+                ),
+                initiative: nil
             ),
-            LinearProjectUpdate(
-                id: "upd-4",
+            LinearPulseUpdate(
+                id: "upd-5",
                 body: "Onboarding funnel live on 25% of new activations. Day-1 retention is up 4.2 points versus the old flow.",
                 createdAt: daysAgo(2),
                 health: "onTrack",
@@ -709,19 +730,22 @@ struct TestDataProvider {
                     name: "Self-serve onboarding",
                     url: "https://linear.app/aigoggles/project/self-serve-onboarding",
                     color: "#5E6AD2",
-                    icon: nil
-                )
+                    icon: nil,
+                    teams: UpdateProjectTeamsRef(nodes: [UpdateProjectTeamsRef.Node(id: "team-3")])
+                ),
+                initiative: nil
             ),
-            LinearProjectUpdate(
-                id: "upd-5",
-                body: "Vendor slipped on the sensor module; we'll have parts for the 200-unit build by Nov 5. Scheduling the all-hands hardware day for the 6th.",
+            LinearPulseUpdate(
+                id: "upd-6",
+                body: "Growth leadership review: trimming the scope to the three bets with clearest signal. Detailed write-up in the linked doc.",
                 createdAt: daysAgo(3),
-                health: "atRisk",
-                user: UpdateActor(id: "u-5", name: "Jordan Lee", displayName: "Jordan", avatarUrl: nil),
-                project: UpdateProjectRef(
-                    id: "project-4",
-                    name: "Winter 2026 Launch",
-                    url: "https://linear.app/aigoggles/project/winter-2026-launch",
+                health: nil,
+                user: UpdateActor(id: "u-7", name: "Sarah Chen", displayName: "Sarah", avatarUrl: nil),
+                project: nil,
+                initiative: UpdateInitiativeRef(
+                    id: "initiative-2",
+                    name: "Growth experiments Q4",
+                    url: "https://linear.app/aigoggles/roadmap",
                     color: "#10B981",
                     icon: nil
                 )

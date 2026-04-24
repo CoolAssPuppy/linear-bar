@@ -5,11 +5,13 @@ import AppKit
 /// of project status updates across the workspace, each tagged with the
 /// author's health classification (On track / At risk / Off track).
 struct PulseView: View {
-    @State private var updates: [LinearProjectUpdate] = []
+    @State private var updates: [LinearPulseUpdate] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
+    @State private var scope: LinearAPI.PulseScope = .workspace
 
+    @ObservedObject private var teamsStore = TeamsStore.shared
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -35,11 +37,13 @@ struct PulseView: View {
             }
         }
         .onAppear {
+            teamsStore.loadIfNeeded()
             if !hasLoadedOnce {
                 hasLoadedOnce = true
                 loadData()
             }
         }
+        .onChange(of: scope) { _, _ in loadData() }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
         }
@@ -49,9 +53,12 @@ struct PulseView: View {
 
     private var subHeader: some View {
         HStack(spacing: 8) {
-            Text("Recent updates")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(theme.foregroundSoft)
+            PopoverChip(
+                prefix: "Scope:",
+                selection: $scope,
+                options: LinearAPI.PulseScope.allCases,
+                label: { Self.scopeLabel(for: $0) }
+            )
             Spacer(minLength: 0)
             Text(countLabel)
                 .font(.system(size: 11, weight: .medium))
@@ -59,6 +66,14 @@ struct PulseView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+    }
+
+    private static func scopeLabel(for scope: LinearAPI.PulseScope) -> String {
+        switch scope {
+        case .workspace: return "My Workspace"
+        case .teams:     return "My Teams"
+        case .mine:      return "Just Mine"
+        }
     }
 
     private var countLabel: String {
@@ -97,11 +112,15 @@ struct PulseView: View {
         isLoading = true
         errorMessage = nil
 
+        let currentScope = scope
+        let teamIds = Set(teamsStore.teams.map { $0.id })
         Task {
             do {
                 let fetched = try await LinearAPI.shared.fetchPulseUpdates(
                     accessToken: session.accessToken,
-                    accountEmail: session.accountEmail
+                    accountEmail: session.accountEmail,
+                    scope: currentScope,
+                    viewerTeamIds: teamIds
                 )
                 await MainActor.run {
                     updates = fetched
@@ -120,7 +139,7 @@ struct PulseView: View {
 // MARK: - Row
 
 private struct PulseRow: View {
-    let update: LinearProjectUpdate
+    let update: LinearPulseUpdate
 
     @Environment(\.theme) private var theme
     @State private var isHovered = false
@@ -156,16 +175,18 @@ private struct PulseRow: View {
                 .font(.system(size: 11))
                 .foregroundStyle(theme.muted)
 
-            if let project = update.project {
-                ProjectGlyph(color: project.color)
-                Text(project.name)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(theme.foregroundSoft)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
+            targetGlyph
+            Text(targetName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(theme.foregroundSoft)
+                .lineLimit(1)
+                .truncationMode(.tail)
 
-            healthChip
+            // Health pill only applies to project updates; initiative
+            // updates on Linear don't carry a health classification.
+            if update.project != nil {
+                healthChip
+            }
 
             Spacer(minLength: 6)
 
@@ -176,6 +197,23 @@ private struct PulseRow: View {
                     .fixedSize()
             }
         }
+    }
+
+    @ViewBuilder
+    private var targetGlyph: some View {
+        if let project = update.project {
+            ProjectGlyph(color: project.color)
+        } else if update.initiative != nil {
+            InitiativeGlyph()
+        }
+    }
+
+    private var targetName: String {
+        update.project?.name ?? update.initiative?.name ?? ""
+    }
+
+    private var targetURL: String? {
+        update.project?.url ?? update.initiative?.url
     }
 
     private var healthChip: some View {
@@ -258,7 +296,7 @@ private struct PulseRow: View {
     }
 
     private func openInLinear() {
-        guard let urlString = update.project?.url else { return }
+        guard let urlString = targetURL else { return }
         _ = SafeExternalURL.openLinearURL(from: urlString)
     }
 }

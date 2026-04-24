@@ -1,20 +1,23 @@
 import Foundation
 
-/// A single project status update from Linear's Pulse feed. Combines
-/// the authoring user, the target project, the `health` classification
-/// the author picked (`onTrack` / `atRisk` / `offTrack`), and the free
-/// body text. Linear's web Pulse shows a feed of these across the
-/// workspace.
-struct LinearProjectUpdate: Identifiable, Codable, Hashable {
+/// A single entry in Linear's Pulse feed. Project updates and initiative
+/// updates share the same header / body / author shape on the wire, so
+/// we flatten them into one struct with optional `project` and
+/// `initiative` targets — exactly one is non-nil in practice. The row
+/// renderer picks which header to show based on which target was
+/// decoded.
+struct LinearPulseUpdate: Identifiable, Codable, Hashable {
     let id: String
     let body: String
     let createdAt: Date?
-    /// Raw string from Linear's `ProjectUpdateHealthType` enum — values
-    /// observed in production: `onTrack`, `atRisk`, `offTrack`. Left as
-    /// String so unknown values decode instead of erroring.
+    /// Raw string from Linear's `ProjectUpdateHealthType` enum (values
+    /// observed: `onTrack`, `atRisk`, `offTrack`). Always nil on
+    /// initiative updates — initiatives don't carry a health
+    /// classification. Kept as String so unknown values decode.
     let health: String?
     let user: UpdateActor?
     let project: UpdateProjectRef?
+    let initiative: UpdateInitiativeRef?
 }
 
 struct UpdateActor: Codable, Hashable {
@@ -27,6 +30,24 @@ struct UpdateActor: Codable, Hashable {
 }
 
 struct UpdateProjectRef: Codable, Hashable {
+    let id: String
+    let name: String
+    let url: String
+    let color: String?
+    let icon: String?
+    /// Teams the project belongs to. Optional to tolerate older Linear
+    /// workspaces whose `Project.teams` connection was renamed, and used
+    /// only when the Pulse scope filter is "My Teams" — we intersect
+    /// these with the viewer's team memberships.
+    let teams: UpdateProjectTeamsRef?
+}
+
+struct UpdateProjectTeamsRef: Codable, Hashable {
+    struct Node: Codable, Hashable { let id: String }
+    let nodes: [Node]
+}
+
+struct UpdateInitiativeRef: Codable, Hashable {
     let id: String
     let name: String
     let url: String
