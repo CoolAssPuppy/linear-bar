@@ -29,14 +29,16 @@ extension LinearAPI {
     /// - `.workspace`: everything.
     /// - `.mine`: server-filtered to the viewer's own updates on both
     ///   connections.
-    /// - `.teams`: workspace-wide fetch, then client-filtered to
-    ///   project updates whose project belongs to any team in
-    ///   `viewerTeamIds`; initiative updates are dropped.
+    /// - `.teams`: workspace-wide fetch, client-filtered to project
+    ///   updates whose project belongs to any team in
+    ///   `viewerTeamIds`, **union** with the viewer's own updates
+    ///   (project + initiative). "My Teams" is a superset of "Just
+    ///   Mine" in the user's mental model — authoring an update on a
+    ///   project that isn't mapped to any of your teams in the
+    ///   response still counts.
     ///
-    /// The two connections are fetched in parallel and merged
-    /// client-side. A failure on one side (e.g. schema drift on
-    /// initiativeUpdates) is swallowed so the feed still renders from
-    /// the surviving connection.
+    /// Connections fetch in parallel. A failure on any side is
+    /// swallowed so the feed still renders from the survivors.
     func fetchPulseUpdates(
         accessToken: String,
         accountEmail: String? = nil,
@@ -47,12 +49,12 @@ extension LinearAPI {
             return TestDataProvider.getPulseUpdates()
         }
 
-        async let projects = fetchProjectUpdates(
+        async let projectsAll = fetchProjectUpdates(
             accessToken: accessToken,
             accountEmail: accountEmail,
             onlyMine: scope == .mine
         )
-        async let initiatives = scope == .teams
+        async let initiativesAll = scope == .teams
             ? [] as [LinearPulseUpdate]
             : fetchInitiativeUpdates(
                 accessToken: accessToken,
@@ -60,19 +62,60 @@ extension LinearAPI {
                 onlyMine: scope == .mine
             )
 
-        var projectResults = (try? await projects) ?? []
-        let initiativeResults = (try? await initiatives) ?? []
+        // "My Teams" also needs my own authored updates (project +
+        // initiative). Kick those off in parallel too so the wall-clock
+        // cost is the single slowest request.
+        async let myProjects = scope == .teams
+            ? fetchProjectUpdates(
+                accessToken: accessToken,
+                accountEmail: accountEmail,
+                onlyMine: true
+            )
+            : [] as [LinearPulseUpdate]
+        async let myInitiatives = scope == .teams
+            ? fetchInitiativeUpdates(
+                accessToken: accessToken,
+                accountEmail: accountEmail,
+                onlyMine: true
+            )
+            : [] as [LinearPulseUpdate]
 
-        if scope == .teams, !viewerTeamIds.isEmpty {
-            projectResults = projectResults.filter { update in
-                guard let nodes = update.project?.teams?.nodes else { return false }
-                return nodes.contains { viewerTeamIds.contains($0.id) }
-            }
+        var projectResults = (try? await projectsAll) ?? []
+        var initiativeResults = (try? await initiativesAll) ?? []
+        let ownProjects = (try? await myProjects) ?? []
+        let ownInitiatives = (try? await myInitiatives) ?? []
+
+        if scope == .teams {
+            // Keep updates whose project belongs to one of my teams.
+            let teamFiltered = viewerTeamIds.isEmpty
+                ? []
+                : projectResults.filter { update in
+                    guard let nodes = update.project?.teams?.nodes else { return false }
+                    return nodes.contains { viewerTeamIds.contains($0.id) }
+                }
+            projectResults = Self.mergedUnique(teamFiltered, ownProjects)
+            initiativeResults = ownInitiatives
         }
 
         return (projectResults + initiativeResults).sorted {
             ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast)
         }
+    }
+
+    /// Concatenates two update streams and drops duplicates, keeping
+    /// the first occurrence. Used to union team-scoped and authored
+    /// results without re-fetching individual records.
+    private static func mergedUnique(
+        _ primary: [LinearPulseUpdate],
+        _ secondary: [LinearPulseUpdate]
+    ) -> [LinearPulseUpdate] {
+        var seen = Set<String>()
+        var out: [LinearPulseUpdate] = []
+        out.reserveCapacity(primary.count + secondary.count)
+        for update in primary + secondary where seen.insert(update.id).inserted {
+            out.append(update)
+        }
+        return out
     }
 
     // MARK: - Per-endpoint fetches
