@@ -19,6 +19,7 @@ struct IssueIdentifierLabel: View {
 
     @Environment(\.theme) private var theme
     @State private var isHovered = false
+    @State private var iconHovered = false
 
     init(identifier: String, url: String?, width: CGFloat? = 70) {
         self.identifier = identifier
@@ -46,17 +47,20 @@ struct IssueIdentifierLabel: View {
     private var copyButton: some View {
         Button(action: copyLink) {
             Image(systemName: "link")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(theme.primaryForeground)
-                .frame(width: 16, height: 16)
+                .font(.system(size: 7, weight: .semibold))
+                .foregroundStyle(iconHovered ? theme.primaryForeground : theme.primary)
+                .frame(width: 13, height: 13)
                 .background(
                     Circle()
-                        .fill(theme.primary)
-                        .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
+                        .fill(iconHovered ? theme.primary : Color.clear)
+                )
+                .overlay(
+                    Circle().strokeBorder(theme.primary, lineWidth: 1)
                 )
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { iconHovered = $0 }
         .help("Copy link to \(identifier)")
     }
 

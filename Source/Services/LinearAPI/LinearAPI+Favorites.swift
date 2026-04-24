@@ -48,7 +48,6 @@ extension LinearAPI {
               customView {
                 id
                 name
-                url
                 icon
                 color
               }

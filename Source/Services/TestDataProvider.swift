@@ -687,7 +687,6 @@ struct TestDataProvider {
                 customView: FavoriteCustomViewTarget(
                     id: "view-1",
                     name: "High priority bugs",
-                    url: "https://linear.app/aigoggles/view/high-priority-bugs",
                     icon: nil,
                     color: "#EF4444"
                 )

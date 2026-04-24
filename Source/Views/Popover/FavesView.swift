@@ -163,8 +163,8 @@ private struct FavoriteRow: View {
                     IssueIdentifierLabel(identifier: issue.identifier, url: issue.url)
                 } else if let project = favorite.project {
                     IssueIdentifierLabel(identifier: "PROJ", url: project.url)
-                } else if let view = favorite.customView {
-                    IssueIdentifierLabel(identifier: "VIEW", url: view.url)
+                } else if favorite.customView != nil {
+                    IssueIdentifierLabel(identifier: "VIEW", url: customViewURL)
                 } else {
                     IssueIdentifierLabel(identifier: "FAV", url: nil)
                 }
@@ -215,7 +215,19 @@ private struct FavoriteRow: View {
     private var url: String? {
         favorite.issue?.url
             ?? favorite.project?.url
-            ?? favorite.customView?.url
+            ?? customViewURL
+    }
+
+    /// Linear's CustomView type doesn't expose a URL field; synthesize
+    /// one from the workspace slug + view id. Returns nil when we don't
+    /// have a workspace slug on hand (e.g. demo mode with stub data).
+    private var customViewURL: String? {
+        guard let view = favorite.customView,
+              let slug = AppSettings.shared.primaryValidAccount?.organizationSlug,
+              !slug.isEmpty else {
+            return nil
+        }
+        return "https://linear.app/\(slug)/view/\(view.id)"
     }
 
     private func openInLinear() {

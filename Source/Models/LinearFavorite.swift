@@ -45,10 +45,10 @@ struct FavoriteProjectTarget: Codable, Hashable {
 struct FavoriteCustomViewTarget: Codable, Hashable {
     let id: String
     let name: String
-    /// Linear web URL for the saved view. Optional because older
-    /// workspaces may not expose it on the `CustomView` type; when nil
-    /// the row simply skips the copy-link affordance.
-    let url: String?
+    /// Linear's `CustomView` type doesn't expose a `url` field in the
+    /// GraphQL schema — selecting it returns a type error. FavesView
+    /// synthesizes the URL at render time from the workspace slug and
+    /// the view id.
     let icon: String?
     let color: String?
 }
