@@ -54,10 +54,10 @@ struct PulseView: View {
     private var subHeader: some View {
         HStack(spacing: 8) {
             PopoverChip(
-                prefix: "Scope:",
+                prefix: nil,
                 selection: $scope,
                 options: LinearAPI.PulseScope.allCases,
-                label: { Self.scopeLabel(for: $0) },
+                label: { "Scope: \(Self.scopeLabel(for: $0))" },
                 selectionWeight: .foreground
             )
             Spacer(minLength: 0)
@@ -90,6 +90,7 @@ struct PulseView: View {
     private var contentView: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
+                sparkline
                 ForEach(updates) { update in
                     PulseRow(update: update)
                     Divider().background(theme.dividerSubtle)
@@ -97,6 +98,13 @@ struct PulseView: View {
             }
             .padding(.bottom, 8)
         }
+    }
+
+    private var sparkline: some View {
+        PulseSparkline(buckets: PulseBucketer.buckets(updates: updates))
+            .padding(.horizontal, 14)
+            .padding(.top, 6)
+            .padding(.bottom, 12)
     }
 
     // MARK: - Data
