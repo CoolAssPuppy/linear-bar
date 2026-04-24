@@ -8,6 +8,24 @@
     <description>Linear Bar updates</description>
     <language>en</language>
     <item>
+      <title>Version 2.0.1</title>
+      <pubDate>Fri, 24 Apr 2026 01:17:10 +0000</pubDate>
+      <sparkle:version>16</sparkle:version>
+      <sparkle:shortVersionString>2.0.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <ul>
+          <li>Fixed workspace logo sizing when the menu bar popover shows the multi-workspace picker.</li><li>Cleaned up Settings layout.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://downloads.strategicnerds.com/apps/linear-bar/LinearBar-2.0.1.dmg"
+        sparkle:edSignature="XiPs8RZ2ZO9xNYV86s20n36coK2WzzPKO9i8fUD++YdpvhzFyCmdVllpS1YimPZbygrvMPQ2/8CfvMb2caSMBw=="
+        length="4273836"
+        type="application/x-apple-diskimage" />
+    </item>
+
+    <item>
       <title>Version 2.0.0</title>
       <pubDate>Fri, 24 Apr 2026 01:02:50 +0000</pubDate>
       <sparkle:version>15</sparkle:version>
