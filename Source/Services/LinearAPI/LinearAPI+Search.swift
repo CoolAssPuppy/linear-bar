@@ -2,9 +2,15 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Max page size for search results. 30 is enough to fill the popover
-    /// without overfetching from the expensive `searchIssues` root.
-    private static let searchPageSize = 30
+    /// Page sizes scoped per connection. SearchView renders at most 7
+    /// issues, 2 projects, 2 initiatives (`combined.prefix(12)`). Over-
+    /// fetching on every keystroke is pure waste — and `searchIssues` is
+    /// one of Linear's more expensive roots. These values leave comfort-
+    /// able headroom for the Show-completed/canceled filter to drop rows
+    /// without starving the result list.
+    private static let searchIssuesPageSize = 15
+    private static let searchProjectsPageSize = 5
+    private static let searchInitiativesPageSize = 5
 
     /// Searches for issues across the workspace.
     func searchIssues(term: String, accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
@@ -24,7 +30,7 @@ extension LinearAPI {
 
         let variables: [String: Any] = [
             "term": term,
-            "first": Self.searchPageSize
+            "first": Self.searchIssuesPageSize
         ]
 
         struct Response: Decodable {
@@ -61,7 +67,7 @@ extension LinearAPI {
 
         let variables: [String: Any] = [
             "term": term,
-            "first": Self.searchPageSize
+            "first": Self.searchProjectsPageSize
         ]
 
         struct Response: Decodable {
@@ -98,7 +104,7 @@ extension LinearAPI {
 
         let variables: [String: Any] = [
             "term": term,
-            "first": Self.searchPageSize
+            "first": Self.searchInitiativesPageSize
         ]
 
         struct Response: Decodable {

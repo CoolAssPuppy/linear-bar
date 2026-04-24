@@ -106,7 +106,24 @@ extension LinearAPI {
             )
             : [] as [LinearPulseUpdate]
 
-        var projectResults = (try? await projectsAll) ?? []
+        // Project updates are the primary surface — let auth / rate-limit
+        // failures propagate so PulseView can show the right sign-in or
+        // back-off state instead of an empty-feed panel. Secondary
+        // connections (initiatives, my-own team supplementary fetches)
+        // stay best-effort so a perm error on one side doesn't empty the
+        // whole feed.
+        var projectResults: [LinearPulseUpdate]
+        do {
+            projectResults = try await projectsAll
+        } catch LinearError.authenticationRequired {
+            throw LinearError.authenticationRequired
+        } catch LinearError.rateLimitExceeded {
+            throw LinearError.rateLimitExceeded
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            projectResults = []
+        }
         var initiativeResults = (try? await initiativesAll) ?? []
         let ownProjects = (try? await myProjects) ?? []
         let ownInitiatives = (try? await myInitiatives) ?? []

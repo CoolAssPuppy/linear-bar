@@ -13,6 +13,7 @@ struct RecentView: View {
     @State private var hasLoadedOnce = false
     @State private var scope: Scope = .touched
     @State private var typeFilter: TypeFilter = .all
+    @State private var loadTask: Task<Void, Never>?
 
     @Environment(\.theme) private var theme
 
@@ -104,7 +105,11 @@ struct RecentView: View {
         isLoading = true
         errorMessage = nil
 
-        Task {
+        // Cancel the in-flight fetch so a rapid scope flip doesn't leave
+        // two requests racing to stamp state.
+        loadTask?.cancel()
+
+        loadTask = Task {
             do {
                 async let fetchedIssues = LinearAPI.shared.fetchTouchedIssues(
                     accessToken: session.accessToken,
@@ -127,6 +132,7 @@ struct RecentView: View {
                 let projectsResult = (try? await fetchedProjects) ?? []
                 let initiativesResult = (try? await fetchedInitiatives) ?? []
 
+                if Task.isCancelled { return }
                 await MainActor.run {
                     issues = issuesResult
                     projects = projectsResult
@@ -135,6 +141,7 @@ struct RecentView: View {
                     isLoading = false
                 }
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
                     errorMessage = error.localizedDescription
                     isLoading = false

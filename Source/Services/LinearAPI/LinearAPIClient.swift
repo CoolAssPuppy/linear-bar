@@ -19,6 +19,10 @@ class LinearAPI {
     }()
 
     private static let rateLimitRetryableStatus = 429
+    private static let serverErrorRetryable: Set<Int> = [502, 503, 504]
+    /// Default delay when a 5xx has no Retry-After header. Small enough to
+    /// feel instant, large enough to clear a single-node blip.
+    private static let defaultServerErrorRetrySeconds: TimeInterval = 0.5
 
     private init() {
         let config = URLSessionConfiguration.default
@@ -111,6 +115,23 @@ class LinearAPI {
                 )
             }
             throw LinearError.rateLimitExceeded
+        }
+
+        // Transient upstream failures (bad gateway, service unavailable,
+        // gateway timeout). One retry with Retry-After (or a short default)
+        // clears most single-node blips without user-visible churn.
+        if !isRetry, Self.serverErrorRetryable.contains(httpResponse.statusCode) {
+            let delay = Self.retryAfterDelay(from: httpResponse) ?? Self.defaultServerErrorRetrySeconds
+            AppLogger.info("Server \(httpResponse.statusCode); retrying once after \(delay)s", log: AppLogger.api)
+            try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            try Task.checkCancellation()
+            return try await execute(
+                query: query,
+                variables: variables,
+                accessToken: currentAccessToken,
+                accountEmail: accountEmail,
+                isRetry: true
+            )
         }
 
         // Try to decode the body as a GraphQL envelope regardless of status

@@ -12,6 +12,7 @@ struct MyIssuesView: View {
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
     @State private var mode: MineMode = .all
+    @State private var loadTask: Task<Void, Never>?
 
     @Environment(\.theme) private var theme
 
@@ -144,27 +145,28 @@ struct MyIssuesView: View {
         isLoading = true
         errorMessage = nil
 
-        Task {
+        // Cancel any in-flight fetch so a rapid refresh doesn't leave
+        // two requests racing to stamp state.
+        loadTask?.cancel()
+
+        loadTask = Task {
             do {
-                // Fetch both connections every time. The two queries cover
-                // the three Show modes without re-fetching when the user
-                // toggles between them.
-                async let assigned = LinearAPI.shared.fetchAssignedIssues(
+                // Single GraphQL operation returns both assigned and created
+                // connections. The Show chip pivots over these two lists
+                // client-side — no re-fetch on toggle.
+                let bundle = try await LinearAPI.shared.fetchMineIssues(
                     accessToken: session.accessToken,
                     accountEmail: session.accountEmail
                 )
-                async let created = LinearAPI.shared.fetchMyIssues(
-                    accessToken: session.accessToken,
-                    accountEmail: session.accountEmail
-                )
-                let (a, c) = try await (assigned, created)
+                if Task.isCancelled { return }
                 await MainActor.run {
-                    assignedIssues = a
-                    createdIssues = c
+                    assignedIssues = bundle.assigned
+                    createdIssues = bundle.created
                     rebuildOpen()
                     isLoading = false
                 }
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
                     errorMessage = error.localizedDescription
                     isLoading = false

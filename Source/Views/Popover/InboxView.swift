@@ -9,6 +9,7 @@ struct InboxView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
+    @State private var loadTask: Task<Void, Never>?
 
     @Environment(\.theme) private var theme
 
@@ -154,18 +155,24 @@ struct InboxView: View {
         isLoading = true
         errorMessage = nil
 
-        Task {
+        // Cancel the in-flight fetch so a rapid refresh doesn't leave two
+        // requests racing to stamp state.
+        loadTask?.cancel()
+
+        loadTask = Task {
             do {
                 let items = try await LinearAPI.shared.fetchUnreadNotifications(
                     accessToken: session.accessToken,
                     accountEmail: session.accountEmail
                 )
+                if Task.isCancelled { return }
                 await MainActor.run {
                     notifications = items
                     rebuildGroups()
                     isLoading = false
                 }
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
                     errorMessage = error.localizedDescription
                     isLoading = false
