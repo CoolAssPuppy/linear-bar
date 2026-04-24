@@ -53,111 +53,214 @@ struct TestDataProvider {
     static func getRecentIssues() -> [Issue] {
         let calendar = Calendar.current
         let now = Date()
+        func hoursAgo(_ h: Int) -> Date? { calendar.date(byAdding: .hour, value: -h, to: now) }
+        func daysAgo(_ d: Int) -> Date? { calendar.date(byAdding: .day, value: -d, to: now) }
+
+        let winterLaunch = ProjectReference(id: "proj-1", name: "Winter 2026 Launch", icon: "🎿")
+        let payments = ProjectReference(id: "proj-2", name: "Payments 2.0", icon: "💳")
 
         return [
+            // Today — active
             Issue(
-                id: "issue-3",
-                identifier: "AG-301",
-                title: "Implement \"Are those clouds or avalanche risk?\" detection",
+                id: "issue-1", identifier: "AG-318",
+                title: "Implement \"clouds or avalanche risk?\" detection",
                 description: nil,
-                url: "https://linear.app/aigoggles/issue/AG-301",
-                createdAt: calendar.date(byAdding: .hour, value: -3, to: now),
-                updatedAt: calendar.date(byAdding: .minute, value: -15, to: now),
+                url: "https://linear.app/aigoggles/issue/AG-318",
+                createdAt: hoursAgo(3), updatedAt: hoursAgo(0),
                 dueDate: nil,
                 state: IssueState(name: "In Progress", type: "started"),
-                priority: 2,
-                priorityLabel: "High",
+                priority: 2, priorityLabel: "High",
                 assignee: User(name: "Marcus Kim"),
                 team: Team(id: "team-1", name: "ML Vision", key: "MLVIS", icon: "🤖"),
                 labels: LabelConnection(nodes: [
-                    IssueLabel(id: "label-5", name: "feature", color: "#3B82F6"),
-                    IssueLabel(id: "label-6", name: "safety", color: "#EF4444")
+                    IssueLabel(id: "label-1", name: "feature", color: "#3B82F6"),
+                    IssueLabel(id: "label-2", name: "safety", color: "#EF4444")
                 ]),
-                project: ProjectReference(id: "proj-1", name: "Winter 2025 Launch", icon: "🎿"),
-                parent: nil
+                project: winterLaunch, parent: nil
             ),
             Issue(
-                id: "issue-4",
-                identifier: "AG-298",
+                id: "issue-2", identifier: "AG-315",
                 title: "Add \"friend detection\" to stop yelling at strangers",
                 description: nil,
-                url: "https://linear.app/aigoggles/issue/AG-298",
-                createdAt: calendar.date(byAdding: .hour, value: -8, to: now),
-                updatedAt: calendar.date(byAdding: .hour, value: -1, to: now),
-                dueDate: "2025-11-12",
+                url: "https://linear.app/aigoggles/issue/AG-315",
+                createdAt: hoursAgo(8), updatedAt: hoursAgo(1),
+                dueDate: "2026-05-12",
                 state: IssueState(name: "In Review", type: "started"),
-                priority: 3,
-                priorityLabel: "Medium",
+                priority: 3, priorityLabel: "Medium",
                 assignee: User(name: "Jordan Lee"),
                 team: Team(id: "team-1", name: "ML Vision", key: "MLVIS", icon: "🤖"),
                 labels: LabelConnection(nodes: [
-                    IssueLabel(id: "label-7", name: "social", color: "#EC4899"),
-                    IssueLabel(id: "label-8", name: "ml-training", color: "#8B5CF6")
+                    IssueLabel(id: "label-3", name: "social", color: "#EC4899"),
+                    IssueLabel(id: "label-4", name: "ml-training", color: "#8B5CF6")
                 ]),
-                project: nil,
-                parent: nil
+                project: nil, parent: nil
             ),
+            // Yesterday — hardware
             Issue(
-                id: "issue-5",
-                identifier: "AG-287",
+                id: "issue-3", identifier: "AG-310",
                 title: "Goggles fog up when user is too excited about powder",
                 description: nil,
-                url: "https://linear.app/aigoggles/issue/AG-287",
-                createdAt: calendar.date(byAdding: .day, value: -1, to: now),
-                updatedAt: calendar.date(byAdding: .hour, value: -4, to: now),
-                dueDate: "2025-11-20",
+                url: "https://linear.app/aigoggles/issue/AG-310",
+                createdAt: daysAgo(1), updatedAt: hoursAgo(22),
+                dueDate: "2026-05-20",
                 state: IssueState(name: "Todo", type: "unstarted"),
-                priority: 2,
-                priorityLabel: "High",
+                priority: 2, priorityLabel: "High",
                 assignee: User(name: "Elena Rodriguez"),
                 team: Team(id: "team-2", name: "Hardware", key: "HW", icon: "⚡"),
                 labels: LabelConnection(nodes: [
-                    IssueLabel(id: "label-9", name: "hardware", color: "#F59E0B"),
-                    IssueLabel(id: "label-10", name: "ux", color: "#06B6D4")
+                    IssueLabel(id: "label-5", name: "hardware", color: "#F59E0B"),
+                    IssueLabel(id: "label-6", name: "ux", color: "#06B6D4")
                 ]),
-                project: ProjectReference(id: "proj-1", name: "Winter 2025 Launch", icon: "🎿"),
-                parent: nil
+                project: winterLaunch, parent: nil
             ),
             Issue(
-                id: "issue-6",
-                identifier: "AG-275",
-                title: "Document: \"How to explain to investors why we need AI for skiing\"",
+                id: "issue-4", identifier: "AG-307",
+                title: "Battery drains 30% faster in alpine cold",
                 description: nil,
-                url: "https://linear.app/aigoggles/issue/AG-275",
-                createdAt: calendar.date(byAdding: .day, value: -2, to: now),
-                updatedAt: calendar.date(byAdding: .hour, value: -18, to: now),
+                url: "https://linear.app/aigoggles/issue/AG-307",
+                createdAt: daysAgo(2), updatedAt: daysAgo(1),
                 dueDate: nil,
-                state: IssueState(name: "Done", type: "completed"),
-                priority: 4,
-                priorityLabel: "Low",
-                assignee: User(name: "Sarah Chen"),
-                team: Team(id: "team-3", name: "Product", key: "PROD", icon: "📱"),
+                state: IssueState(name: "In Progress", type: "started"),
+                priority: 1, priorityLabel: "Urgent",
+                assignee: User(name: "Elena Rodriguez"),
+                team: Team(id: "team-2", name: "Hardware", key: "HW", icon: "⚡"),
                 labels: LabelConnection(nodes: [
-                    IssueLabel(id: "label-11", name: "documentation", color: "#6B7280")
+                    IssueLabel(id: "label-7", name: "hardware", color: "#F59E0B"),
+                    IssueLabel(id: "label-8", name: "bug", color: "#EF4444")
                 ]),
-                project: nil,
-                parent: nil
+                project: winterLaunch, parent: nil
             ),
+            // Last 3–5 days — product + AR
             Issue(
-                id: "issue-7",
-                identifier: "AG-264",
+                id: "issue-5", identifier: "AG-298",
                 title: "AR overlay shows \"You're doing great!\" even during faceplant",
                 description: nil,
-                url: "https://linear.app/aigoggles/issue/AG-264",
-                createdAt: calendar.date(byAdding: .day, value: -3, to: now),
-                updatedAt: calendar.date(byAdding: .day, value: -1, to: now),
-                dueDate: "2025-11-08",
+                url: "https://linear.app/aigoggles/issue/AG-298",
+                createdAt: daysAgo(3), updatedAt: daysAgo(2),
+                dueDate: "2026-05-08",
                 state: IssueState(name: "In Progress", type: "started"),
-                priority: 1,
-                priorityLabel: "Urgent",
+                priority: 1, priorityLabel: "Urgent",
                 assignee: User(name: "Alex Morgan"),
                 team: Team(id: "team-4", name: "AR Experience", key: "AR", icon: "🥽"),
                 labels: LabelConnection(nodes: [
-                    IssueLabel(id: "label-12", name: "bug", color: "#EF4444"),
-                    IssueLabel(id: "label-13", name: "ar-display", color: "#8B5CF6")
+                    IssueLabel(id: "label-9", name: "bug", color: "#EF4444"),
+                    IssueLabel(id: "label-10", name: "ar-display", color: "#8B5CF6")
                 ]),
-                project: ProjectReference(id: "proj-1", name: "Winter 2025 Launch", icon: "🎿"),
-                parent: nil
+                project: winterLaunch, parent: nil
+            ),
+            Issue(
+                id: "issue-6", identifier: "AG-295",
+                title: "Onboarding: detect left vs right goggle before first calibration",
+                description: nil,
+                url: "https://linear.app/aigoggles/issue/AG-295",
+                createdAt: daysAgo(4), updatedAt: daysAgo(3),
+                dueDate: nil,
+                state: IssueState(name: "In Progress", type: "started"),
+                priority: 3, priorityLabel: "Medium",
+                assignee: User(name: "Rafa Patel"),
+                team: Team(id: "team-3", name: "Product", key: "PROD", icon: "📱"),
+                labels: LabelConnection(nodes: [
+                    IssueLabel(id: "label-11", name: "onboarding", color: "#3B82F6")
+                ]),
+                project: nil, parent: nil
+            ),
+            // Completed — last week
+            Issue(
+                id: "issue-7", identifier: "AG-284",
+                title: "Document: \"How to explain to investors why we need AI for skiing\"",
+                description: nil,
+                url: "https://linear.app/aigoggles/issue/AG-284",
+                createdAt: daysAgo(6), updatedAt: daysAgo(5),
+                dueDate: nil,
+                state: IssueState(name: "Done", type: "completed"),
+                priority: 4, priorityLabel: "Low",
+                assignee: User(name: "Sarah Chen"),
+                team: Team(id: "team-3", name: "Product", key: "PROD", icon: "📱"),
+                labels: LabelConnection(nodes: [
+                    IssueLabel(id: "label-12", name: "documentation", color: "#6B7280")
+                ]),
+                project: nil, parent: nil
+            ),
+            Issue(
+                id: "issue-8", identifier: "AG-279",
+                title: "Stripe refund retries silently dropped after timeout",
+                description: nil,
+                url: "https://linear.app/aigoggles/issue/AG-279",
+                createdAt: daysAgo(7), updatedAt: daysAgo(6),
+                dueDate: nil,
+                state: IssueState(name: "Done", type: "completed"),
+                priority: 2, priorityLabel: "High",
+                assignee: User(name: "Sam Okafor"),
+                team: Team(id: "team-3", name: "Product", key: "PROD", icon: "📱"),
+                labels: LabelConnection(nodes: [
+                    IssueLabel(id: "label-13", name: "payments", color: "#10B981")
+                ]),
+                project: payments, parent: nil
+            ),
+            // Older activity — 8–13 days ago
+            Issue(
+                id: "issue-9", identifier: "AG-268",
+                title: "Voice assistant keeps mishearing \"pow\" as \"pow pow\"",
+                description: nil,
+                url: "https://linear.app/aigoggles/issue/AG-268",
+                createdAt: daysAgo(9), updatedAt: daysAgo(8),
+                dueDate: nil,
+                state: IssueState(name: "Todo", type: "unstarted"),
+                priority: 3, priorityLabel: "Medium",
+                assignee: User(name: "Jordan Lee"),
+                team: Team(id: "team-1", name: "ML Vision", key: "MLVIS", icon: "🤖"),
+                labels: LabelConnection(nodes: [
+                    IssueLabel(id: "label-14", name: "voice", color: "#8B5CF6")
+                ]),
+                project: nil, parent: nil
+            ),
+            Issue(
+                id: "issue-10", identifier: "AG-259",
+                title: "AR HUD flickers when Bluetooth reconnects mid-run",
+                description: nil,
+                url: "https://linear.app/aigoggles/issue/AG-259",
+                createdAt: daysAgo(10), updatedAt: daysAgo(9),
+                dueDate: nil,
+                state: IssueState(name: "Canceled", type: "canceled"),
+                priority: 3, priorityLabel: "Medium",
+                assignee: User(name: "Alex Morgan"),
+                team: Team(id: "team-4", name: "AR Experience", key: "AR", icon: "🥽"),
+                labels: LabelConnection(nodes: [
+                    IssueLabel(id: "label-15", name: "duplicate", color: "#6B7280")
+                ]),
+                project: nil, parent: nil
+            ),
+            Issue(
+                id: "issue-11", identifier: "AG-248",
+                title: "Cycle burndown ignores weekends in early-week math",
+                description: nil,
+                url: "https://linear.app/aigoggles/issue/AG-248",
+                createdAt: daysAgo(12), updatedAt: daysAgo(11),
+                dueDate: nil,
+                state: IssueState(name: "Done", type: "completed"),
+                priority: 4, priorityLabel: "Low",
+                assignee: User(name: "Sarah Chen"),
+                team: Team(id: "team-3", name: "Product", key: "PROD", icon: "📱"),
+                labels: LabelConnection(nodes: [
+                    IssueLabel(id: "label-16", name: "analytics", color: "#10B981")
+                ]),
+                project: nil, parent: nil
+            ),
+            Issue(
+                id: "issue-12", identifier: "AG-236",
+                title: "Add Strava integration for post-run analytics",
+                description: nil,
+                url: "https://linear.app/aigoggles/issue/AG-236",
+                createdAt: daysAgo(13), updatedAt: daysAgo(12),
+                dueDate: "2026-06-01",
+                state: IssueState(name: "In Progress", type: "started"),
+                priority: 3, priorityLabel: "Medium",
+                assignee: User(name: "Erin Wu"),
+                team: Team(id: "team-3", name: "Product", key: "PROD", icon: "📱"),
+                labels: LabelConnection(nodes: [
+                    IssueLabel(id: "label-17", name: "integration", color: "#3B82F6")
+                ]),
+                project: nil, parent: nil
             )
         ]
     }
@@ -183,8 +286,21 @@ struct TestDataProvider {
         return [
             Project(
                 id: "proj-1",
+                name: "Winter 2026 Launch",
+                description: "Goggles v2 rollout across North America and Europe.",
+                url: "https://linear.app/aigoggles/project/winter-2026",
+                createdAt: calendar.date(byAdding: .month, value: -3, to: now),
+                updatedAt: calendar.date(byAdding: .hour, value: -2, to: now),
+                state: "started",
+                progress: 0.72,
+                icon: "🎿",
+                lead: User(name: "Sarah Chen"),
+                targetDate: "2026-05-30"
+            ),
+            Project(
+                id: "proj-2",
                 name: "Payments 2.0",
-                description: "Reconciliation pipeline overhaul.",
+                description: "Reconciliation pipeline overhaul and Stripe webhook hardening.",
                 url: "https://linear.app/aigoggles/project/payments-2",
                 createdAt: calendar.date(byAdding: .month, value: -2, to: now),
                 updatedAt: calendar.date(byAdding: .hour, value: -6, to: now),
@@ -192,12 +308,12 @@ struct TestDataProvider {
                 progress: 0.48,
                 icon: "💳",
                 lead: User(name: "Sam Okafor"),
-                targetDate: "2026-05-30"
+                targetDate: "2026-06-15"
             ),
             Project(
-                id: "proj-2",
+                id: "proj-3",
                 name: "Audit log",
-                description: nil,
+                description: "Workspace-wide activity log for compliance.",
                 url: "https://linear.app/aigoggles/project/audit-log",
                 createdAt: calendar.date(byAdding: .month, value: -1, to: now),
                 updatedAt: calendar.date(byAdding: .day, value: -1, to: now),
@@ -205,7 +321,20 @@ struct TestDataProvider {
                 progress: 0.22,
                 icon: "📘",
                 lead: User(name: "Erin Wu"),
-                targetDate: "2026-06-15"
+                targetDate: "2026-07-01"
+            ),
+            Project(
+                id: "proj-4",
+                name: "Strava integration",
+                description: "Post-run analytics and ride sharing.",
+                url: "https://linear.app/aigoggles/project/strava",
+                createdAt: calendar.date(byAdding: .day, value: -18, to: now),
+                updatedAt: calendar.date(byAdding: .day, value: -4, to: now),
+                state: "planned",
+                progress: 0.10,
+                icon: "🏔️",
+                lead: User(name: "Rafa Patel"),
+                targetDate: "2026-08-01"
             )
         ]
     }
@@ -226,8 +355,64 @@ struct TestDataProvider {
                 icon: "🚀",
                 status: "active",
                 targetDate: "2026-05-15"
+            ),
+            Initiative(
+                id: "init-2",
+                name: "Winter athletes beta",
+                description: "Ship the private beta to 100 pro skiers before the next storm cycle.",
+                url: "https://linear.app/aigoggles/initiative/beta",
+                createdAt: calendar.date(byAdding: .month, value: -1, to: now),
+                updatedAt: calendar.date(byAdding: .hour, value: -5, to: now),
+                progress: 0.38,
+                icon: "🏂",
+                status: "active",
+                targetDate: "2026-06-10"
+            ),
+            Initiative(
+                id: "init-3",
+                name: "Reliability: 99.9% uptime",
+                description: "Cycle burndown + alerting + runbooks for every core service.",
+                url: "https://linear.app/aigoggles/initiative/reliability",
+                createdAt: calendar.date(byAdding: .month, value: -2, to: now),
+                updatedAt: calendar.date(byAdding: .day, value: -6, to: now),
+                progress: 0.25,
+                icon: "🛡️",
+                status: "planned",
+                targetDate: "2026-09-01"
             )
         ]
+    }
+
+    // MARK: - Search
+
+    /// Case-insensitive substring match against `identifier` and `title`.
+    /// Empty term returns an empty list so the Search tab stays on its
+    /// "start typing" prompt rather than flashing the full issue set.
+    static func searchIssues(term: String) -> [Issue] {
+        let needle = term.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !needle.isEmpty else { return [] }
+        return getRecentIssues().filter {
+            $0.identifier.lowercased().contains(needle)
+                || $0.title.lowercased().contains(needle)
+        }
+    }
+
+    static func searchProjects(term: String) -> [Project] {
+        let needle = term.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !needle.isEmpty else { return [] }
+        return getRecentProjects().filter {
+            $0.name.lowercased().contains(needle)
+                || ($0.description?.lowercased().contains(needle) ?? false)
+        }
+    }
+
+    static func searchInitiatives(term: String) -> [Initiative] {
+        let needle = term.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !needle.isEmpty else { return [] }
+        return getRecentInitiatives().filter {
+            $0.name.lowercased().contains(needle)
+                || ($0.description?.lowercased().contains(needle) ?? false)
+        }
     }
 
     // MARK: - Notifications

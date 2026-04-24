@@ -4,6 +4,9 @@ extension LinearAPI {
 
     /// Searches for issues across the workspace
     func searchIssues(term: String, accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.searchIssues(term: term)
+        }
         let query = """
         query($term: String!) {
           searchIssues(term: $term, first: 50, includeArchived: false) {
@@ -72,6 +75,9 @@ extension LinearAPI {
 
     /// Searches for projects across the workspace
     func searchProjects(term: String, accessToken: String, accountEmail: String? = nil) async throws -> [Project] {
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.searchProjects(term: term)
+        }
         let query = """
         query($term: String!) {
           searchProjects(term: $term, first: 50) {
@@ -113,6 +119,9 @@ extension LinearAPI {
 
     /// Searches workspace initiatives by name / description.
     func searchInitiatives(term: String, accessToken: String, accountEmail: String? = nil) async throws -> [Initiative] {
+        if TestDataProvider.isUITesting {
+            return TestDataProvider.searchInitiatives(term: term)
+        }
         let query = """
         query($term: String!) {
           initiatives(first: 50, filter: { name: { containsIgnoreCase: $term } }) {
