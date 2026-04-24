@@ -18,6 +18,8 @@ class LinearAPI {
         return decoder
     }()
 
+    private static let rateLimitRetryableStatus = 429
+
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
@@ -35,6 +37,7 @@ class LinearAPI {
         accountEmail: String? = nil,
         isRetry: Bool = false
     ) async throws -> GraphQLResponse<T> {
+        try Task.checkCancellation()
         var currentAccessToken = accessToken
 
         if !isRetry, let email = accountEmail {
@@ -56,6 +59,7 @@ class LinearAPI {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await session.data(for: request)
+        try Task.checkCancellation()
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw LinearError.networkError(NSError(domain: "LinearAPI", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
@@ -91,7 +95,21 @@ class LinearAPI {
             }
         }
 
-        if httpResponse.statusCode == 429 {
+        if httpResponse.statusCode == Self.rateLimitRetryableStatus {
+            if !isRetry,
+               let retryAfter = Self.retryAfterDelay(from: httpResponse),
+               retryAfter > 0 {
+                AppLogger.info("Rate limited; retrying once after \(retryAfter)s", log: AppLogger.api)
+                try await Task.sleep(nanoseconds: UInt64(retryAfter * 1_000_000_000))
+                try Task.checkCancellation()
+                return try await execute(
+                    query: query,
+                    variables: variables,
+                    accessToken: currentAccessToken,
+                    accountEmail: accountEmail,
+                    isRetry: true
+                )
+            }
             throw LinearError.rateLimitExceeded
         }
 
@@ -131,6 +149,24 @@ class LinearAPI {
             code: httpResponse.statusCode,
             userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"]
         ))
+    }
+
+    static func retryAfterDelay(from response: HTTPURLResponse) -> TimeInterval? {
+        guard let raw = response.value(forHTTPHeaderField: "Retry-After")?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else {
+            return nil
+        }
+
+        if let seconds = TimeInterval(raw), seconds >= 0 {
+            return min(seconds, 15)
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss z"
+        guard let date = formatter.date(from: raw) else { return nil }
+        return min(max(0, date.timeIntervalSinceNow), 15)
     }
 }
 

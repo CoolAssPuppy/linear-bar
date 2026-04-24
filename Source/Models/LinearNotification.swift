@@ -65,7 +65,7 @@ struct LinearNotification: Identifiable, Codable, Hashable {
     /// object's URL if the notification itself doesn't expose one.
     var targetURL: URL? {
         if let urlString = issue?.url ?? project?.url ?? document?.url {
-            return URL(string: urlString)
+            return SafeExternalURL.linearURL(from: urlString)
         }
         return nil
     }

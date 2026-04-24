@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 
 /// Single row used by the Recent tab. Accepts any of the three Linear
 /// artifact types and routes the leading glyph accordingly — state circle
@@ -76,8 +75,7 @@ struct RecentArtifactRow: View {
     }
 
     private func openInLinear() {
-        guard let url = URL(string: item.url) else { return }
-        NSWorkspace.shared.open(url)
+        _ = SafeExternalURL.openLinearURL(from: item.url)
     }
 }
 

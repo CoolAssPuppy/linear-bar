@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 
 /// Shared row used by Mine, Recent, Pulse, and Search result rows. Renders
 /// an issue state circle + ID + title + an optional trailing signal.
@@ -127,8 +126,7 @@ struct CompactIssueRow: View {
     }
 
     private func openInLinear() {
-        guard let target = URL(string: url) else { return }
-        NSWorkspace.shared.open(target)
+        _ = SafeExternalURL.openLinearURL(from: url)
     }
 
     /// Translates an Issue's SLA/due/review metadata into the single trailing

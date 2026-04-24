@@ -256,8 +256,7 @@ private struct SearchResultRow: View {
     }
 
     private func openInLinear() {
-        guard let url = URL(string: item.url) else { return }
-        NSWorkspace.shared.open(url)
+        _ = SafeExternalURL.openLinearURL(from: item.url)
     }
 }
 

@@ -262,7 +262,7 @@ private struct NotificationAvatar: View {
     var body: some View {
         ZStack {
             if let urlString = notification.actor?.avatarUrl,
-               let url = URL(string: urlString) {
+               let url = SafeExternalURL.httpsURL(from: urlString) {
                 AsyncImage(url: url, transaction: Transaction(animation: .default)) { phase in
                     switch phase {
                     case .success(let image):

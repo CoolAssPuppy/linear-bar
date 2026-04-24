@@ -513,12 +513,14 @@ struct LinearAccountView: View {
     }
 
     private func openInLinear() {
-        let slug = account.organizationSlug ?? ""
-        let urlString = slug.isEmpty
-            ? "https://linear.app"
-            : "https://linear.app/\(slug)"
-        guard let url = URL(string: urlString) else { return }
-        NSWorkspace.shared.open(url)
+        if let slug = account.organizationSlug, !slug.isEmpty {
+            guard let url = SafeExternalURL.linearURL(orgSlug: slug, pathComponents: []) else { return }
+            NSWorkspace.shared.open(url)
+            return
+        }
+
+        guard let fallback = SafeExternalURL.linearURL(from: "https://linear.app") else { return }
+        NSWorkspace.shared.open(fallback)
     }
 
     private func reauthorize() {
