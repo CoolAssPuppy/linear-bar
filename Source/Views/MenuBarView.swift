@@ -366,6 +366,8 @@ struct LinearGlyph: Shape {
 private struct WorkspacePicker: View {
     @Environment(\.theme) private var theme
     @ObservedObject private var settings = AppSettings.shared
+    @State private var coordinator = WorkspaceMenuCoordinator()
+    @State private var anchorFrame: CGRect = .zero
 
     var body: some View {
         // SwiftUI's `Menu` bridges to an NSPopUpButton-style control on macOS,
@@ -388,20 +390,56 @@ private struct WorkspacePicker: View {
                     .foregroundStyle(theme.tertiary)
             }
             .contentShape(Rectangle())
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .preference(key: WorkspaceAnchorKey.self,
+                                    value: geo.frame(in: .global))
+                }
+            )
         }
         .buttonStyle(.plain)
         .help("Switch workspace")
+        .onPreferenceChange(WorkspaceAnchorKey.self) { anchorFrame = $0 }
     }
 
     private func presentMenu() {
+        coordinator.settings = settings
         let menu = NSMenu()
         let primary = primaryAccount
         for account in settings.accounts {
-            let item = NSMenuItem(title: account.workspaceLabel, action: nil, keyEquivalent: "")
+            let item = NSMenuItem(
+                title: account.workspaceLabel,
+                action: #selector(WorkspaceMenuCoordinator.selectAccount(_:)),
+                keyEquivalent: ""
+            )
+            item.target = coordinator
+            item.representedObject = account.email
             item.state = (account.email == primary?.email) ? .on : .off
+            item.image = Self.workspaceIcon(for: account)
             menu.addItem(item)
         }
-        menu.popUp(positioning: nil, at: .zero, in: NSApp.keyWindow?.contentView)
+
+        // Anchor the menu to the chip's on-screen position so it opens
+        // directly below the button, not wherever the mouse happens to be.
+        let location = menuOriginInScreen()
+        menu.popUp(positioning: nil, at: location, in: nil)
+    }
+
+    private func menuOriginInScreen() -> NSPoint {
+        guard let window = NSApp.keyWindow else {
+            return NSEvent.mouseLocation
+        }
+        // SwiftUI .global frame is in the window's coordinate space, origin
+        // top-left. Convert to the screen coordinate space (origin
+        // bottom-left) by flipping against the content view height.
+        let contentHeight = window.contentView?.bounds.height ?? window.frame.height
+        let chipBottomInContent = NSPoint(
+            x: anchorFrame.minX,
+            y: contentHeight - anchorFrame.maxY
+        )
+        let screenPoint = window.convertPoint(toScreen: chipBottomInContent)
+        return screenPoint
     }
 
     private var primaryAccount: LinearAccount? {
@@ -410,6 +448,71 @@ private struct WorkspacePicker: View {
 
     private var workspaceLabel: String {
         primaryAccount?.workspaceLabel ?? "No workspace"
+    }
+
+    /// Renders a small rounded-square initial tile for each workspace in
+    /// the menu. Matches the in-app `WorkspaceLogo`'s fallback style so
+    /// the menu reads as a continuation of the chip.
+    private static func workspaceIcon(for account: LinearAccount, size: CGFloat = 18) -> NSImage {
+        let image = NSImage(size: NSSize(width: size, height: size))
+        image.lockFocus()
+        defer { image.unlockFocus() }
+
+        let rect = NSRect(x: 0, y: 0, width: size, height: size)
+        let radius = size * 0.22
+
+        let tint = NSColor(Color(hex: account.color ?? "#5E6AD2"))
+        NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).addClip()
+        tint.setFill()
+        rect.fill()
+
+        let initial = String(account.workspaceLabel.first.map { String($0).uppercased() } ?? "?")
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: size * 0.55, weight: .bold),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.92)
+        ]
+        let attributed = NSAttributedString(string: initial, attributes: attributes)
+        let textSize = attributed.size()
+        attributed.draw(at: NSPoint(
+            x: (size - textSize.width) / 2,
+            y: (size - textSize.height) / 2
+        ))
+
+        return image
+    }
+}
+
+/// Anchor-rect PreferenceKey used by WorkspacePicker to report the chip's
+/// on-screen position up to the parent so the NSMenu opens directly below
+/// the chip rather than at the mouse cursor.
+private struct WorkspaceAnchorKey: PreferenceKey {
+    static var defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
+}
+
+/// Target object for the NSMenu — plain NSObject because NSMenuItem.target
+/// won't accept a SwiftUI struct. Holds a weak ref to AppSettings and
+/// reorders `accounts` on selection so `primaryValidAccount` resolves to
+/// the chosen workspace.
+@MainActor
+private final class WorkspaceMenuCoordinator: NSObject {
+    weak var settings: AppSettings?
+
+    @objc func selectAccount(_ sender: NSMenuItem) {
+        guard let email = sender.representedObject as? String,
+              let settings,
+              let index = settings.accounts.firstIndex(where: { $0.email == email }),
+              index != 0 else {
+            return
+        }
+        var reordered = settings.accounts
+        let account = reordered.remove(at: index)
+        reordered.insert(account, at: 0)
+        settings.accounts = reordered
+        NotificationCenter.default.post(name: .accountSelected, object: account)
+        NotificationCenter.default.post(name: .refreshAllData, object: nil)
     }
 }
 
