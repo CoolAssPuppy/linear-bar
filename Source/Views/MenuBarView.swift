@@ -357,22 +357,12 @@ private struct WorkspacePicker: View {
     @ObservedObject private var settings = AppSettings.shared
 
     var body: some View {
-        Menu {
-            ForEach(settings.accounts) { account in
-                Button {
-                    // Selecting an account from the popover is a placeholder
-                    // while multi-account picking lands. For now the chip
-                    // reflects whichever account is already "primary".
-                } label: {
-                    HStack {
-                        Text(account.workspaceLabel)
-                        if account.email == settings.accounts.first?.email {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
-        } label: {
+        // SwiftUI's `Menu` bridges to an NSPopUpButton-style control on macOS,
+        // which sizes any image in its label using the image's natural pixel
+        // dimensions and ignores SwiftUI `.frame` modifiers underneath. That
+        // blew the workspace logo up to ~250pt. Driving an NSMenu manually
+        // from a plain Button keeps the chip in pure SwiftUI layout.
+        Button(action: presentMenu) {
             HStack(spacing: 6) {
                 WorkspaceLogo(account: primaryAccount, size: 18)
 
@@ -388,9 +378,19 @@ private struct WorkspacePicker: View {
             }
             .contentShape(Rectangle())
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .help("Switch workspace")
+    }
+
+    private func presentMenu() {
+        let menu = NSMenu()
+        let primary = primaryAccount
+        for account in settings.accounts {
+            let item = NSMenuItem(title: account.workspaceLabel, action: nil, keyEquivalent: "")
+            item.state = (account.email == primary?.email) ? .on : .off
+            menu.addItem(item)
+        }
+        menu.popUp(positioning: nil, at: .zero, in: NSApp.keyWindow?.contentView)
     }
 
     private var primaryAccount: LinearAccount? {
@@ -427,35 +427,39 @@ private struct WorkspacePill: View {
 /// Renders the Linear workspace logo with a graceful fallback to the
 /// workspace initial in the account's tint color. Used in the popover
 /// header, sidebar, and account list so the same art appears everywhere.
+///
+/// Uses a manual URLSession load + `Image(nsImage:)` instead of
+/// `AsyncImage`. Inside a SwiftUI `Menu` label, AsyncImage's resolved
+/// image leaks its intrinsic content size past every `.frame` and
+/// `.clipped` modifier and blows out the parent. Loading manually and
+/// rendering with `.resizable()` keeps the layout deterministic.
 struct WorkspaceLogo: View {
     let account: LinearAccount?
     let size: CGFloat
 
     @Environment(\.theme) private var theme
+    @StateObject private var loader = WorkspaceLogoLoader()
 
     var body: some View {
-        ZStack {
-            if let urlString = account?.organizationLogoUrl,
-               let url = SafeExternalURL.httpsURL(from: urlString) {
-                AsyncImage(url: url, transaction: Transaction(animation: .default)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: size, height: size)
-                            .clipped()
-                    default:
-                        initialTile
-                    }
-                }
-                .frame(width: size, height: size)
+        Group {
+            if let nsImage = loader.image {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipped()
             } else {
                 initialTile
             }
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+        .fixedSize()
+        .onAppear { loader.load(urlString: account?.organizationLogoUrl) }
+        .onChange(of: account?.organizationLogoUrl) { _, newValue in
+            loader.load(urlString: newValue)
+        }
     }
 
     private var initialTile: some View {
@@ -476,6 +480,34 @@ struct WorkspaceLogo: View {
     private var tintColor: Color {
         if let hex = account?.color { return Color(hex: hex) }
         return theme.primary
+    }
+}
+
+@MainActor
+private final class WorkspaceLogoLoader: ObservableObject {
+    @Published var image: NSImage?
+    private var loadedURL: String?
+    private var task: URLSessionDataTask?
+
+    func load(urlString: String?) {
+        guard let urlString,
+              let url = SafeExternalURL.httpsURL(from: urlString) else {
+            image = nil
+            loadedURL = nil
+            task?.cancel()
+            return
+        }
+        if urlString == loadedURL { return }
+        loadedURL = urlString
+
+        task?.cancel()
+        task = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let data, let nsImage = NSImage(data: data) else { return }
+            DispatchQueue.main.async {
+                self?.image = nsImage
+            }
+        }
+        task?.resume()
     }
 }
 
