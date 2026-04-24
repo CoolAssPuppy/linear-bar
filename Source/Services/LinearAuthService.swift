@@ -184,6 +184,7 @@ class LinearAuthService: NSObject {
               let returnedState = returnedState,
               returnedState == expected else {
             AppLogger.error("OAuth state mismatch or missing; rejecting callback", log: AppLogger.auth)
+            Telemetry.capture("account.signin_failed", properties: ["reason": "oauth_state"])
             completion(.failure(NSError(domain: "LinearAuthService", code: -3, userInfo: [NSLocalizedDescriptionKey: "OAuth state verification failed"])))
             return
         }
@@ -250,14 +251,17 @@ class LinearAuthService: NSObject {
                         }
 
                         AppLogger.privateInfo("Successfully authenticated and saved credentials for \(viewer.email)", log: AppLogger.auth)
+                        Telemetry.capture("account.added")
                         completion(.success(account))
 
                     } catch {
                         AppLogger.error("Error fetching user information", log: AppLogger.auth, error: error)
+                        Telemetry.capture("account.signin_failed", properties: ["reason": "viewer_fetch"])
                         completion(.failure(error))
                     }
 
                 case .failure(let error):
+                    Telemetry.capture("account.signin_failed", properties: ["reason": Self.reasonTag(for: error)])
                     completion(.failure(error))
                 }
             }
@@ -265,6 +269,29 @@ class LinearAuthService: NSObject {
     }
 
     // MARK: - Private Helpers
+
+    /// Maps an auth-flow error to a short, PII-free tag suitable for a
+    /// telemetry property. Specific enough to build a funnel, never leaks
+    /// user-identifiable content.
+    private static func reasonTag(for error: Error) -> String {
+        if let authError = error as? ASWebAuthenticationSessionError {
+            switch authError.code {
+            case .canceledLogin:                return "canceled"
+            case .presentationContextNotProvided,
+                 .presentationContextInvalid:   return "presentation"
+            @unknown default:                   return "auth_session_other"
+            }
+        }
+        let ns = error as NSError
+        if ns.domain == "LinearAuthService" {
+            switch ns.code {
+            case -3: return "oauth_state"
+            case -2: return "canceled"
+            default: return "auth_service"
+            }
+        }
+        return "other"
+    }
 
     private func generateDefaultColor() -> String {
         let colors = [

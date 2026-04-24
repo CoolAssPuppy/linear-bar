@@ -141,6 +141,7 @@ class LinearAPI {
             if let errors = decoded.errors, !errors.isEmpty {
                 let message = errors.map { $0.message }.joined(separator: ", ")
                 AppLogger.privateError("GraphQL error: \(message)", log: AppLogger.api)
+                Telemetry.capture("error.graphql", properties: ["status": httpResponse.statusCode])
                 throw LinearError.graphQLError(message)
             }
 

@@ -19,6 +19,7 @@ struct SettingsView: View {
     @StateObject private var updater = UpdaterManager.shared
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("showUnreadCount") private var showUnreadCount = true
+    @State private var telemetryOptIn: Bool = Telemetry.isOptedIn
 
     @Environment(\.theme) private var theme
 
@@ -99,6 +100,25 @@ struct SettingsView: View {
                     Toggle("", isOn: Binding(
                         get: { settings.iCloudSyncEnabled },
                         set: { settings.iCloudSyncEnabled = $0 }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(theme.primary)
+                }
+
+                AppRowDivider().padding(.vertical, 10)
+
+                AppSettingRow(
+                    "Send anonymous usage data",
+                    description: "Help improve Menu Bar for Linear."
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { telemetryOptIn },
+                        set: { newValue in
+                            telemetryOptIn = newValue
+                            Telemetry.setOptedIn(newValue)
+                        }
                     ))
                     .labelsHidden()
                     .toggleStyle(.switch)

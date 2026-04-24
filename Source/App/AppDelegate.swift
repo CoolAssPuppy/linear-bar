@@ -26,9 +26,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupCrashHandling()
+        Telemetry.setup()
         menuBarManager.setup(target: self, action: #selector(menuBarButtonClicked))
         popoverManager.setup()
         NSApp.setActivationPolicy(.accessory)
+
+        Telemetry.capture("app.launched")
+        reportUpdateInstalledIfNeeded()
 
         tokenScheduler.onValidationComplete = { [weak self] in
             self?.menuBarManager.updateIcon()
@@ -183,7 +187,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popoverManager.close()
         } else if let button = menuBarManager.statusItem?.button {
             popoverManager.show(relativeTo: button)
+            Telemetry.capture("menu.opened")
         }
+    }
+
+    /// Fires a `update.installed` event the first time a new build launches
+    /// against a different `CFBundleShortVersionString` than the previous
+    /// run. Silent on first-ever launch (no prior version stored). Lives
+    /// alongside the `app.launched` fan-out so every release self-reports
+    /// adoption without needing a Sparkle delegate.
+    private func reportUpdateInstalledIfNeeded() {
+        let key = "com.strategicnerds.LinearBar.telemetry.lastLaunchedVersion"
+        let defaults = UserDefaults.standard
+        let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let previous = defaults.string(forKey: key)
+        defaults.set(current, forKey: key)
+
+        guard let previous, !previous.isEmpty, previous != current else { return }
+        Telemetry.capture("update.installed", properties: ["from": previous, "to": current])
     }
 
     // MARK: - Main window + Settings drawer
