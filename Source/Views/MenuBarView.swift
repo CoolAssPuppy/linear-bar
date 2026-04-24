@@ -420,26 +420,19 @@ private struct WorkspacePicker: View {
             menu.addItem(item)
         }
 
-        // Anchor the menu to the chip's on-screen position so it opens
-        // directly below the button, not wherever the mouse happens to be.
-        let location = menuOriginInScreen()
-        menu.popUp(positioning: nil, at: location, in: nil)
-    }
-
-    private func menuOriginInScreen() -> NSPoint {
-        guard let window = NSApp.keyWindow else {
-            return NSEvent.mouseLocation
+        // Position the menu in the popover's contentView coordinate space
+        // (AppKit bottom-left origin) so the upper-left of the menu lands
+        // at the lower-left of the chip. Fall back to the mouse location
+        // only if we can't get a handle on the window.
+        guard let contentView = NSApp.keyWindow?.contentView else {
+            menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+            return
         }
-        // SwiftUI .global frame is in the window's coordinate space, origin
-        // top-left. Convert to the screen coordinate space (origin
-        // bottom-left) by flipping against the content view height.
-        let contentHeight = window.contentView?.bounds.height ?? window.frame.height
-        let chipBottomInContent = NSPoint(
+        let location = NSPoint(
             x: anchorFrame.minX,
-            y: contentHeight - anchorFrame.maxY
+            y: contentView.bounds.height - anchorFrame.maxY
         )
-        let screenPoint = window.convertPoint(toScreen: chipBottomInContent)
-        return screenPoint
+        menu.popUp(positioning: nil, at: location, in: contentView)
     }
 
     private var primaryAccount: LinearAccount? {
@@ -454,31 +447,46 @@ private struct WorkspacePicker: View {
     /// the menu. Matches the in-app `WorkspaceLogo`'s fallback style so
     /// the menu reads as a continuation of the chip.
     private static func workspaceIcon(for account: LinearAccount, size: CGFloat = 18) -> NSImage {
-        let image = NSImage(size: NSSize(width: size, height: size))
-        image.lockFocus()
-        defer { image.unlockFocus() }
+        let pixelSize = NSSize(width: size, height: size)
+        let tint = Self.nsColorFromHex(account.color ?? "#5E6AD2")
+        let initial = account.workspaceLabel.first
+            .map { String($0).uppercased() } ?? "?"
 
-        let rect = NSRect(x: 0, y: 0, width: size, height: size)
-        let radius = size * 0.22
+        let image = NSImage(size: pixelSize, flipped: false) { rect in
+            let path = NSBezierPath(
+                roundedRect: rect,
+                xRadius: rect.width * 0.22,
+                yRadius: rect.height * 0.22
+            )
+            tint.setFill()
+            path.fill()
 
-        let tint = NSColor(Color(hex: account.color ?? "#5E6AD2"))
-        NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).addClip()
-        tint.setFill()
-        rect.fill()
-
-        let initial = String(account.workspaceLabel.first.map { String($0).uppercased() } ?? "?")
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: size * 0.55, weight: .bold),
-            .foregroundColor: NSColor.white.withAlphaComponent(0.92)
-        ]
-        let attributed = NSAttributedString(string: initial, attributes: attributes)
-        let textSize = attributed.size()
-        attributed.draw(at: NSPoint(
-            x: (size - textSize.width) / 2,
-            y: (size - textSize.height) / 2
-        ))
-
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: rect.width * 0.55, weight: .bold),
+                .foregroundColor: NSColor.white.withAlphaComponent(0.92)
+            ]
+            let attributed = NSAttributedString(string: initial, attributes: attributes)
+            let textSize = attributed.size()
+            attributed.draw(at: NSPoint(
+                x: (rect.width - textSize.width) / 2,
+                y: (rect.height - textSize.height) / 2
+            ))
+            return true
+        }
+        // Keep our tint intact — NSMenuItem otherwise treats single-tone
+        // images as templates and washes them out in dark mode.
+        image.isTemplate = false
         return image
+    }
+
+    private static func nsColorFromHex(_ hex: String) -> NSColor {
+        let trimmed = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var raw: UInt64 = 0
+        Scanner(string: trimmed).scanHexInt64(&raw)
+        let r = CGFloat((raw >> 16) & 0xFF) / 255
+        let g = CGFloat((raw >> 8) & 0xFF) / 255
+        let b = CGFloat(raw & 0xFF) / 255
+        return NSColor(srgbRed: r, green: g, blue: b, alpha: 1)
     }
 }
 
