@@ -219,7 +219,6 @@ private struct NotificationRow: View {
                 if let identifier = notification.issue?.identifier {
                     IssueIdentifierLabel(identifier: identifier,
                                          url: notification.issue?.url,
-                                         rowIsHovered: isHovered,
                                          width: nil)
                 } else if let project = notification.project {
                     ProjectGlyph(color: project.color)

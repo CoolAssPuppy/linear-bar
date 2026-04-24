@@ -220,9 +220,7 @@ private struct SearchResultRow: View {
                 leadingIcon.frame(width: 14, height: 14)
 
                 if let issue = item as? Issue {
-                    IssueIdentifierLabel(identifier: issue.identifier,
-                                         url: issue.url,
-                                         rowIsHovered: isHovered)
+                    IssueIdentifierLabel(identifier: issue.identifier, url: issue.url)
                 } else {
                     Spacer().frame(width: 70)
                 }

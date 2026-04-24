@@ -16,9 +16,7 @@ struct RecentArtifactRow: View {
                     .frame(width: 14, alignment: .center)
 
                 if case .issue(let issue) = item {
-                    IssueIdentifierLabel(identifier: issue.identifier,
-                                         url: issue.url,
-                                         rowIsHovered: isHovered)
+                    IssueIdentifierLabel(identifier: issue.identifier, url: issue.url)
                 } else {
                     Text(leadingLabel)
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
