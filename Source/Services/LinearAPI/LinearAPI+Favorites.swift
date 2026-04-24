@@ -18,31 +18,32 @@ extension LinearAPI {
             return TestDataProvider.getFavorites()
         }
 
+        // Favorites live on Query, not on User/Viewer. An earlier draft of
+        // this query nested them under `viewer { favorites }` and Linear
+        // rejected it with "Cannot query field favorites on type User".
         let query = """
         query FetchFavorites($first: Int!) {
-          viewer {
-            favorites(first: $first) {
-              nodes {
+          favorites(first: $first, includeArchived: false) {
+            nodes {
+              id
+              type
+              folderName
+              issue {
                 id
-                type
-                folderName
-                issue {
-                  id
-                  identifier
-                  title
-                  url
-                  state { name type }
-                  team { id name key }
-                }
-                project {
-                  id
-                  name
-                  url
-                  icon
-                  color
-                  state
-                  progress
-                }
+                identifier
+                title
+                url
+                state { name type }
+                team { id name key }
+              }
+              project {
+                id
+                name
+                url
+                icon
+                color
+                state
+                progress
               }
             }
           }
@@ -52,11 +53,8 @@ extension LinearAPI {
         let variables: [String: Any] = ["first": Self.favoritesPageSize]
 
         struct Response: Decodable {
-            struct ViewerData: Decodable {
-                struct Conn: Decodable { let nodes: [LinearFavorite] }
-                let favorites: Conn
-            }
-            let viewer: ViewerData
+            struct Conn: Decodable { let nodes: [LinearFavorite] }
+            let favorites: Conn
         }
 
         let response: GraphQLResponse<Response> = try await execute(
@@ -67,6 +65,6 @@ extension LinearAPI {
         )
 
         guard let data = response.data else { throw LinearError.invalidResponse }
-        return data.viewer.favorites.nodes
+        return data.favorites.nodes
     }
 }
