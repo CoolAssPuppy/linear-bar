@@ -469,7 +469,7 @@ private struct WorkspacePicker: View {
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
         let rect = NSRect(x: 0, y: 0, width: size, height: size)
-        let tint = Self.nsColorFromHex(account.color ?? "#5E6AD2")
+        let tint = NSColor(hex: account.color ?? "#5E6AD2")
         let path = NSBezierPath(
             roundedRect: rect,
             xRadius: size * 0.22,
@@ -499,15 +499,6 @@ private struct WorkspacePicker: View {
         return image
     }
 
-    private static func nsColorFromHex(_ hex: String) -> NSColor {
-        let trimmed = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var raw: UInt64 = 0
-        Scanner(string: trimmed).scanHexInt64(&raw)
-        let r = CGFloat((raw >> 16) & 0xFF) / 255
-        let g = CGFloat((raw >> 8) & 0xFF) / 255
-        let b = CGFloat(raw & 0xFF) / 255
-        return NSColor(srgbRed: r, green: g, blue: b, alpha: 1)
-    }
 }
 
 /// Holds a strong reference to the invisible NSView we install behind the

@@ -11,6 +11,7 @@ struct PulseView: View {
     @State private var hasLoadedOnce = false
     @State private var scope: LinearAPI.PulseScope = .workspace
     @State private var window: PulseWindow = .twoWeeks
+    @State private var loadTask: Task<Void, Never>?
 
     @ObservedObject private var teamsStore = TeamsStore.shared
     @Environment(\.theme) private var theme
@@ -141,10 +142,15 @@ struct PulseView: View {
         isLoading = true
         errorMessage = nil
 
+        // Cancel any in-flight fetch before starting a new one — rapid
+        // scope/window flips otherwise leave orphan requests racing each
+        // other to set `updates`, producing flicker and wasted network.
+        loadTask?.cancel()
+
         let currentScope = scope
         let currentWindow = window
         let teamIds = Set(teamsStore.teams.map { $0.id })
-        Task {
+        loadTask = Task {
             do {
                 let fetched = try await LinearAPI.shared.fetchPulseUpdates(
                     accessToken: session.accessToken,
@@ -153,11 +159,13 @@ struct PulseView: View {
                     viewerTeamIds: teamIds,
                     windowDays: currentWindow.rawValue
                 )
+                if Task.isCancelled { return }
                 await MainActor.run {
                     updates = fetched
                     isLoading = false
                 }
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
                     errorMessage = error.localizedDescription
                     isLoading = false

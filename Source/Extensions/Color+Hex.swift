@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Extension to create Color from hexadecimal string
@@ -32,6 +33,39 @@ extension Color {
             green: Double(g) / 255,
             blue: Double(b) / 255,
             opacity: Double(a) / 255
+        )
+    }
+}
+
+/// AppKit counterpart for code paths that can't use SwiftUI `Color`
+/// (e.g., drawing into `NSBitmapImageRep` for menu item icons).
+/// Same hex format handling as the SwiftUI init above.
+extension NSColor {
+    convenience init(hex: String) {
+        let trimmed = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var raw: UInt64 = 0
+        Scanner(string: trimmed).scanHexInt64(&raw)
+
+        let a: UInt64
+        let r: UInt64
+        let g: UInt64
+        let b: UInt64
+        switch trimmed.count {
+        case 3:
+            (a, r, g, b) = (255, (raw >> 8) * 17, (raw >> 4 & 0xF) * 17, (raw & 0xF) * 17)
+        case 6:
+            (a, r, g, b) = (255, raw >> 16, raw >> 8 & 0xFF, raw & 0xFF)
+        case 8:
+            (a, r, g, b) = (raw >> 24, raw >> 16 & 0xFF, raw >> 8 & 0xFF, raw & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+
+        self.init(
+            srgbRed: CGFloat(r) / 255,
+            green: CGFloat(g) / 255,
+            blue: CGFloat(b) / 255,
+            alpha: CGFloat(a) / 255
         )
     }
 }

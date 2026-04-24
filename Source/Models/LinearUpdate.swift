@@ -20,14 +20,11 @@ struct LinearPulseUpdate: Identifiable, Codable, Hashable {
     let initiative: UpdateInitiativeRef?
 }
 
-struct UpdateActor: Codable, Hashable {
-    let id: String?
-    let name: String?
-    let displayName: String?
-    let avatarUrl: String?
-
-    var label: String { displayName ?? name ?? "Someone" }
-}
+/// Reusing the same struct as notifications — identical shape on the
+/// wire (id/name/displayName/avatarUrl) and identical rendering
+/// concerns. Kept as a typealias rather than unifying into a single
+/// `LinearActor` type so neither existing call site needs to rename.
+typealias UpdateActor = NotificationActor
 
 struct UpdateProjectRef: Codable, Hashable {
     let id: String
