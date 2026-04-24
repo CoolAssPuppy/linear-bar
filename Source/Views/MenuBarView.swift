@@ -195,6 +195,8 @@ private struct TabButton: View {
                         .font(.system(size: 11, weight: .medium))
                     Text(tab.label)
                         .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                        .lineLimit(1)
+                        .fixedSize()
                 }
                 .foregroundStyle(foregroundColor)
                 .padding(.horizontal, 6)
