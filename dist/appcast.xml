@@ -8,6 +8,24 @@
     <description>Linear Bar updates</description>
     <language>en</language>
     <item>
+      <title>Version 2.1.2</title>
+      <pubDate>Fri, 24 Apr 2026 10:29:37 +0000</pubDate>
+      <sparkle:version>19</sparkle:version>
+      <sparkle:shortVersionString>2.1.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <ul>
+          <li>Fixed Mine and Recent tabs showing 'Invalid response from Linear API' after 2.1.1 (an over-aggressive GraphQL field trim broke issue decoding).</li><li>Fixed 'OAuth state verification failed' when Add Account was clicked twice in quick succession.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://downloads.strategicnerds.com/apps/linear-bar/LinearBar-2.1.2.dmg"
+        sparkle:edSignature="W3cLQANstHIHhHh8MV9JECBQDBFYV8q2EFXR4Z5Je243IuEgzkBILipVT0fRCRPQztavBjlWGhCFkVJbA87gCQ=="
+        length="4454516"
+        type="application/x-apple-diskimage" />
+    </item>
+
+    <item>
       <title>Version 2.1.1</title>
       <pubDate>Fri, 24 Apr 2026 10:14:44 +0000</pubDate>
       <sparkle:version>18</sparkle:version>
