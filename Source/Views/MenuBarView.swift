@@ -280,25 +280,49 @@ private struct HeaderBar: View {
 }
 
 private struct BrandMark: View {
-    @Environment(\.theme) private var theme
+    var body: some View {
+        CheckmarkBrandMark(size: 22, glyphSize: 14)
+    }
+}
+
+/// Reusable brand tile: dark square with a soft amber glow and the
+/// Strategic Nerds checkmark. Sized by the caller — popover header uses
+/// 22pt, Welcome hero uses 64pt.
+struct CheckmarkBrandMark: View {
+    let size: CGFloat
+    let glyphSize: CGFloat
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [theme.primary, theme.primaryDeep],
+                        colors: [Color(hex: "#1E1E1E"), Color(hex: "#0A0A0A")],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .shadow(color: theme.primary.opacity(0.28), radius: 4)
+                .shadow(color: Color(hex: "#FDB817").opacity(0.28), radius: size * 0.3)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color(hex: "#FDB817").opacity(0.22), Color.clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: size * 0.6
+                    )
+                )
+                .frame(width: size * 1.15, height: size * 1.15)
 
             LinearGlyph()
-                .stroke(theme.primaryForeground, style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
-                .frame(width: 12, height: 12)
+                .stroke(
+                    Color(hex: "#FDB817"),
+                    style: StrokeStyle(lineWidth: max(size * 0.09, 1.2), lineCap: .round, lineJoin: .round)
+                )
+                .frame(width: glyphSize, height: glyphSize)
         }
-        .frame(width: 22, height: 22)
+        .frame(width: size, height: size)
     }
 }
 

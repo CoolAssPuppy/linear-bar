@@ -1,28 +1,27 @@
 import CoreGraphics
 
-/// Single source of truth for the Linear-style wordmark's geometry. Five
-/// parallel diagonal strokes on a 12×12 coordinate grid, matching the Paper
-/// brand mark.
+/// Single source of truth for the app's brand mark: a stylized checkmark.
+/// Consumed by both the SwiftUI `LinearGlyph` shape (used in the popover
+/// header and welcome views) and the AppKit `MenuBarIconRenderer` (used
+/// for the menu bar status item), so both surfaces always match.
 ///
-/// Both the SwiftUI `LinearGlyph` shape (used inside the popover) and the
-/// AppKit `MenuBarIconRenderer` (used for the menu bar status item) consume
-/// this array, so any future brand tweak lives in exactly one place.
+/// Name kept as `LinearGlyphStrokes` for call-site stability. The glyph
+/// itself is no longer the Linear wordmark — it's Strategic Nerds' own
+/// checkmark, so nothing links back to Linear's trademark.
 enum LinearGlyphStrokes {
-    /// Stroke width expressed in the same 12×12 coordinate space as `endpoints`.
-    static let strokeWidth: CGFloat = 1.2
+    /// Stroke width expressed in the same coordinate space as `endpoints`,
+    /// calibrated for the 12×12 design box.
+    static let strokeWidth: CGFloat = 1.9
 
-    /// Design coordinate box. The glyph is drawn inside [0, boxSize] × [0, boxSize]
-    /// before being scaled to the caller's frame.
+    /// Design coordinate box.
     static let boxSize: CGFloat = 12
 
-    /// Pairs of `(from, to)` endpoints describing the five parallel strokes.
-    /// Top-left origin (SVG convention). Callers that render in a bottom-left
-    /// origin coordinate system (e.g. NSImage) mirror y against `boxSize`.
+    /// Three corners of the checkmark polyline: (left-mid), (bottom-vertex),
+    /// (top-right). Reduced from the 640-unit master design (120,340 →
+    /// 260,478 → 520,160) to the 12-unit box. Callers that render with a
+    /// bottom-left origin mirror y against `boxSize`.
     static let endpoints: [(CGPoint, CGPoint)] = [
-        (CGPoint(x: 1.2, y: 6.4),  CGPoint(x: 5.6,  y: 10.8)),
-        (CGPoint(x: 1.2, y: 3.4),  CGPoint(x: 8.6,  y: 10.8)),
-        (CGPoint(x: 2.2, y: 1.2),  CGPoint(x: 10.8, y: 9.8)),
-        (CGPoint(x: 5.2, y: 1.2),  CGPoint(x: 10.8, y: 6.8)),
-        (CGPoint(x: 8.2, y: 1.2),  CGPoint(x: 10.8, y: 3.8))
+        (CGPoint(x: 2.25, y: 6.4),  CGPoint(x: 4.87, y: 8.96)),
+        (CGPoint(x: 4.87, y: 8.96), CGPoint(x: 9.75, y: 3.0))
     ]
 }

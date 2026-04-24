@@ -33,22 +33,7 @@ struct PopoverWelcomeView: View {
 
     private var hero: some View {
         VStack(spacing: 16) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [theme.primary, theme.primaryDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: theme.primary.opacity(0.35), radius: 18, y: 6)
-
-                LinearGlyph()
-                    .stroke(theme.primaryForeground, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
-                    .frame(width: 30, height: 30)
-            }
-            .frame(width: 64, height: 64)
+            CheckmarkBrandMark(size: 64, glyphSize: 32)
 
             VStack(spacing: 8) {
                 Text("Menu Bar for Linear")
@@ -70,20 +55,7 @@ struct PopoverWelcomeView: View {
     private var connectCard: some View {
         Button(action: connectLinear) {
             HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [theme.primary, theme.primaryDeep],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    LinearGlyph()
-                        .stroke(theme.primaryForeground, style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
-                        .frame(width: 16, height: 16)
-                }
-                .frame(width: 34, height: 34)
+                CheckmarkBrandMark(size: 34, glyphSize: 18)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Connect Linear workspace")

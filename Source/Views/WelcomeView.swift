@@ -57,34 +57,11 @@ struct LinearWelcomeView: View {
     private var heroBadge: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            theme.primary.opacity(0.18),
-                            theme.primaryDeep.opacity(0.06)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(Color(hex: "#FDB817").opacity(0.08))
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(theme.primary.opacity(0.25), lineWidth: 1)
+                .strokeBorder(Color(hex: "#FDB817").opacity(0.25), lineWidth: 1)
 
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [theme.primary, theme.primaryDeep],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 80, height: 80)
-                .shadow(color: theme.primary.opacity(0.35), radius: 16, y: 8)
-                .overlay(
-                    Image(systemName: "checkmark.square.fill")
-                        .font(.system(size: 32, weight: .semibold))
-                        .foregroundStyle(.white)
-                )
+            CheckmarkBrandMark(size: 80, glyphSize: 40)
         }
         .frame(width: 96, height: 96)
     }
