@@ -1,6 +1,31 @@
 import Foundation
 
 extension LinearAuthService {
+    enum OAuthFlowContext {
+        case refresh
+        case exchange
+
+        var label: String {
+            switch self {
+            case .refresh: return "OAuth refresh"
+            case .exchange: return "Token exchange"
+            }
+        }
+
+        var defaultErrorMessage: String {
+            switch self {
+            case .refresh: return "Failed to refresh token"
+            case .exchange: return "Failed to exchange code for token"
+            }
+        }
+    }
+
+    struct OAuthTokenResponse: Decodable {
+        let access_token: String
+        let refresh_token: String?
+        let expires_in: Int?
+    }
+
 
     /// Exchanges an authorization code for an access token
     func exchangeCodeForToken(code: String) async throws -> TokenPair {
@@ -37,20 +62,8 @@ extension LinearAuthService {
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            var errorMessage = "Failed to refresh token (HTTP \(httpResponse.statusCode))"
-            // Parse the OAuth error envelope before logging. Logging the raw
-            // body here would risk writing refresh/access token fields to the
-            // system log if a provider ever returns a mixed payload.
-            if let jsonObject = try? JSONSerialization.jsonObject(with: data),
-               let errorData = jsonObject as? [String: Any] {
-                let error = errorData["error"] as? String
-                let description = errorData["error_description"] as? String
-                AppLogger.privateError("OAuth refresh failed: \(error ?? "unknown") - \(description ?? "")", log: AppLogger.auth)
-                if let description { errorMessage = description }
-                else if let error { errorMessage = error }
-            } else {
-                AppLogger.privateError("OAuth refresh failed (HTTP \(httpResponse.statusCode), non-JSON body)", log: AppLogger.auth)
-            }
+            let parsed = Self.parseOAuthError(data: data, statusCode: httpResponse.statusCode, context: .refresh)
+            AppLogger.privateError(parsed.logMessage, log: AppLogger.auth)
 
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 400 {
                 AppLogger.privateError("Refresh token is invalid or expired for \(email)", log: AppLogger.auth)
@@ -59,16 +72,10 @@ extension LinearAuthService {
                 updateAccountAuthStatus(email: email, status: .expired)
             }
 
-            throw NSError(domain: "LinearAuthService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
+            throw NSError(domain: "LinearAuthService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: parsed.userMessage])
         }
 
-        struct TokenResponse: Decodable {
-            let access_token: String
-            let refresh_token: String?
-            let expires_in: Int?
-        }
-
-        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        let tokenResponse = try JSONDecoder().decode(OAuthTokenResponse.self, from: data)
         AppLogger.privateInfo("Successfully refreshed access token for \(email)", log: AppLogger.auth)
 
         let accessTokenSaved = KeychainService.shared.saveAccessToken(tokenResponse.access_token, forAccount: email)
@@ -123,32 +130,12 @@ extension LinearAuthService {
         AppLogger.debug("Response status code: \(httpResponse.statusCode)", log: AppLogger.auth)
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            var errorMessage = "Failed to exchange code for token (HTTP \(httpResponse.statusCode))"
-            if let errorBody = String(data: data, encoding: .utf8) {
-                AppLogger.privateError("Error response: \(errorBody)", log: AppLogger.auth)
-
-                if let jsonObject = try? JSONSerialization.jsonObject(with: data),
-                   let errorData = jsonObject as? [String: Any] {
-                    if let error = errorData["error"] as? String {
-                        errorMessage = error
-                    }
-                    if let errorDescription = errorData["error_description"] as? String {
-                        errorMessage = errorDescription
-                    }
-                } else {
-                    errorMessage += ": \(errorBody)"
-                }
-            }
-            throw NSError(domain: "LinearAuthService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
+            let parsed = Self.parseOAuthError(data: data, statusCode: httpResponse.statusCode, context: .exchange)
+            AppLogger.privateError(parsed.logMessage, log: AppLogger.auth)
+            throw NSError(domain: "LinearAuthService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: parsed.userMessage])
         }
 
-        struct TokenResponse: Decodable {
-            let access_token: String
-            let refresh_token: String?
-            let expires_in: Int?
-        }
-
-        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        let tokenResponse = try JSONDecoder().decode(OAuthTokenResponse.self, from: data)
         AppLogger.info("Successfully received access token", log: AppLogger.auth)
         if tokenResponse.refresh_token != nil {
             AppLogger.info("Refresh token also received", log: AppLogger.auth)
@@ -161,6 +148,26 @@ extension LinearAuthService {
             accessToken: tokenResponse.access_token,
             refreshToken: tokenResponse.refresh_token,
             expiresIn: tokenResponse.expires_in
+        )
+    }
+
+    static func parseOAuthError(data: Data, statusCode: Int, context: OAuthFlowContext) -> (userMessage: String, logMessage: String) {
+        let fallback = "\(context.defaultErrorMessage) (HTTP \(statusCode))"
+
+        guard let jsonObject = try? JSONSerialization.jsonObject(with: data),
+              let errorData = jsonObject as? [String: Any] else {
+            return (
+                userMessage: fallback,
+                logMessage: "\(context.label) failed (HTTP \(statusCode), non-JSON body)"
+            )
+        }
+
+        let oauthError = errorData["error"] as? String
+        let oauthDescription = errorData["error_description"] as? String
+        let userMessage = oauthDescription ?? oauthError ?? fallback
+        return (
+            userMessage: userMessage,
+            logMessage: "\(context.label) failed: \(oauthError ?? "unknown") - \(oauthDescription ?? "")"
         )
     }
 }

@@ -103,14 +103,14 @@ struct MenuBarView: View {
         switch type {
         case "issue":
             if let teamKey = teamKey {
-                url = URL(string: "https://linear.app/\(orgSlug)/team/\(teamKey)/new")
+                url = SafeExternalURL.linearURL(orgSlug: orgSlug, pathComponents: ["team", teamKey, "new"])
             } else {
-                url = URL(string: "https://linear.app/\(orgSlug)/issue/new")
+                url = SafeExternalURL.linearURL(orgSlug: orgSlug, pathComponents: ["issue", "new"])
             }
         case "project":
-            url = URL(string: "https://linear.app/\(orgSlug)/projects/new")
+            url = SafeExternalURL.linearURL(orgSlug: orgSlug, pathComponents: ["projects", "new"])
         case "initiative":
-            url = URL(string: "https://linear.app/\(orgSlug)/roadmap")
+            url = SafeExternalURL.linearURL(orgSlug: orgSlug, pathComponents: ["roadmap"])
         default:
             return
         }
@@ -436,7 +436,7 @@ struct WorkspaceLogo: View {
     var body: some View {
         ZStack {
             if let urlString = account?.organizationLogoUrl,
-               let url = URL(string: urlString) {
+               let url = SafeExternalURL.httpsURL(from: urlString) {
                 AsyncImage(url: url, transaction: Transaction(animation: .default)) { phase in
                     switch phase {
                     case .success(let image):
