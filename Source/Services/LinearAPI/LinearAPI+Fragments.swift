@@ -15,10 +15,19 @@ enum LinearGQL {
     /// Fields selected on `Issue` for every list/compact surface
     /// (Inbox, Mine, Recent, Search). Covers identifier rendering,
     /// state circle, due-date label, row click target, sort keys, and
-    /// assignee chip. `team { id }` is the only team field any view
-    /// reads — `name`/`key`/`icon` come from the Teams store. The
-    /// `project` ref isn't rendered anywhere on issue rows today; the
-    /// Swift model's `Issue.project` stays optional for forward-compat.
+    /// assignee chip.
+    ///
+    /// `team { id name key icon }`: only `team.id` is consumed by views,
+    /// but `Team.name` and `Team.key` are non-optional on the Swift
+    /// model — requesting just `{ id }` makes every issue fail to
+    /// decode (`JSONDecoder` throws on the missing keys, the client's
+    /// `try?` swallows it, and the caller sees the generic "Invalid
+    /// response" error). Keep the full selection until the Team model
+    /// is refactored to make those fields optional.
+    ///
+    /// `project` was previously included with id/name/icon but no view
+    /// consumes `Issue.project`; `ProjectReference` is optional on the
+    /// model so omitting the whole selection is safe.
     static let issueCompactFields = """
     id
     identifier
@@ -29,7 +38,7 @@ enum LinearGQL {
     dueDate
     state { name type }
     assignee { name }
-    team { id }
+    team { id name key icon }
     """
 
     /// Fields selected on `Project` for Recent / Search surfaces.

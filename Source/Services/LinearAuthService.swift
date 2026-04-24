@@ -57,6 +57,19 @@ class LinearAuthService: NSObject {
     /// Initiates the OAuth flow using ASWebAuthenticationSession
     @MainActor
     func authorize(completion: @escaping (Result<TokenPair, Error>) -> Void) {
+        // Reentrance guard: if a sign-in is already in flight, cancel it
+        // before starting a new one. Otherwise the two flows race for
+        // `pendingAuthState` — whichever callback lands last will have
+        // the mismatched state and fail verification, producing the
+        // confusing "OAuth state verification failed" error after a
+        // double-click on Add Account.
+        if let existing = authSession {
+            AppLogger.info("Cancelling in-flight OAuth session before starting a new one", log: AppLogger.auth)
+            existing.cancel()
+            authSession = nil
+            pendingAuthState = nil
+        }
+
         let state = Self.generateOAuthState()
         pendingAuthState = state
 
