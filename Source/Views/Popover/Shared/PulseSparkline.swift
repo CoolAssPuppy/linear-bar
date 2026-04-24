@@ -6,13 +6,12 @@ import SwiftUI
 /// minimal — meant to read as a single pulse of workspace activity,
 /// not a full chart.
 struct PulseSparkline: View {
-    /// One count per day, oldest first. Caller passes exactly
-    /// `PulseSparkline.dayCount` values.
+    /// One count per day, oldest first. The array length determines
+    /// the X resolution of the line (7, 14, 30, 90, etc.) — the chart
+    /// scales its step width accordingly.
     let buckets: [Int]
 
     @Environment(\.theme) private var theme
-
-    static let dayCount = 14
 
     var body: some View {
         GeometryReader { geo in
@@ -72,16 +71,19 @@ struct PulseSparkline: View {
 // MARK: - Bucketer
 
 enum PulseBucketer {
-    /// Produces `PulseSparkline.dayCount` buckets ending today
-    /// (inclusive), counting how many updates fell on each day by
-    /// `createdAt`. Missing days render as zero.
+    /// Produces `dayCount` buckets ending today (inclusive), counting
+    /// how many updates fell on each day by `createdAt`. Missing days
+    /// render as zero. Caller passes the same day count that was used
+    /// to scope the Pulse query so the chart's X axis matches what's
+    /// in `updates`.
     static func buckets(
         updates: [LinearPulseUpdate],
+        dayCount: Int,
         calendar: Calendar = .current,
         reference: Date = Date()
     ) -> [Int] {
         let startOfToday = calendar.startOfDay(for: reference)
-        let days: [Date] = (0..<PulseSparkline.dayCount).compactMap {
+        let days: [Date] = (0..<dayCount).compactMap {
             calendar.date(byAdding: .day, value: -$0, to: startOfToday)
         }.reversed()
 

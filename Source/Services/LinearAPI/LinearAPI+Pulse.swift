@@ -2,16 +2,17 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Page size for each Pulse connection. 30 from each keeps the
-    /// merged feed roughly one-two days deep on active workspaces
-    /// without overfetching.
-    private static let pulsePageSize = 30
-
-    /// Time window applied to every Pulse fetch via a server-side
-    /// `createdAt.gt` filter. Matches Linear's web Pulse default of
-    /// roughly two weeks of recent signal — enough to stay populated
-    /// on quiet workspaces without trailing into archive territory.
-    private static let pulseWindowDays = 14
+    /// Per-connection page size. The Pulse window dropdown scales the
+    /// request: wider windows fan out more rows so a 90-day view on a
+    /// busy workspace doesn't silently truncate at 30 results.
+    private static func pulsePageSize(for windowDays: Int) -> Int {
+        switch windowDays {
+        case ...7:  return 30
+        case ...14: return 40
+        case ...30: return 60
+        default:    return 80
+        }
+    }
 
     /// ISO8601 formatter with fractional seconds disabled — Linear's
     /// GraphQL `DateTimeComparator` accepts either form but fractional
@@ -63,7 +64,8 @@ extension LinearAPI {
         accessToken: String,
         accountEmail: String? = nil,
         scope: PulseScope = .workspace,
-        viewerTeamIds: Set<String> = []
+        viewerTeamIds: Set<String> = [],
+        windowDays: Int = 14
     ) async throws -> [LinearPulseUpdate] {
         if TestDataProvider.isUITesting {
             return TestDataProvider.getPulseUpdates()
@@ -72,14 +74,16 @@ extension LinearAPI {
         async let projectsAll = fetchProjectUpdates(
             accessToken: accessToken,
             accountEmail: accountEmail,
-            onlyMine: scope == .mine
+            onlyMine: scope == .mine,
+            windowDays: windowDays
         )
         async let initiativesAll = scope == .teams
             ? [] as [LinearPulseUpdate]
             : fetchInitiativeUpdates(
                 accessToken: accessToken,
                 accountEmail: accountEmail,
-                onlyMine: scope == .mine
+                onlyMine: scope == .mine,
+                windowDays: windowDays
             )
 
         // "My Teams" also needs my own authored updates (project +
@@ -89,14 +93,16 @@ extension LinearAPI {
             ? fetchProjectUpdates(
                 accessToken: accessToken,
                 accountEmail: accountEmail,
-                onlyMine: true
+                onlyMine: true,
+                windowDays: windowDays
             )
             : [] as [LinearPulseUpdate]
         async let myInitiatives = scope == .teams
             ? fetchInitiativeUpdates(
                 accessToken: accessToken,
                 accountEmail: accountEmail,
-                onlyMine: true
+                onlyMine: true,
+                windowDays: windowDays
             )
             : [] as [LinearPulseUpdate]
 
@@ -143,9 +149,10 @@ extension LinearAPI {
     private func fetchProjectUpdates(
         accessToken: String,
         accountEmail: String?,
-        onlyMine: Bool
+        onlyMine: Bool,
+        windowDays: Int
     ) async throws -> [LinearPulseUpdate] {
-        let since = Self.windowStartIso(daysAgo: Self.pulseWindowDays)
+        let since = Self.windowStartIso(daysAgo: windowDays)
         let filterArg: String = {
             if onlyMine {
                 return ", filter: { user: { isMe: { eq: true } }, createdAt: { gt: \"\(since)\" } }"
@@ -180,7 +187,7 @@ extension LinearAPI {
         }
         """
 
-        let variables: [String: Any] = ["first": Self.pulsePageSize]
+        let variables: [String: Any] = ["first": Self.pulsePageSize(for: windowDays)]
 
         struct Response: Decodable {
             struct Conn: Decodable { let nodes: [LinearPulseUpdate] }
@@ -201,9 +208,10 @@ extension LinearAPI {
     private func fetchInitiativeUpdates(
         accessToken: String,
         accountEmail: String?,
-        onlyMine: Bool
+        onlyMine: Bool,
+        windowDays: Int
     ) async throws -> [LinearPulseUpdate] {
-        let since = Self.windowStartIso(daysAgo: Self.pulseWindowDays)
+        let since = Self.windowStartIso(daysAgo: windowDays)
         let filterArg: String = {
             if onlyMine {
                 return ", filter: { user: { isMe: { eq: true } }, createdAt: { gt: \"\(since)\" } }"
@@ -236,7 +244,7 @@ extension LinearAPI {
         }
         """
 
-        let variables: [String: Any] = ["first": Self.pulsePageSize]
+        let variables: [String: Any] = ["first": Self.pulsePageSize(for: windowDays)]
 
         struct Response: Decodable {
             struct Conn: Decodable { let nodes: [LinearPulseUpdate] }

@@ -10,9 +10,21 @@ struct PulseView: View {
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
     @State private var scope: LinearAPI.PulseScope = .workspace
+    @State private var window: PulseWindow = .twoWeeks
 
     @ObservedObject private var teamsStore = TeamsStore.shared
     @Environment(\.theme) private var theme
+
+    /// Trailing time window applied to the Pulse feed + sparkline.
+    enum PulseWindow: Int, CaseIterable, Identifiable {
+        case week      = 7
+        case twoWeeks  = 14
+        case month     = 30
+        case quarter   = 90
+
+        var id: Int { rawValue }
+        var label: String { "\(rawValue)d" }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,6 +56,7 @@ struct PulseView: View {
             }
         }
         .onChange(of: scope) { _, _ in loadData() }
+        .onChange(of: window) { _, _ in loadData() }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             loadData()
         }
@@ -58,6 +71,13 @@ struct PulseView: View {
                 selection: $scope,
                 options: LinearAPI.PulseScope.allCases,
                 label: { "Scope: \(Self.scopeLabel(for: $0))" },
+                selectionWeight: .foreground
+            )
+            PopoverChip(
+                prefix: nil,
+                selection: $window,
+                options: PulseWindow.allCases,
+                label: { "Last \($0.label)" },
                 selectionWeight: .foreground
             )
             Spacer(minLength: 0)
@@ -101,7 +121,7 @@ struct PulseView: View {
     }
 
     private var sparkline: some View {
-        PulseSparkline(buckets: PulseBucketer.buckets(updates: updates))
+        PulseSparkline(buckets: PulseBucketer.buckets(updates: updates, dayCount: window.rawValue))
             .padding(.horizontal, 14)
             .padding(.top, 6)
             .padding(.bottom, 12)
@@ -122,6 +142,7 @@ struct PulseView: View {
         errorMessage = nil
 
         let currentScope = scope
+        let currentWindow = window
         let teamIds = Set(teamsStore.teams.map { $0.id })
         Task {
             do {
@@ -129,7 +150,8 @@ struct PulseView: View {
                     accessToken: session.accessToken,
                     accountEmail: session.accountEmail,
                     scope: currentScope,
-                    viewerTeamIds: teamIds
+                    viewerTeamIds: teamIds,
+                    windowDays: currentWindow.rawValue
                 )
                 await MainActor.run {
                     updates = fetched
