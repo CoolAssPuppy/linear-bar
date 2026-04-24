@@ -148,13 +148,13 @@ struct RecentView: View {
 
         var bucket: [RecentArtifact] = []
         if typeFilter.includesIssues {
-            bucket.append(contentsOf: issues.map(RecentArtifact.issue))
+            bucket.append(contentsOf: issues.filter { ListFilter.keep($0) }.map(RecentArtifact.issue))
         }
         if typeFilter.includesProjects {
-            bucket.append(contentsOf: projects.map(RecentArtifact.project))
+            bucket.append(contentsOf: projects.filter { ListFilter.keep($0) }.map(RecentArtifact.project))
         }
         if typeFilter.includesInitiatives {
-            bucket.append(contentsOf: initiatives.map(RecentArtifact.initiative))
+            bucket.append(contentsOf: initiatives.filter { ListFilter.keep($0) }.map(RecentArtifact.initiative))
         }
 
         if let selectedTeam {

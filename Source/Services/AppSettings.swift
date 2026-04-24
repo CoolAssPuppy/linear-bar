@@ -73,8 +73,21 @@ class AppSettings: ObservableObject {
     @Published var demoModeEnabled: Bool {
         didSet {
             TestDataProvider.isDemoModeEnabled = demoModeEnabled
-            UserDefaults.standard.set(demoModeEnabled, forKey: "demoModeEnabled")
+            saveSetting(demoModeEnabled, forKey: "demoModeEnabled")
             NotificationCenter.default.post(name: .refreshAllData, object: nil)
+        }
+    }
+
+    /// Master switch for iCloud sync. When on, every other @Published value
+    /// (plus the accounts list) is mirrored to NSUbiquitousKeyValueStore so
+    /// that sibling devices stay in step. Kept out of iCloud itself — each
+    /// device decides locally whether to participate.
+    @Published var iCloudSyncEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(iCloudSyncEnabled, forKey: "iCloudSyncEnabled")
+            if iCloudSyncEnabled {
+                pushAllSettingsToiCloud()
+            }
         }
     }
 
@@ -117,6 +130,11 @@ class AppSettings: ObservableObject {
 
         let teamKey = UserDefaults.standard.string(forKey: "selectedTeamKey")
         self.selectedTeamKey = teamKey?.isEmpty == false ? teamKey : nil
+
+        // Initialize iCloudSyncEnabled before touching `self` so every stored
+        // property is set first — Swift otherwise rejects `self.demoModeEnabled`
+        // on the next line.
+        self.iCloudSyncEnabled = UserDefaults.standard.bool(forKey: "iCloudSyncEnabled")
 
         self.demoModeEnabled = UserDefaults.standard.bool(forKey: "demoModeEnabled")
         TestDataProvider.isDemoModeEnabled = self.demoModeEnabled
@@ -212,7 +230,25 @@ class AppSettings: ObservableObject {
 
         if let encoded = try? JSONEncoder().encode(accounts) {
             UserDefaults.standard.set(encoded, forKey: "accounts")
+            syncAccountsToiCloudIfEnabled(encodedAccounts: encoded)
             AppLogger.debug("Saved \(accounts.count) accounts", log: AppLogger.settings)
         }
+    }
+
+    /// Pushes every synced preference + the accounts blob to iCloud once.
+    /// Called when the user flips the master toggle on, so the other
+    /// devices pick up this machine's state immediately.
+    func pushAllSettingsToiCloud() {
+        iCloudStore.set(refreshInterval.rawValue, forKey: "refreshInterval")
+        iCloudStore.set(launchAtLogin, forKey: "launchAtLogin")
+        iCloudStore.set(defaultTab.rawValue, forKey: "defaultTab")
+        iCloudStore.set(showCompletedItems, forKey: "showCompletedItems")
+        iCloudStore.set(showCanceledItems, forKey: "showCanceledItems")
+        iCloudStore.set(sortOrder.rawValue, forKey: "sortOrder")
+        iCloudStore.set(demoModeEnabled, forKey: "demoModeEnabled")
+        if let encoded = try? JSONEncoder().encode(accounts) {
+            iCloudStore.set(encoded, forKey: Self.iCloudAccountsKey)
+        }
+        iCloudStore.synchronize()
     }
 }

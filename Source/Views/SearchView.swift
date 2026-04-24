@@ -184,10 +184,14 @@ struct SearchView: View {
             let projects = (try? await projectsResult) ?? []
             let initiatives = (try? await initiativesResult) ?? []
 
+            let visibleIssues = issues.filter { ListFilter.keep($0) }
+            let visibleProjects = projects.filter { ListFilter.keep($0) }
+            let visibleInitiatives = initiatives.filter { ListFilter.keep($0) }
+
             var combined: [any LinearItem] = []
-            for issue in issues.prefix(7) { combined.append(issue) }
-            for project in projects.prefix(2) { combined.append(project) }
-            for initiative in initiatives.prefix(2) { combined.append(initiative) }
+            for issue in visibleIssues.prefix(7) { combined.append(issue) }
+            for project in visibleProjects.prefix(2) { combined.append(project) }
+            for initiative in visibleInitiatives.prefix(2) { combined.append(initiative) }
 
             await MainActor.run {
                 searchResults = Array(combined.prefix(12))

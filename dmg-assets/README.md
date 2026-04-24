@@ -2,11 +2,11 @@
 
 The release flow builds a styled DMG via `create-dmg`. It expects two files in this folder:
 
-- **`background.tiff`** — the DMG window background. Required. Created from a 1320 × 800 px PNG, converted with:
+- **`background.tiff`** — the DMG window background. Required. Created by combining the 1x and 2x PNGs:
   ```bash
   tiffutil -cathidpicheck background@1x.png background@2x.png -out background.tiff
   ```
-  The @1x version is 660 × 400 and the @2x version is 1320 × 800. Both must be saved from the same source art at the right sizes.
+  The @1x version is 600 × 400 and the @2x version is 1200 × 800. Both come from the Paper artboard "DMG Install Background" — update that first and re-export.
 
 - **`VolumeIcon.icns`** — optional. Shown as the mounted volume icon in Finder. Generate from a 1024 × 1024 PNG via:
   ```bash

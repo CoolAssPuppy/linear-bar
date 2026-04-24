@@ -90,6 +90,22 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
                     .appBoxedPicker()
                 }
+
+                AppRowDivider().padding(.vertical, 10)
+
+                AppSettingRow(
+                    "Sync settings to iCloud",
+                    description: "Keep connected workspaces and preferences in step across your Macs. Tokens stay on each device."
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { settings.iCloudSyncEnabled },
+                        set: { settings.iCloudSyncEnabled = $0 }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(theme.primary)
+                }
             }
         }
     }

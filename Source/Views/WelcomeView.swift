@@ -67,26 +67,12 @@ struct LinearWelcomeView: View {
     }
 
     private var trustSignals: some View {
-        HStack(spacing: 14) {
-            trustItem(icon: "lock.fill", label: "Tokens stored in macOS Keychain")
-
-            Circle()
-                .fill(theme.dim)
-                .frame(width: 3, height: 3)
-
-            trustItem(icon: "info.circle", label: "No telemetry, no analytics, no servers")
-        }
-    }
-
-    private func trustItem(icon: String, label: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(theme.tertiary)
-            Text(label)
-                .font(.system(size: 11))
-                .foregroundStyle(theme.tertiary)
-        }
+        Text("Connect securely to your account. Menu Bar for Linear does not maintain servers or collect your data. Your information stays on this machine.")
+            .font(.system(size: 11))
+            .foregroundStyle(theme.tertiary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 420)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Actions

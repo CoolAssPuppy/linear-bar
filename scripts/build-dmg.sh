@@ -63,8 +63,9 @@ echo "  Background: $BACKGROUND"
 echo "  Output:     $DMG_OUT"
 echo ""
 
-# Window coords assume a 1320x800 (2x retina) background → 660x400 window.
-# Update if the art changes.
+# Window is 600x400 (matches dmg-assets/background art at 600x400 @1x,
+# 1200x800 @2x). Icon centers are placed over the staggered tile
+# illustrations in the background — update both together if the art changes.
 VOLICON_ARGS=()
 if [[ -f "$VOLUME_ICON" ]]; then
   VOLICON_ARGS=(--volicon "$VOLUME_ICON")
@@ -75,10 +76,10 @@ create-dmg \
   "${VOLICON_ARGS[@]}" \
   --background "$BACKGROUND" \
   --window-pos 200 120 \
-  --window-size 660 400 \
+  --window-size 600 400 \
   --icon-size 96 \
-  --icon "Linear Bar.app" 355 200 \
-  --app-drop-link 555 200 \
+  --icon "Linear Bar.app" 378 164 \
+  --app-drop-link 530 216 \
   --hide-extension "Linear Bar.app" \
   --no-internet-enable \
   --hdiutil-quiet \

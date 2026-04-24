@@ -246,56 +246,46 @@ struct AppProviderChoiceCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
+            HStack(spacing: 14) {
+                VStack(spacing: 10) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(theme.cardElevated)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .strokeBorder(theme.borderStrong, lineWidth: 1)
                             )
                         Image(assetName)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 22, height: 22)
+                            .frame(width: 26, height: 26)
                     }
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
 
-                    Spacer()
-
-                    ZStack {
-                        Circle()
-                            .fill(theme.cardElevated)
-                        Circle()
-                            .strokeBorder(theme.borderStrong, lineWidth: 1)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
+                    VStack(spacing: 3) {
+                        Text(title)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(theme.foreground)
+                        Text(subtitle)
+                            .font(.system(size: 11))
                             .foregroundStyle(theme.muted)
                     }
-                    .frame(width: 24, height: 24)
                 }
+                .frame(maxWidth: .infinity)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(theme.foreground)
-                    Text(subtitle)
-                        .font(.system(size: 11))
+                ZStack {
+                    Circle()
+                        .fill(theme.cardElevated)
+                    Circle()
+                        .strokeBorder(theme.borderStrong, lineWidth: 1)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(theme.muted)
                 }
-
-                HStack(spacing: 5) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(theme.success)
-                    Text("Read-only access")
-                        .font(.system(size: 10))
-                        .foregroundStyle(theme.muted)
-                }
+                .frame(width: 24, height: 24)
             }
             .padding(18)
-            .frame(width: 220, alignment: .leading)
+            .frame(width: 260)
             .background(
                 RoundedRectangle(cornerRadius: AppRadius.xxl, style: .continuous)
                     .fill(isHovered ? theme.cardElevated : theme.card)
