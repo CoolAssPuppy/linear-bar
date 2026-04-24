@@ -7,5 +7,23 @@
     <link>https://downloads.strategicnerds.com/apps/linear-bar/appcast.xml</link>
     <description>Linear Bar updates</description>
     <language>en</language>
+    <item>
+      <title>Version 2.0.0</title>
+      <pubDate>Fri, 24 Apr 2026 01:02:50 +0000</pubDate>
+      <sparkle:version>15</sparkle:version>
+      <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <ul>
+          <li>First public release of Menu Bar for Linear — your Linear workspace in the macOS menu bar.</li><li>Inbox, Mine, Recent, Pulse, and Search tabs; team and workspace switcher; iCloud sync for accounts and preferences; per-workspace refresh.</li><li>New brand: stylized amber checkmark app and DMG icons.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://downloads.strategicnerds.com/apps/linear-bar/LinearBar-2.0.0.dmg"
+        sparkle:edSignature="KftmYRKHd5VccB4+PphBF0RJ2TfcHFyckLu+iz+dI7kcAqOpzuE3cYwh/EPI9z5cZOtqqZvi8PLDVck+ZqTVAg=="
+        length="4274867"
+        type="application/x-apple-diskimage" />
+    </item>
+
   </channel>
 </rss>
