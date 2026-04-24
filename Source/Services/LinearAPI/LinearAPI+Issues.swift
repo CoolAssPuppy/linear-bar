@@ -2,222 +2,129 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Fetches issues created by the current user
+    /// Max page size for the popover's issue lists. 50 comfortably covers
+    /// the visible rows (popover height fits ~10, with scroll); going
+    /// higher is wasted bandwidth. Centralized so Mine / Recent / Team
+    /// queries stay in sync.
+    private static let issueListPageSize = 50
+
+    /// Fetches issues created by the current user.
     func fetchMyIssues(accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
         }
 
         let query = """
-        query {
+        query FetchMyIssues($first: Int!) {
           viewer {
-            createdIssues(first: 100, orderBy: updatedAt) {
+            createdIssues(first: $first, orderBy: updatedAt) {
               nodes {
-                id
-                identifier
-                title
-                description
-                url
-                createdAt
-                updatedAt
-                dueDate
-                state {
-                  name
-                  type
-                }
-                priority
-                priorityLabel
-                team {
-                  id
-                  name
-                  key
-                }
-                labels {
-                  nodes {
-                    id
-                    name
-                    color
-                  }
-                }
-                project {
-                  id
-                  name
-                  icon
-                }
-                parent {
-                  id
-                  identifier
-                  title
-                }
+                \(LinearGQL.issueCompactFields)
               }
             }
           }
         }
         """
 
+        let variables: [String: Any] = ["first": Self.issueListPageSize]
+
         struct Response: Decodable {
             struct ViewerData: Decodable {
-                struct IssuesData: Decodable {
-                    let nodes: [Issue]
-                }
+                struct IssuesData: Decodable { let nodes: [Issue] }
                 let createdIssues: IssuesData
             }
             let viewer: ViewerData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
+        let response: GraphQLResponse<Response> = try await execute(
+            query: query,
+            variables: variables,
+            accessToken: accessToken,
+            accountEmail: accountEmail
+        )
 
-        guard let data = response.data else {
-            throw LinearError.invalidResponse
-        }
-
+        guard let data = response.data else { throw LinearError.invalidResponse }
         return data.viewer.createdIssues.nodes
     }
 
-    /// Fetches issues assigned to the current user
+    /// Fetches issues assigned to the current user.
     func fetchAssignedIssues(accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
         }
 
         let query = """
-        query {
+        query FetchAssignedIssues($first: Int!) {
           viewer {
-            assignedIssues(first: 100, orderBy: updatedAt) {
+            assignedIssues(first: $first, orderBy: updatedAt) {
               nodes {
-                id
-                identifier
-                title
-                description
-                url
-                createdAt
-                updatedAt
-                dueDate
-                state {
-                  name
-                  type
-                }
-                priority
-                priorityLabel
-                team {
-                  id
-                  name
-                  key
-                }
-                assignee {
-                  name
-                }
-                labels {
-                  nodes {
-                    id
-                    name
-                    color
-                  }
-                }
-                project {
-                  id
-                  name
-                  icon
-                }
-                parent {
-                  id
-                  identifier
-                  title
-                }
+                \(LinearGQL.issueCompactFields)
               }
             }
           }
         }
         """
 
+        let variables: [String: Any] = ["first": Self.issueListPageSize]
+
         struct Response: Decodable {
             struct ViewerData: Decodable {
-                struct IssuesData: Decodable {
-                    let nodes: [Issue]
-                }
+                struct IssuesData: Decodable { let nodes: [Issue] }
                 let assignedIssues: IssuesData
             }
             let viewer: ViewerData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, accessToken: accessToken, accountEmail: accountEmail)
+        let response: GraphQLResponse<Response> = try await execute(
+            query: query,
+            variables: variables,
+            accessToken: accessToken,
+            accountEmail: accountEmail
+        )
 
-        guard let data = response.data else {
-            throw LinearError.invalidResponse
-        }
-
+        guard let data = response.data else { throw LinearError.invalidResponse }
         return data.viewer.assignedIssues.nodes
     }
 
-    /// Fetches issues for a specific team
+    /// Fetches issues for a specific team.
     func fetchTeamIssues(teamId: String, accessToken: String, accountEmail: String? = nil) async throws -> [Issue] {
         if TestDataProvider.isUITesting {
             return TestDataProvider.getRecentIssues()
         }
 
         let query = """
-        query($teamId: String!) {
+        query FetchTeamIssues($teamId: String!, $first: Int!) {
           team(id: $teamId) {
-            issues(first: 100, orderBy: updatedAt) {
+            issues(first: $first, orderBy: updatedAt) {
               nodes {
-                id
-                identifier
-                title
-                description
-                url
-                createdAt
-                updatedAt
-                dueDate
-                state {
-                  name
-                  type
-                }
-                priority
-                priorityLabel
-                assignee {
-                  name
-                }
-                labels {
-                  nodes {
-                    id
-                    name
-                    color
-                  }
-                }
-                project {
-                  id
-                  name
-                  icon
-                }
-                parent {
-                  id
-                  identifier
-                  title
-                }
+                \(LinearGQL.issueCompactFields)
               }
             }
           }
         }
         """
 
-        let variables: [String: Any] = ["teamId": teamId]
+        let variables: [String: Any] = [
+            "teamId": teamId,
+            "first": Self.issueListPageSize
+        ]
 
         struct Response: Decodable {
             struct TeamData: Decodable {
-                struct IssuesData: Decodable {
-                    let nodes: [Issue]
-                }
+                struct IssuesData: Decodable { let nodes: [Issue] }
                 let issues: IssuesData
             }
             let team: TeamData
         }
 
-        let response: GraphQLResponse<Response> = try await execute(query: query, variables: variables, accessToken: accessToken, accountEmail: accountEmail)
+        let response: GraphQLResponse<Response> = try await execute(
+            query: query,
+            variables: variables,
+            accessToken: accessToken,
+            accountEmail: accountEmail
+        )
 
-        guard let data = response.data else {
-            throw LinearError.invalidResponse
-        }
-
+        guard let data = response.data else { throw LinearError.invalidResponse }
         return data.team.issues.nodes
     }
 }

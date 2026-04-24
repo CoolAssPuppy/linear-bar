@@ -9,8 +9,8 @@ extension LinearAPI {
     /// merge assignee / creator / subscribers on the server, but the filter
     /// shape rejected on at least one workspace tested. Issuing the two
     /// documented per-user connections (`viewer.assignedIssues`,
-    /// `viewer.createdIssues`) and merging client-side is bulletproof and
-    /// cheap enough (two parallel requests instead of one).
+    /// `viewer.createdIssues`) in a single GraphQL operation and merging
+    /// client-side is bulletproof and cheap (one request, one response).
     func fetchTouchedIssues(
         accessToken: String,
         accountEmail: String? = nil,
@@ -22,41 +22,13 @@ extension LinearAPI {
         }
 
         let query = """
-        query Recent($first: Int!) {
+        query FetchRecentTouchedIssues($first: Int!) {
           viewer {
             assignedIssues(first: $first, orderBy: updatedAt) {
-              nodes {
-                id
-                identifier
-                title
-                url
-                createdAt
-                updatedAt
-                dueDate
-                state { name type }
-                priority
-                priorityLabel
-                assignee { name }
-                team { id name key icon }
-                project { id name icon }
-              }
+              nodes { \(LinearGQL.issueCompactFields) }
             }
             createdIssues(first: $first, orderBy: updatedAt) {
-              nodes {
-                id
-                identifier
-                title
-                url
-                createdAt
-                updatedAt
-                dueDate
-                state { name type }
-                priority
-                priorityLabel
-                assignee { name }
-                team { id name key icon }
-                project { id name icon }
-              }
+              nodes { \(LinearGQL.issueCompactFields) }
             }
           }
         }

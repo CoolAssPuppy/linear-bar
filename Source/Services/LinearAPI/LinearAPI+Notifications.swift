@@ -2,13 +2,24 @@ import Foundation
 
 extension LinearAPI {
 
+    /// Page size for the Inbox tab. 50 fits the visible popover and leaves
+    /// room for client-side unread filtering (Linear's server-side
+    /// `NotificationFilter` input has drifted historically — see below).
+    private static let notificationsPageSize = 50
+
     /// Fetches the viewer's unread notifications for the Inbox tab.
     ///
     /// Linear's `notifications` connection returns polymorphic subtypes;
     /// this query pulls the common base fields plus the two subtypes we
-    /// display (IssueNotification, ProjectNotification). The DocumentNotification
-    /// subtype is intentionally omitted — its schema shape has changed
-    /// historically and a missing subtype here would reject the whole query.
+    /// display (IssueNotification, ProjectNotification). The
+    /// DocumentNotification subtype is intentionally omitted — its schema
+    /// shape has changed historically and a missing subtype here would
+    /// reject the whole query.
+    ///
+    /// Unread filtering happens client-side. Server-side
+    /// `filter: { readAt: { null: true } }` 400'd on at least one
+    /// workspace; doing it in Swift costs one boolean check per node and
+    /// is immune to future filter-shape drift.
     func fetchUnreadNotifications(
         accessToken: String,
         accountEmail: String? = nil,
@@ -19,7 +30,7 @@ extension LinearAPI {
         }
 
         let query = """
-        query Inbox($first: Int!) {
+        query FetchInbox($first: Int!) {
           notifications(first: $first) {
             nodes {
               id
@@ -39,9 +50,6 @@ extension LinearAPI {
                   identifier
                   title
                   url
-                  state { name type }
-                  priority
-                  priorityLabel
                   team { id name key }
                 }
               }
@@ -50,7 +58,6 @@ extension LinearAPI {
                   id
                   name
                   url
-                  icon
                   color
                 }
               }
@@ -59,12 +66,10 @@ extension LinearAPI {
         }
         """
 
-        let variables: [String: Any] = ["first": limit]
+        let variables: [String: Any] = ["first": min(limit, Self.notificationsPageSize)]
 
         struct Response: Decodable {
-            struct NotificationsData: Decodable {
-                let nodes: [LinearNotification]
-            }
+            struct NotificationsData: Decodable { let nodes: [LinearNotification] }
             let notifications: NotificationsData
         }
 
@@ -75,18 +80,12 @@ extension LinearAPI {
             accountEmail: accountEmail
         )
 
-        guard let data = response.data else {
-            throw LinearError.invalidResponse
-        }
-
-        // Filter client-side to just unread notifications. Doing this on the
-        // server via the `filter` argument 400'd on some workspaces because
-        // the NotificationFilter input shape has drifted.
+        guard let data = response.data else { throw LinearError.invalidResponse }
         return data.notifications.nodes.filter { $0.readAt == nil }
     }
 
-    /// Fetches the total unread notification count. Cheap scalar — drives the
-    /// menu bar badge number.
+    /// Fetches the total unread notification count. Cheap scalar — drives
+    /// the menu bar badge number.
     func fetchUnreadNotificationCount(
         accessToken: String,
         accountEmail: String? = nil
@@ -95,11 +94,9 @@ extension LinearAPI {
             return TestDataProvider.getUnreadNotifications().count
         }
 
-        let query = "query UnreadCount { notificationsUnreadCount }"
+        let query = "query FetchUnreadCount { notificationsUnreadCount }"
 
-        struct Response: Decodable {
-            let notificationsUnreadCount: Int
-        }
+        struct Response: Decodable { let notificationsUnreadCount: Int }
 
         let response: GraphQLResponse<Response> = try await execute(
             query: query,
@@ -107,10 +104,7 @@ extension LinearAPI {
             accountEmail: accountEmail
         )
 
-        guard let data = response.data else {
-            throw LinearError.invalidResponse
-        }
-
+        guard let data = response.data else { throw LinearError.invalidResponse }
         return data.notificationsUnreadCount
     }
 }

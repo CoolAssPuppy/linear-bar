@@ -2,11 +2,12 @@ import Foundation
 
 extension LinearAPI {
 
+    /// Cap for the at-risk issue list inside an active cycle. Pulse only
+    /// renders the worst offenders; 50 leaves headroom for sort + filter.
+    private static let cycleIssuePageSize = 50
+
     /// Fetches the active cycle for a specific team plus the at-risk issues
     /// threatening it. Powers the Pulse tab.
-    ///
-    /// Note: `slaBreachesAt` is included on Issue — not every workspace has
-    /// SLA enabled, but the field is schema-safe everywhere.
     func fetchActiveCycleWithIssues(
         teamId: String,
         accessToken: String,
@@ -17,7 +18,7 @@ extension LinearAPI {
         }
 
         let query = """
-        query ActiveCycle($teamId: String!) {
+        query FetchActiveCycle($teamId: String!, $first: Int!) {
           team(id: $teamId) {
             id
             name
@@ -32,18 +33,9 @@ extension LinearAPI {
               scopeHistory
               completedScopeHistory
               inProgressScopeHistory
-              issues(first: 100) {
+              issues(first: $first) {
                 nodes {
-                  id
-                  identifier
-                  title
-                  url
-                  updatedAt
-                  dueDate
-                  priority
-                  priorityLabel
-                  state { name type }
-                  assignee { name }
+                  \(LinearGQL.cycleIssueFields)
                 }
               }
             }
@@ -51,7 +43,10 @@ extension LinearAPI {
         }
         """
 
-        let variables: [String: Any] = ["teamId": teamId]
+        let variables: [String: Any] = [
+            "teamId": teamId,
+            "first": Self.cycleIssuePageSize
+        ]
 
         struct Response: Decodable {
             struct TeamData: Decodable {

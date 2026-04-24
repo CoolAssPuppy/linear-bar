@@ -2,10 +2,13 @@ import Foundation
 
 extension LinearAPI {
 
+    /// Max page size for the Recent tab's project/initiative lists.
+    private static let recentPageSize = 30
+
     /// Fetches the projects the viewer can see in the current workspace,
     /// sorted by most-recently-updated. Filtering to "projects I lead" or
-    /// "projects I'm a member of" requires the or/and filter shape that has
-    /// 400'd in real workspaces, so we stay simple and fetch what the
+    /// "projects I'm a member of" requires the or/and filter shape that
+    /// has 400'd in real workspaces, so we stay simple and fetch what the
     /// viewer can see — the Recent tab then shows whatever is actually
     /// moving in the org.
     func fetchRecentProjects(
@@ -18,26 +21,16 @@ extension LinearAPI {
         }
 
         let query = """
-        query RecentProjects($first: Int!) {
+        query FetchRecentProjects($first: Int!) {
           projects(first: $first, orderBy: updatedAt) {
             nodes {
-              id
-              name
-              description
-              url
-              createdAt
-              updatedAt
-              state
-              progress
-              icon
-              lead { name }
-              targetDate
+              \(LinearGQL.projectFields)
             }
           }
         }
         """
 
-        let variables: [String: Any] = ["first": limit]
+        let variables: [String: Any] = ["first": min(limit, Self.recentPageSize)]
 
         struct Response: Decodable {
             struct Conn: Decodable { let nodes: [Project] }
@@ -51,10 +44,7 @@ extension LinearAPI {
             accountEmail: accountEmail
         )
 
-        guard let data = response.data else {
-            throw LinearError.invalidResponse
-        }
-
+        guard let data = response.data else { throw LinearError.invalidResponse }
         return data.projects.nodes
     }
 
@@ -71,24 +61,16 @@ extension LinearAPI {
         }
 
         let query = """
-        query RecentInitiatives($first: Int!) {
+        query FetchRecentInitiatives($first: Int!) {
           initiatives(first: $first, orderBy: updatedAt) {
             nodes {
-              id
-              name
-              description
-              url
-              createdAt
-              updatedAt
-              icon
-              status
-              targetDate
+              \(LinearGQL.initiativeFields)
             }
           }
         }
         """
 
-        let variables: [String: Any] = ["first": limit]
+        let variables: [String: Any] = ["first": min(limit, Self.recentPageSize)]
 
         struct Response: Decodable {
             struct Conn: Decodable { let nodes: [Initiative] }
@@ -102,10 +84,7 @@ extension LinearAPI {
             accountEmail: accountEmail
         )
 
-        guard let data = response.data else {
-            throw LinearError.invalidResponse
-        }
-
+        guard let data = response.data else { throw LinearError.invalidResponse }
         return data.initiatives.nodes
     }
 }
