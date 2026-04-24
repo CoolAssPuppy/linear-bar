@@ -33,7 +33,6 @@ struct SettingsView: View {
 
                 VStack(spacing: 14) {
                     updatesCard
-                    demoModeCard
                     supportCard
                 }
                 .frame(maxWidth: .infinity)

@@ -443,10 +443,13 @@ struct WorkspaceLogo: View {
                         image
                             .resizable()
                             .scaledToFill()
+                            .frame(width: size, height: size)
+                            .clipped()
                     default:
                         initialTile
                     }
                 }
+                .frame(width: size, height: size)
             } else {
                 initialTile
             }
