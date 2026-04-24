@@ -8,6 +8,24 @@
     <description>Linear Bar updates</description>
     <language>en</language>
     <item>
+      <title>Version 2.1.0</title>
+      <pubDate>Fri, 24 Apr 2026 09:52:19 +0000</pubDate>
+      <sparkle:version>17</sparkle:version>
+      <sparkle:shortVersionString>2.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <ul>
+          <li>Added Pulse view.</li><li>Fixed bugs.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://downloads.strategicnerds.com/apps/linear-bar/LinearBar-2.1.0.dmg"
+        sparkle:edSignature="LS+ZuVNgIIMr5MNvtsBIWCuZjgCaIDfea59lLxuQ192XjkM8d9NU6We2n4DPtLzULptco3+qtnLuYvP7/XrmAw=="
+        length="4452521"
+        type="application/x-apple-diskimage" />
+    </item>
+
+    <item>
       <title>Version 2.0.1</title>
       <pubDate>Fri, 24 Apr 2026 01:17:10 +0000</pubDate>
       <sparkle:version>16</sparkle:version>
