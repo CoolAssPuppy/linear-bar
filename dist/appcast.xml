@@ -8,6 +8,24 @@
     <description>Linear Bar updates</description>
     <language>en</language>
     <item>
+      <title>Version 2.1.6</title>
+      <pubDate>Sat, 25 Apr 2026 17:05:18 +0000</pubDate>
+      <sparkle:version>24</sparkle:version>
+      <sparkle:shortVersionString>2.1.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <ul>
+          <li>New high-contrast app icon: burnt-orange bands on the gold planet body, clearly distinct on every theme.</li><li>Recent tab now respects the team scope filter for projects and initiatives, not just issues.</li><li>Cleaner copy-link affordance: hover any row in Mine, Recent, Search, or Faves to reveal a copy icon in its own column instead of overlaying the identifier.</li><li>Pulse stacked bars use a distinct categorical palette (blue / orange / emerald) tuned for light and dark backgrounds.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://downloads.strategicnerds.com/apps/linear-bar/LinearBar-2.1.6.dmg"
+        sparkle:edSignature="ORzdTy9S7fYcMwGvALdDyg+jC+wPujjO13lWLF5Vd9kdlLpXdhEhRjFXkIRdpefSpbzBFT5xNWEarOOQxNgjBQ=="
+        length="4596477"
+        type="application/x-apple-diskimage" />
+    </item>
+
+    <item>
       <title>Version 2.1.5</title>
       <pubDate>Sat, 25 Apr 2026 14:36:45 +0000</pubDate>
       <sparkle:version>23</sparkle:version>
