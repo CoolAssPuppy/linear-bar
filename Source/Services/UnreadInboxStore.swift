@@ -29,20 +29,17 @@ final class UnreadInboxStore: ObservableObject {
     /// fetch via the `refreshAllData` notification.
     private static let pollInterval: TimeInterval = 90
 
-    private init() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAccountsChanged),
-            name: .accountsDidUpdate,
-            object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleRefreshAll),
-            name: .refreshAllData,
-            object: nil
-        )
-    }
+    /// Tracks whether the notification observers have been wired up. We
+    /// can't register them in `init()` because `AppSettings.loadAccounts()`
+    /// posts `.accountsDidUpdate` from inside `AppSettings.shared`'s own
+    /// dispatch_once — re-entering this store on the same thread would
+    /// then read `AppSettings.shared.accounts` and recursively lock libdispatch.
+    /// `start()` registers observers after AppDelegate has finished
+    /// `applicationDidFinishLaunching`, by which point AppSettings has
+    /// fully published.
+    private var observersRegistered = false
+
+    private init() {}
 
     deinit {
         // swiftlint:disable:next notification_center_detachment
@@ -51,6 +48,7 @@ final class UnreadInboxStore: ObservableObject {
 
     func start() {
         stop()
+        registerObserversIfNeeded()
         // Fire once immediately so the badge isn't blank at launch, then
         // schedule the recurring tick.
         refresh()
@@ -67,6 +65,23 @@ final class UnreadInboxStore: ObservableObject {
         pollTimer = nil
         inFlight?.cancel()
         inFlight = nil
+    }
+
+    private func registerObserversIfNeeded() {
+        guard !observersRegistered else { return }
+        observersRegistered = true
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAccountsChanged),
+            name: .accountsDidUpdate,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRefreshAll),
+            name: .refreshAllData,
+            object: nil
+        )
     }
 
     @objc private func handleAccountsChanged() {
