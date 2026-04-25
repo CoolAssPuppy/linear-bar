@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Future bug fixes will be listed here
 
+## [2.1.5] - 2026-04-25
+
+### Added
+- Unread Inbox count in the menu bar (sum across enabled workspaces)
+
+### Fixed
+- Bug fixes
+
 ## [1.0.0] - 2025-01-15
 
 ### Added
