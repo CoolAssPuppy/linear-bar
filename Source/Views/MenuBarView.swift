@@ -341,7 +341,7 @@ private struct BrandMark: View {
 }
 
 /// Reusable brand tile: dark square with a soft amber glow and the
-/// Strategic Nerds checkmark. Sized by the caller — popover header uses
+/// two-tone planet glyph. Sized by the caller — popover header uses
 /// 22pt, Welcome hero uses 64pt.
 struct CheckmarkBrandMark: View {
     let size: CGFloat
@@ -370,31 +370,14 @@ struct CheckmarkBrandMark: View {
                 )
                 .frame(width: size * 1.15, height: size * 1.15)
 
-            LinearGlyph()
-                .stroke(
-                    Color(hex: "#FDB817"),
-                    style: StrokeStyle(lineWidth: max(size * 0.09, 1.2), lineCap: .round, lineJoin: .round)
-                )
+            // The branded planet is rendered from the same SVG that the
+            // menu bar template uses, so brand mark and status item read
+            // as one shape across the app.
+            Image(nsImage: PlanetGlyph.branded(size: glyphSize))
+                .interpolation(.high)
                 .frame(width: glyphSize, height: glyphSize)
         }
         .frame(width: size, height: size)
-    }
-}
-
-/// SwiftUI path for the Linear-style brand mark. Geometry is shared with the
-/// menu bar icon renderer via `LinearGlyphStrokes` so both surfaces always
-/// match pixel-for-pixel.
-struct LinearGlyph: Shape {
-    func path(in rect: CGRect) -> Path {
-        let scaleX = rect.width / LinearGlyphStrokes.boxSize
-        let scaleY = rect.height / LinearGlyphStrokes.boxSize
-
-        var path = Path()
-        for (from, to) in LinearGlyphStrokes.endpoints {
-            path.move(to: CGPoint(x: from.x * scaleX, y: from.y * scaleY))
-            path.addLine(to: CGPoint(x: to.x * scaleX, y: to.y * scaleY))
-        }
-        return path
     }
 }
 
