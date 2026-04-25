@@ -1,30 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background with rounded corners -->
-  <rect width="1024" height="1024" rx="226" fill="#5E6AD2"/>
+  <rect width="1024" height="1024" rx="226" fill="#121212"/>
 
-  <!-- Linear-inspired connection nodes in background (subtle) -->
-  <g opacity="0.3" stroke="white" stroke-width="8" fill="none">
-    <line x1="300" y1="300" x2="500" y2="400"/>
-    <line x1="500" y1="400" x2="700" y2="300"/>
-    <line x1="500" y1="400" x2="500" y2="600"/>
-    <circle cx="300" cy="300" r="20" fill="white"/>
-    <circle cx="500" cy="400" r="20" fill="white"/>
-    <circle cx="700" cy="300" r="20" fill="white"/>
-    <circle cx="500" cy="600" r="20" fill="white"/>
+  <g opacity="0.18" fill="none" stroke="#FDB817" stroke-width="3">
+    <circle cx="512" cy="512" r="280"/>
+    <circle cx="512" cy="512" r="360"/>
   </g>
 
-  <!-- Large checkbox in center -->
-  <g transform="translate(312, 312)">
-    <!-- Checkbox square -->
-    <rect x="0" y="0" width="400" height="400" rx="60" fill="white" stroke="none"/>
+  <g transform="translate(112, 112) scale(12.5)">
+    <path d="m32 4a28 28 0 0 1 0 56" fill="#FCDE09"/>
 
-    <!-- Checkmark -->
-    <path d="M 100 200 L 180 280 L 320 120"
-          stroke="#5E6AD2"
-          stroke-width="50"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          fill="none"/>
+    <path d="m49 36a2 2 0 0 1 0-4h11a27.8539 27.8539 0 0 0 -.2954-4h-17.7046a2 2 0 0 1 0-4h8a2 2 0 0 0 0-4h-16a2 2 0 0 1 0-4h5a4 4 0 0 1 0-8h7.4257a28 28 0 1 0 0 48h-5.4257a2 2 0 0 1 0-4h5a2 2 0 0 0 0-4h-12a2 2 0 0 1 0-4h15a4 4 0 0 0 0-8z" fill="#FDB817"/>
+
+    <g fill="#FCDE09">
+      <path d="m19 48a1.0029 1.0029 0 0 1 -1 1h-8.24a22.3542 22.3542 0 0 1 -1.39-2h9.63a1.0029 1.0029 0 0 1 1 1z"/>
+      <path d="m18 33h-4a1 1 0 0 1 0-2h4a1 1 0 0 1 0 2z"/>
+      <path d="m11 32a1.0029 1.0029 0 0 1 -1 1h-5.97c-.02-.33-.03-.66-.03-1s.01-.67.03-1h5.97a1.0029 1.0029 0 0 1 1 1z"/>
+      <path d="m19 16a1.0029 1.0029 0 0 1 -1 1h-9.63a22.3542 22.3542 0 0 1 1.39-2h8.24a1.0029 1.0029 0 0 1 1 1z"/>
+    </g>
   </g>
 </svg>
