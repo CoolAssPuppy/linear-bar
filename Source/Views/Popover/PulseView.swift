@@ -125,7 +125,7 @@ struct PulseView: View {
         PulseSparkline(buckets: PulseBucketer.buckets(updates: updates, dayCount: window.rawValue))
             .padding(.horizontal, 14)
             .padding(.top, 6)
-            .padding(.bottom, 12)
+            .padding(.bottom, 14)
     }
 
     // MARK: - Data

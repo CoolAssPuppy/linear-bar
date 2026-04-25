@@ -1,98 +1,161 @@
 import SwiftUI
 
-/// Thin EKG-style line chart for the Pulse tab. Draws one point per
-/// day across the Pulse window (14 days today) with a line through
-/// them and a soft gradient fill underneath. Intentionally dense and
-/// minimal — meant to read as a single pulse of workspace activity,
-/// not a full chart.
+/// Day-by-day stacked bar chart for the Pulse tab. Each bar represents one
+/// day; the segments stack issue / project / initiative activity within
+/// that day. The legend underneath maps each color to its category. The
+/// sparkline this replaces collapsed all three streams into one peak,
+/// hiding which kind of work was driving activity on a given day.
 struct PulseSparkline: View {
-    /// One count per day, oldest first. The array length determines
-    /// the X resolution of the line (7, 14, 30, 90, etc.) — the chart
-    /// scales its step width accordingly.
-    let buckets: [Int]
+    /// Per-day, per-category bucket counts. Oldest day first.
+    let buckets: [PulseDayBuckets]
 
     @Environment(\.theme) private var theme
 
+    private static let chartHeight: CGFloat = 64
+    private static let barCornerRadius: CGFloat = 1.5
+
     var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            chart
+            legend
+        }
+    }
+
+    private var chart: some View {
         GeometryReader { geo in
-            let peak = CGFloat(max(buckets.max() ?? 0, 1))
-            let stepX = geo.size.width / CGFloat(max(buckets.count - 1, 1))
-            let points = buckets.enumerated().map { index, value in
-                CGPoint(
-                    x: CGFloat(index) * stepX,
-                    y: geo.size.height - (geo.size.height * CGFloat(value) / peak)
-                )
-            }
+            let peak = max(buckets.map { $0.total }.max() ?? 0, 1)
+            let count = max(buckets.count, 1)
+            // Bars share the row evenly with a 2px-min gap so consecutive
+            // days don't visually merge into a single column.
+            let gap: CGFloat = 2
+            let barWidth = max((geo.size.width - gap * CGFloat(count - 1)) / CGFloat(count), 2)
 
-            ZStack {
-                fillPath(points: points, height: geo.size.height)
-                    .fill(
-                        LinearGradient(
-                            colors: [theme.primary.opacity(0.24), theme.primary.opacity(0.0)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-
-                strokePath(points: points)
-                    .stroke(
-                        theme.primary,
-                        style: StrokeStyle(lineWidth: 1.4, lineCap: .round, lineJoin: .round)
-                    )
+            HStack(alignment: .bottom, spacing: gap) {
+                ForEach(Array(buckets.enumerated()), id: \.offset) { _, bucket in
+                    bar(for: bucket, peak: peak, height: geo.size.height, width: barWidth)
+                }
             }
+            .frame(maxHeight: .infinity, alignment: .bottom)
         }
-        .frame(height: 36)
+        .frame(height: Self.chartHeight)
     }
 
-    private func fillPath(points: [CGPoint], height: CGFloat) -> Path {
-        Path { path in
-            guard let first = points.first, let last = points.last else { return }
-            path.move(to: CGPoint(x: first.x, y: height))
-            path.addLine(to: first)
-            for point in points.dropFirst() {
-                path.addLine(to: point)
+    /// Stacks issue → project → initiative bottom-up so the densest
+    /// category (issues) anchors the bar and lighter activity layers
+    /// read on top.
+    private func bar(for bucket: PulseDayBuckets, peak: Int, height: CGFloat, width: CGFloat) -> some View {
+        let scale = height / CGFloat(peak)
+        let issueHeight = CGFloat(bucket.issues) * scale
+        let projectHeight = CGFloat(bucket.projects) * scale
+        let initiativeHeight = CGFloat(bucket.initiatives) * scale
+
+        return VStack(spacing: 0) {
+            segment(height: initiativeHeight, color: theme.warning, width: width, isTop: true)
+            segment(height: projectHeight, color: theme.primary, width: width, isTop: initiativeHeight == 0)
+            segment(height: issueHeight, color: theme.success, width: width, isTop: initiativeHeight + projectHeight == 0)
+
+            // Empty days still show a faint baseline tick so the X axis
+            // reads as continuous time rather than missing days.
+            if bucket.total == 0 {
+                Rectangle()
+                    .fill(theme.dim.opacity(0.35))
+                    .frame(width: width, height: 1.5)
             }
-            path.addLine(to: CGPoint(x: last.x, y: height))
-            path.closeSubpath()
+        }
+        .frame(width: width, alignment: .bottom)
+    }
+
+    @ViewBuilder
+    private func segment(height: CGFloat, color: Color, width: CGFloat, isTop: Bool) -> some View {
+        if height > 0 {
+            UnevenRoundedRectangle(
+                topLeadingRadius: isTop ? Self.barCornerRadius : 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: isTop ? Self.barCornerRadius : 0,
+                style: .continuous
+            )
+            .fill(color)
+            .frame(width: width, height: height)
         }
     }
 
-    private func strokePath(points: [CGPoint]) -> Path {
-        Path { path in
-            guard let first = points.first else { return }
-            path.move(to: first)
-            for point in points.dropFirst() {
-                path.addLine(to: point)
-            }
+    private var legend: some View {
+        HStack(spacing: 14) {
+            legendItem(color: theme.success, label: "Issues")
+            legendItem(color: theme.primary, label: "Projects")
+            legendItem(color: theme.warning, label: "Initiatives")
+            Spacer(minLength: 0)
         }
     }
+
+    private func legendItem(color: Color, label: String) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(theme.muted)
+        }
+    }
+}
+
+/// One day's activity counts split by category. Keeps the stacking order
+/// (issues bottom, initiatives top) consistent across renders.
+struct PulseDayBuckets: Hashable {
+    let issues: Int
+    let projects: Int
+    let initiatives: Int
+
+    var total: Int { issues + projects + initiatives }
+
+    static let empty = PulseDayBuckets(issues: 0, projects: 0, initiatives: 0)
 }
 
 // MARK: - Bucketer
 
 enum PulseBucketer {
-    /// Produces `dayCount` buckets ending today (inclusive), counting
-    /// how many updates fell on each day by `createdAt`. Missing days
-    /// render as zero. Caller passes the same day count that was used
-    /// to scope the Pulse query so the chart's X axis matches what's
-    /// in `updates`.
+    /// Produces `dayCount` buckets ending today (inclusive), with each
+    /// day's `LinearPulseUpdate`s split into issues / projects /
+    /// initiatives. Linear's pulse feed today only carries project +
+    /// initiative status updates — the `issues` lane is reserved for
+    /// when issue activity is folded into pulse and stays at zero
+    /// until then. The chart still renders the lane so the legend
+    /// reads as a fixed contract.
     static func buckets(
         updates: [LinearPulseUpdate],
         dayCount: Int,
         calendar: Calendar = .current,
         reference: Date = Date()
-    ) -> [Int] {
+    ) -> [PulseDayBuckets] {
         let startOfToday = calendar.startOfDay(for: reference)
         let days: [Date] = (0..<dayCount).compactMap {
             calendar.date(byAdding: .day, value: -$0, to: startOfToday)
         }.reversed()
 
-        var counts: [Date: Int] = [:]
+        struct Counts { var projects = 0; var initiatives = 0 }
+        var perDay: [Date: Counts] = [:]
+
         for update in updates {
             guard let createdAt = update.createdAt else { continue }
-            counts[calendar.startOfDay(for: createdAt), default: 0] += 1
+            let day = calendar.startOfDay(for: createdAt)
+            var counts = perDay[day] ?? Counts()
+            if update.project != nil {
+                counts.projects += 1
+            } else if update.initiative != nil {
+                counts.initiatives += 1
+            }
+            perDay[day] = counts
         }
 
-        return days.map { counts[$0] ?? 0 }
+        return days.map { day in
+            let counts = perDay[day] ?? Counts()
+            return PulseDayBuckets(
+                issues: 0,
+                projects: counts.projects,
+                initiatives: counts.initiatives
+            )
+        }
     }
 }
