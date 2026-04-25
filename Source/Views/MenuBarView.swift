@@ -8,6 +8,7 @@ struct MenuBarView: View {
     @State private var isRefreshing = false
     @State private var lastRefreshedAt: Date = Date()
     @ObservedObject private var themeStore = ThemeStore.shared
+    @ObservedObject private var inboxStore = UnreadInboxStore.shared
 
     @ObservedObject private var appSettings = AppSettings.shared
 
@@ -65,11 +66,18 @@ struct MenuBarView: View {
     private var tabBar: some View {
         HStack(spacing: 0) {
             ForEach(Tab.allCases, id: \.self) { tab in
-                TabButton(tab: tab, selectedTab: $selectedTab)
+                TabButton(tab: tab, selectedTab: $selectedTab, badge: badge(for: tab))
             }
         }
         .padding(.horizontal, 6)
         .padding(.vertical, AppSpacing.sm)
+    }
+
+    /// Inbox is the only tab that carries a count today. Returning nil hides
+    /// the badge (no zero-state rendering).
+    private func badge(for tab: Tab) -> Int? {
+        guard tab == .inbox else { return nil }
+        return inboxStore.total > 0 ? inboxStore.total : nil
     }
 
     // MARK: - Content
@@ -188,6 +196,7 @@ struct MenuBarView: View {
 private struct TabButton: View {
     let tab: MenuBarView.Tab
     @Binding var selectedTab: MenuBarView.Tab
+    let badge: Int?
     @Environment(\.theme) private var theme
     @State private var isHovered = false
 
@@ -201,6 +210,9 @@ private struct TabButton: View {
                         .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
                         .lineLimit(1)
                         .fixedSize()
+                    if let badge {
+                        TabBadge(count: badge)
+                    }
                 }
                 .foregroundStyle(foregroundColor)
                 .padding(.horizontal, 6)
@@ -224,6 +236,27 @@ private struct TabButton: View {
         if isSelected { return theme.foreground }
         if isHovered { return theme.foregroundSoft }
         return theme.muted
+    }
+}
+
+/// Compact pill that surfaces a numeric count (currently the unread Inbox
+/// total). Caps display at "99+" to keep the tab from blowing up its lane.
+private struct TabBadge: View {
+    let count: Int
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(Color(hex: "#0A0A0A"))
+            .padding(.horizontal, 5)
+            .frame(minWidth: 16, minHeight: 14)
+            .background(Capsule().fill(theme.primary))
+            .fixedSize()
+    }
+
+    private var label: String {
+        count > 99 ? "99+" : "\(count)"
     }
 }
 

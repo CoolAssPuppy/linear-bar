@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 /// Manages the menu bar status item and its icon state.
 ///
@@ -11,6 +12,11 @@ class MenuBarManager {
     /// multiple input properties change but resolve to the same visual state
     /// (e.g. unread count ticking while `isOffline` is already true).
     private var lastAppliedState: MenuBarIconState?
+
+    /// Subscription to `UnreadInboxStore.total`. Held strongly so the store's
+    /// publisher keeps emitting; cancelled in `applicationWillTerminate` via
+    /// `tearDown()`.
+    private var unreadCancellable: AnyCancellable?
 
     var isSyncing: Bool = false {
         didSet { if isSyncing != oldValue { updateIcon() } }
@@ -37,6 +43,20 @@ class MenuBarManager {
             button.target = target
             updateIcon()
         }
+
+        // Mirror the aggregated unread total into our published count. The
+        // store handles polling + per-workspace toggle filtering — we just
+        // surface whatever it computed.
+        unreadCancellable = UnreadInboxStore.shared.$total
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] count in
+                self?.unreadCount = count
+            }
+    }
+
+    func tearDown() {
+        unreadCancellable?.cancel()
+        unreadCancellable = nil
     }
 
     func updateIcon() {

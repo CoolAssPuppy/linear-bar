@@ -37,6 +37,7 @@ struct LinearAccountView: View {
                 // Stacking is less dense but actually readable.
                 VStack(alignment: .leading, spacing: 18) {
                     identityCard
+                    linearCard
                     teamsCard
                     notificationsCard
                     managementCard
@@ -251,6 +252,24 @@ struct LinearAccountView: View {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // MARK: - Linear card
+
+    private var linearCard: some View {
+        AppCard("Linear") {
+            AppSettingRow("Show unread Inbox mentions in menu bar") {
+                Toggle("", isOn: Binding(
+                    get: { account.showUnreadInMenuBar },
+                    set: { newValue in
+                        account.showUnreadInMenuBar = newValue
+                        settings.updateAccount(account)
+                    }
+                ))
+                .toggleStyle(.switch)
+                .labelsHidden()
             }
         }
     }

@@ -6,6 +6,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let menuBarManager = MenuBarManager()
     private let popoverManager = PopoverManager()
     private let tokenScheduler = TokenRefreshScheduler()
+    private let inboxStore = UnreadInboxStore.shared
     /// The single main window that hosts `LinearMainView` (sidebar + content
     /// + drawer overlay). Replaces the previous standalone Settings NSWindow.
     private var mainWindow: NSWindow?
@@ -85,10 +86,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if !CommandLine.arguments.contains("--uitesting") {
             launchValidationTask()
             tokenScheduler.start()
+            inboxStore.start()
         }
         #else
         launchValidationTask()
         tokenScheduler.start()
+        inboxStore.start()
         #endif
     }
 
@@ -97,6 +100,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Stop the periodic token refresh timer.
         tokenScheduler.stop()
+        inboxStore.stop()
+        menuBarManager.tearDown()
 
         // Cancel any in-flight validation tasks we launched so they don't
         // keep running past termination.
