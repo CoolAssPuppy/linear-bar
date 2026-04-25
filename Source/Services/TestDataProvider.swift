@@ -295,7 +295,8 @@ struct TestDataProvider {
                 progress: 0.72,
                 icon: "🎿",
                 lead: User(name: "Sarah Chen"),
-                targetDate: "2026-05-30"
+                targetDate: "2026-05-30",
+                teams: teamConnection(["team-1", "team-3", "team-4"])
             ),
             Project(
                 id: "proj-2",
@@ -308,7 +309,8 @@ struct TestDataProvider {
                 progress: 0.48,
                 icon: "💳",
                 lead: User(name: "Sam Okafor"),
-                targetDate: "2026-06-15"
+                targetDate: "2026-06-15",
+                teams: teamConnection(["team-1"])
             ),
             Project(
                 id: "proj-3",
@@ -321,7 +323,8 @@ struct TestDataProvider {
                 progress: 0.22,
                 icon: "📘",
                 lead: User(name: "Erin Wu"),
-                targetDate: "2026-07-01"
+                targetDate: "2026-07-01",
+                teams: teamConnection(["team-1", "team-2"])
             ),
             Project(
                 id: "proj-4",
@@ -334,7 +337,8 @@ struct TestDataProvider {
                 progress: 0.10,
                 icon: "🏔️",
                 lead: User(name: "Rafa Patel"),
-                targetDate: "2026-08-01"
+                targetDate: "2026-08-01",
+                teams: teamConnection(["team-3"])
             )
         ]
     }
@@ -354,7 +358,11 @@ struct TestDataProvider {
                 progress: 0.6,
                 icon: "🚀",
                 status: "active",
-                targetDate: "2026-05-15"
+                targetDate: "2026-05-15",
+                projects: initiativeProjectConnection([
+                    ["team-1", "team-3"],
+                    ["team-2"]
+                ])
             ),
             Initiative(
                 id: "init-2",
@@ -366,7 +374,10 @@ struct TestDataProvider {
                 progress: 0.38,
                 icon: "🏂",
                 status: "active",
-                targetDate: "2026-06-10"
+                targetDate: "2026-06-10",
+                projects: initiativeProjectConnection([
+                    ["team-3", "team-4"]
+                ])
             ),
             Initiative(
                 id: "init-3",
@@ -378,9 +389,22 @@ struct TestDataProvider {
                 progress: 0.25,
                 icon: "🛡️",
                 status: "planned",
-                targetDate: "2026-09-01"
+                targetDate: "2026-09-01",
+                projects: initiativeProjectConnection([
+                    ["team-1"]
+                ])
             )
         ]
+    }
+
+    private static func teamConnection(_ ids: [String]) -> TeamIdConnection {
+        TeamIdConnection(nodes: ids.map { TeamIdRef(id: $0) })
+    }
+
+    private static func initiativeProjectConnection(_ projectsTeamIds: [[String]]) -> InitiativeProjectConnection {
+        InitiativeProjectConnection(
+            nodes: projectsTeamIds.map { InitiativeProjectRef(teams: teamConnection($0)) }
+        )
     }
 
     // MARK: - Search

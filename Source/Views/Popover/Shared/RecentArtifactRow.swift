@@ -15,7 +15,8 @@ struct RecentArtifactRow: View {
                 leadingGlyph
                     .frame(width: 14, alignment: .center)
 
-                IssueIdentifierLabel(identifier: leadingLabel, url: item.url)
+                IssueIdentifierLabel(identifier: leadingLabel)
+                RowCopyLinkButton(url: item.url, label: leadingLabel, isRowHovered: isHovered)
 
                 Text(item.title)
                     .font(.system(size: 12, weight: .medium))
@@ -124,12 +125,15 @@ enum RecentArtifact: Identifiable {
         }
     }
 
-    /// Team scoping: only issues carry a team id. Projects span teams and
-    /// initiatives are workspace-level, so they ignore the team filter.
-    var teamId: String? {
+    /// Team scoping. Issues carry a single team id; projects can span
+    /// multiple teams; initiatives derive their teams from the projects
+    /// they group. The artifact matches a scope if the scope's team id
+    /// appears anywhere in that surface area.
+    func matches(teamId: String) -> Bool {
         switch self {
-        case .issue(let issue): return issue.team?.id
-        default:                return nil
+        case .issue(let issue):           return issue.team?.id == teamId
+        case .project(let project):       return project.teamIds.contains(teamId)
+        case .initiative(let initiative): return initiative.teamIds.contains(teamId)
         }
     }
 }

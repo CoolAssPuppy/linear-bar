@@ -154,23 +154,8 @@ struct LinearSidebar: View {
 // MARK: - Brand mark
 
 private struct BrandMark: View {
-    @Environment(\.theme) private var theme
-
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [theme.primary, theme.primaryDeep],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-            Image(systemName: "checkmark.square.fill")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
-        }
-        .frame(width: 24, height: 24)
+        CheckmarkBrandMark(size: 24, glyphSize: 14)
     }
 }
 

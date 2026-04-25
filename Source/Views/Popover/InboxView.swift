@@ -226,7 +226,8 @@ private struct NotificationRow: View {
                 if let identifier = notification.issue?.identifier {
                     IssueIdentifierLabel(identifier: identifier,
                                          url: notification.issue?.url,
-                                         width: nil)
+                                         width: nil,
+                                         showsCopyButton: true)
                 } else if let project = notification.project {
                     ProjectGlyph(color: project.color)
                     Text(project.name)

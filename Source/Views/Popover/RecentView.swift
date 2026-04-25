@@ -165,13 +165,7 @@ struct RecentView: View {
         }
 
         if let selectedTeam {
-            bucket = bucket.filter { item in
-                // Projects and initiatives aren't team-scoped; surface them
-                // regardless of the team filter. Issues still filter by
-                // team id.
-                if case .issue = item { return item.teamId == selectedTeam }
-                return true
-            }
+            bucket = bucket.filter { $0.matches(teamId: selectedTeam) }
         }
 
         filtered = bucket.sorted {

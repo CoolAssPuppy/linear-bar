@@ -123,9 +123,15 @@ struct Project: LinearItem, Codable {
     let lead: User?
     /// ISO 8601 date string (`YYYY-MM-DD`).
     let targetDate: String?
+    /// Teams the project belongs to. A Linear project can span multiple
+    /// teams; the team-scoped popover lists keep the project visible if
+    /// any of those teams matches the active scope.
+    let teams: TeamIdConnection?
 
     var title: String { name }
     var itemType: LinearItemType { .project }
+
+    var teamIds: Set<String> { Set(teams?.nodes.map(\.id) ?? []) }
 
     var isOverdue: Bool {
         guard let targetDate else { return false }
@@ -149,15 +155,47 @@ struct Initiative: LinearItem, Codable {
     let status: String?
     /// ISO 8601 date string (`YYYY-MM-DD`).
     let targetDate: String?
+    /// Initiatives don't own teams directly in Linear; they group projects
+    /// which each belong to teams. We collect the union of those team ids
+    /// via `teamIds` so initiatives can be filtered by the active scope.
+    let projects: InitiativeProjectConnection?
 
     var title: String { name }
     var itemType: LinearItemType { .initiative }
+
+    var teamIds: Set<String> {
+        let ids = projects?.nodes.flatMap { $0.teams?.nodes.map(\.id) ?? [] } ?? []
+        return Set(ids)
+    }
 
     var isOverdue: Bool {
         guard let targetDate else { return false }
         guard let date = DateParsing.startOfDay(fromISODate: targetDate) else { return false }
         return date < Date()
     }
+}
+
+// MARK: - Team relationship connections
+
+/// `{ nodes: [{ id }] }` — the only field consumed off project/team
+/// connections is the team id, used for team-scope filtering.
+struct TeamIdConnection: Codable, Hashable {
+    let nodes: [TeamIdRef]
+}
+
+struct TeamIdRef: Codable, Hashable {
+    let id: String
+}
+
+/// Project record nested under `Initiative.projects`. Carries only the
+/// team relationship so initiatives can be reduced to the set of teams
+/// their projects belong to.
+struct InitiativeProjectConnection: Codable, Hashable {
+    let nodes: [InitiativeProjectRef]
+}
+
+struct InitiativeProjectRef: Codable, Hashable {
+    let teams: TeamIdConnection?
 }
 
 // MARK: - Team

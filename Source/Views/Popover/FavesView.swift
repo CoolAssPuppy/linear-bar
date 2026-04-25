@@ -167,14 +167,16 @@ private struct FavoriteRow: View {
                     .frame(width: 14, alignment: .center)
 
                 if let issue = favorite.issue {
-                    IssueIdentifierLabel(identifier: issue.identifier, url: issue.url)
-                } else if let project = favorite.project {
-                    IssueIdentifierLabel(identifier: "PROJ", url: project.url)
+                    IssueIdentifierLabel(identifier: issue.identifier)
+                } else if favorite.project != nil {
+                    IssueIdentifierLabel(identifier: "PROJ")
                 } else if favorite.customView != nil {
-                    IssueIdentifierLabel(identifier: "VIEW", url: customViewURL)
+                    IssueIdentifierLabel(identifier: "VIEW")
                 } else {
-                    IssueIdentifierLabel(identifier: "FAV", url: nil)
+                    IssueIdentifierLabel(identifier: "FAV")
                 }
+
+                RowCopyLinkButton(url: url, label: copyLabel, isRowHovered: isHovered)
 
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
@@ -217,6 +219,13 @@ private struct FavoriteRow: View {
             ?? favorite.project?.name
             ?? favorite.customView?.name
             ?? ""
+    }
+
+    /// Tooltip label for the copy-link button. Issues read better as
+    /// their identifier ("DEBR-145"); projects/views/folders fall back
+    /// to their display name.
+    private var copyLabel: String {
+        favorite.issue?.identifier ?? title
     }
 
     private var url: String? {

@@ -9,11 +9,16 @@ import AppKit
 ///
 /// Two flavors live here:
 /// - `template`: monochrome, marked `isTemplate = true` so macOS inverts
-///   it for dark menu bars.
+///   it for dark menu bars. Only the primary planet body draws — the
+///   back curve and back-ring slivers (originally the secondary fill)
+///   are dropped so the menu bar shape stays a clean single silhouette
+///   instead of the duo-tone look pancaking down to a flat blob.
 /// - `branded`: the colored two-tone planet — primary `#FDB817` for the
-///   front face + visible front rings, secondary `#FCDE09` for the back
-///   curve and the small back-ring slivers. No background; callers wrap
-///   it in their own surface.
+///   front face + visible front rings, secondary `#C2410C` (burnt
+///   orange) for the back curve and back-ring slivers. The two tones
+///   are deliberately far apart in lightness so the bands read clearly
+///   on top of the gold body. No background; callers wrap it in their
+///   own surface.
 enum PlanetGlyph {
     /// Original SVG design space. Every `boxSize` argument below is
     /// interpreted in this coordinate system before being scaled to the
@@ -63,26 +68,27 @@ enum PlanetGlyph {
 
     // MARK: - SVG sources
 
-    /// Monochrome — every path drawn in pure black so AppKit's template
-    /// machinery can recolor it. The viewBox matches `boxSize`.
+    /// Monochrome — only the primary planet body renders. The secondary
+    /// paths (back curve and back-ring slivers) are intentionally
+    /// omitted so the menu bar silhouette stays crisp; in template mode
+    /// those paths flattened to the same black as the body and turned
+    /// the icon into a featureless blob.
     private static let templateSVG = """
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="black">
-      <path d="M32 4a28 28 0 0 1 0 56"/>
       <path d="M49 36a2 2 0 0 1 0-4h11a27.85 27.85 0 0 0 -.3-4h-17.7a2 2 0 0 1 0-4h8a2 2 0 0 0 0-4h-16a2 2 0 0 1 0-4h5a4 4 0 0 1 0-8h7.43a28 28 0 1 0 0 48h-5.43a2 2 0 0 1 0-4h5a2 2 0 0 0 0-4h-12a2 2 0 0 1 0-4h15a4 4 0 0 0 0-8z"/>
-      <path d="M19 48a1 1 0 0 1 -1 1h-8.24a22.35 22.35 0 0 1 -1.39-2h9.63a1 1 0 0 1 1 1z"/>
-      <path d="M18 33h-4a1 1 0 0 1 0-2h4a1 1 0 0 1 0 2z"/>
-      <path d="M11 32a1 1 0 0 1 -1 1h-5.97c-.02-.33-.03-.66-.03-1s.01-.67.03-1h5.97a1 1 0 0 1 1 1z"/>
-      <path d="M19 16a1 1 0 0 1 -1 1h-9.63a22.35 22.35 0 0 1 1.39-2h8.24a1 1 0 0 1 1 1z"/>
     </svg>
     """
 
     /// Two-tone — primary `#FDB817` carries the dominant front mass,
-    /// secondary `#FCDE09` lights the back curve and back-ring slivers.
+    /// secondary `#C2410C` (burnt orange) lights the back curve and
+    /// back-ring slivers. The two tones are kept far apart in lightness
+    /// so the bands read clearly on the gold body — the previous
+    /// `#FCDE09` collapsed against the gold in some themes.
     private static let brandedSVG = """
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-      <path d="M32 4a28 28 0 0 1 0 56" fill="#FCDE09"/>
+      <path d="M32 4a28 28 0 0 1 0 56" fill="#C2410C"/>
       <path d="M49 36a2 2 0 0 1 0-4h11a27.85 27.85 0 0 0 -.3-4h-17.7a2 2 0 0 1 0-4h8a2 2 0 0 0 0-4h-16a2 2 0 0 1 0-4h5a4 4 0 0 1 0-8h7.43a28 28 0 1 0 0 48h-5.43a2 2 0 0 1 0-4h5a2 2 0 0 0 0-4h-12a2 2 0 0 1 0-4h15a4 4 0 0 0 0-8z" fill="#FDB817"/>
-      <g fill="#FCDE09">
+      <g fill="#C2410C">
         <path d="M19 48a1 1 0 0 1 -1 1h-8.24a22.35 22.35 0 0 1 -1.39-2h9.63a1 1 0 0 1 1 1z"/>
         <path d="M18 33h-4a1 1 0 0 1 0-2h4a1 1 0 0 1 0 2z"/>
         <path d="M11 32a1 1 0 0 1 -1 1h-5.97c-.02-.33-.03-.66-.03-1s.01-.67.03-1h5.97a1 1 0 0 1 1 1z"/>

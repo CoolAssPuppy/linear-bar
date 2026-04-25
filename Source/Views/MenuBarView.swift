@@ -41,7 +41,7 @@ struct MenuBarView: View {
 
             ToastOverlay()
         }
-        .frame(width: 440, height: 540)
+        .frame(width: 470, height: 540)
         .background(theme.background)
         .environment(\.theme, theme)
         .environment(\.colorScheme, theme.isDark ? .dark : .light)

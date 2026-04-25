@@ -43,7 +43,9 @@ enum LinearGQL {
 
     /// Fields selected on `Project` for Recent / Search surfaces.
     /// `state` drives the Show-completed/canceled filter; `lead { name }`
-    /// drives the trailing initials column. `icon`, `progress`, and
+    /// drives the trailing initials column. `teams { nodes { id } }`
+    /// powers team-scope filtering — a project surfaces under a team
+    /// scope only if it belongs to that team. `icon`, `progress`, and
     /// `targetDate` have no readers today.
     static let projectFields = """
     id
@@ -52,15 +54,21 @@ enum LinearGQL {
     updatedAt
     state
     lead { name }
+    teams(first: 50) { nodes { id } }
     """
 
     /// Fields selected on `Initiative` for Recent / Search surfaces.
     /// `status` drives the Show-completed/canceled filter.
+    /// `projects { nodes { teams { nodes { id } } } }` lets us derive the
+    /// set of teams an initiative spans (initiatives don't own teams
+    /// directly in Linear) so team-scope filtering can include or hide
+    /// the initiative based on the active scope.
     static let initiativeFields = """
     id
     name
     url
     updatedAt
     status
+    projects(first: 50) { nodes { teams(first: 50) { nodes { id } } } }
     """
 }

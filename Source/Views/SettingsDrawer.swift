@@ -61,7 +61,9 @@ struct SettingsDrawer: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 12) {
+            CheckmarkBrandMark(size: 32, glyphSize: 18)
+
             VStack(alignment: .leading, spacing: 2) {
                 Text("Settings")
                     .font(.system(size: 18, weight: .semibold))

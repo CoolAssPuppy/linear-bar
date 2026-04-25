@@ -40,6 +40,8 @@ struct PulseSparkline: View {
         .frame(height: Self.chartHeight)
     }
 
+    private var colors: PulseChartColors { PulseChartColors.forTheme(isDark: theme.isDark) }
+
     /// Stacks issue → project → initiative bottom-up so the densest
     /// category (issues) anchors the bar and lighter activity layers
     /// read on top.
@@ -50,9 +52,9 @@ struct PulseSparkline: View {
         let initiativeHeight = CGFloat(bucket.initiatives) * scale
 
         return VStack(spacing: 0) {
-            segment(height: initiativeHeight, color: theme.warning, width: width, isTop: true)
-            segment(height: projectHeight, color: theme.primary, width: width, isTop: initiativeHeight == 0)
-            segment(height: issueHeight, color: theme.success, width: width, isTop: initiativeHeight + projectHeight == 0)
+            segment(height: initiativeHeight, color: colors.initiatives, width: width, isTop: true)
+            segment(height: projectHeight, color: colors.projects, width: width, isTop: initiativeHeight == 0)
+            segment(height: issueHeight, color: colors.issues, width: width, isTop: initiativeHeight + projectHeight == 0)
 
             // Empty days still show a faint baseline tick so the X axis
             // reads as continuous time rather than missing days.
@@ -82,9 +84,9 @@ struct PulseSparkline: View {
 
     private var legend: some View {
         HStack(spacing: 14) {
-            legendItem(color: theme.success, label: "Issues")
-            legendItem(color: theme.primary, label: "Projects")
-            legendItem(color: theme.warning, label: "Initiatives")
+            legendItem(color: colors.issues, label: "Issues")
+            legendItem(color: colors.projects, label: "Projects")
+            legendItem(color: colors.initiatives, label: "Initiatives")
             Spacer(minLength: 0)
         }
     }
@@ -98,6 +100,33 @@ struct PulseSparkline: View {
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(theme.muted)
         }
+    }
+}
+
+/// Categorical chart palette for the Pulse stacked bars. Independent of
+/// the theme accent so issues / projects / initiatives stay visually
+/// distinct regardless of which palette is active. Tuned per mode:
+/// saturated mid-tones on light, brighter tints on dark, so each
+/// category pops against any of the configured backgrounds.
+private struct PulseChartColors {
+    let issues: Color
+    let projects: Color
+    let initiatives: Color
+
+    static let light = PulseChartColors(
+        issues:      Color(red: 0x25/255, green: 0x63/255, blue: 0xEB/255),
+        projects:    Color(red: 0xEA/255, green: 0x58/255, blue: 0x0C/255),
+        initiatives: Color(red: 0x05/255, green: 0x96/255, blue: 0x69/255)
+    )
+
+    static let dark = PulseChartColors(
+        issues:      Color(red: 0x60/255, green: 0xA5/255, blue: 0xFA/255),
+        projects:    Color(red: 0xFB/255, green: 0x92/255, blue: 0x3C/255),
+        initiatives: Color(red: 0x34/255, green: 0xD3/255, blue: 0x99/255)
+    )
+
+    static func forTheme(isDark: Bool) -> PulseChartColors {
+        isDark ? .dark : .light
     }
 }
 

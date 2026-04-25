@@ -1,13 +1,16 @@
 import SwiftUI
 import AppKit
 
-/// Monospaced Linear issue identifier (e.g. `DEBR-265`) with a
-/// hover-revealed "copy link" affordance. Hovering the identifier
-/// itself (not the whole row) floats a small link glyph at the
-/// trailing edge, z-indexed above the text, so the column width
-/// never reflows. Clicking the glyph copies the issue URL to the
-/// pasteboard and pops a "Link copied!" toast — without bubbling to
-/// the outer row's open-in-Linear action.
+/// Monospaced Linear issue identifier (e.g. `DEBR-265`). By default
+/// renders just the label — column-aligned list rows surface the copy
+/// affordance via a separate `RowCopyLinkButton` column, which keeps
+/// the column widths stable and stops the icon from overlaying the
+/// identifier text.
+///
+/// `showsCopyButton: true` opts back into the legacy hover-revealed
+/// copy overlay. Used by Inbox's inline metadata line, where the
+/// identifier sits in a wrapping HStack rather than a fixed column
+/// and a separate copy column would feel out of place.
 struct IssueIdentifierLabel: View {
     let identifier: String
     let url: String?
@@ -16,32 +19,47 @@ struct IssueIdentifierLabel: View {
     /// label sizes to its content (used by InboxView's wrapping
     /// metadata line).
     let width: CGFloat?
+    /// Floats a small "copy link" glyph at the trailing edge while the
+    /// identifier is hovered. Off by default — column rows handle copy
+    /// with `RowCopyLinkButton` instead.
+    let showsCopyButton: Bool
 
     @Environment(\.theme) private var theme
     @State private var isHovered = false
     @State private var iconHovered = false
 
-    init(identifier: String, url: String?, width: CGFloat? = 70) {
+    init(identifier: String,
+         url: String? = nil,
+         width: CGFloat? = 70,
+         showsCopyButton: Bool = false) {
         self.identifier = identifier
         self.url = url
         self.width = width
+        self.showsCopyButton = showsCopyButton
     }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            Text(identifier)
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundStyle(theme.primary)
-                .frame(width: width, alignment: .leading)
-
-            if isHovered, url != nil {
-                copyButton
-                    .transition(.opacity)
+        if showsCopyButton {
+            ZStack(alignment: .trailing) {
+                label
+                if isHovered, url != nil {
+                    copyButton
+                        .transition(.opacity)
+                }
             }
+            .contentShape(Rectangle())
+            .onHover { isHovered = $0 }
+            .animation(.easeOut(duration: 0.12), value: isHovered)
+        } else {
+            label
         }
-        .contentShape(Rectangle())
-        .onHover { isHovered = $0 }
-        .animation(.easeOut(duration: 0.12), value: isHovered)
+    }
+
+    private var label: some View {
+        Text(identifier)
+            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            .foregroundStyle(theme.primary)
+            .frame(width: width, alignment: .leading)
     }
 
     private var copyButton: some View {
