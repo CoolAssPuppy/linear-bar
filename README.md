@@ -223,9 +223,9 @@ Contributions welcome! Please:
 
 ## License
 
-Custom Open Source License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the Mozilla Public License 2.0. See [LICENSE](LICENSE) for details.
 
-**TL;DR**: You can fork and customize for personal use, but you cannot distribute through the App Store without permission. This protects the official Menu Bar for Linear while keeping the code open for learning and personal projects.
+Copyright © 2026 Strategic Nerds, Inc.
 
 ## Credits
 
