@@ -82,7 +82,7 @@ class LinearAuthService: NSObject {
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
-            URLQueryItem(name: "scope", value: "read,write"),
+            URLQueryItem(name: "scope", value: "read"),
             URLQueryItem(name: "state", value: state)
         ]
 
