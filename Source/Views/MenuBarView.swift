@@ -47,10 +47,10 @@ struct MenuBarView: View {
         .environment(\.colorScheme, theme.isDark ? .dark : .light)
         .onAppear {
             loadDefaultTab()
-            Telemetry.capture("tab.viewed", properties: ["tab": selectedTab.rawValue])
+            Telemetry.capture(.tabViewed, properties: ["tab": selectedTab.rawValue])
         }
         .onChange(of: selectedTab) { _, newValue in
-            Telemetry.capture("tab.viewed", properties: ["tab": newValue.rawValue])
+            Telemetry.capture(.tabViewed, properties: ["tab": newValue.rawValue])
         }
         .onReceive(NotificationCenter.default.publisher(for: .refreshAllData)) { _ in
             lastRefreshedAt = Date()

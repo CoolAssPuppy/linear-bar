@@ -184,7 +184,7 @@ class LinearAuthService: NSObject {
               let returnedState = returnedState,
               returnedState == expected else {
             AppLogger.error("OAuth state mismatch or missing; rejecting callback", log: AppLogger.auth)
-            Telemetry.capture("account.signin_failed", properties: ["reason": "oauth_state"])
+            Telemetry.capture(.accountSigninFailed, properties: ["reason": "oauth_state"])
             completion(.failure(NSError(domain: "LinearAuthService", code: -3, userInfo: [NSLocalizedDescriptionKey: "OAuth state verification failed"])))
             return
         }
@@ -251,17 +251,17 @@ class LinearAuthService: NSObject {
                         }
 
                         AppLogger.privateInfo("Successfully authenticated and saved credentials for \(viewer.email)", log: AppLogger.auth)
-                        Telemetry.capture("account.added")
+                        Telemetry.capture(.accountAdded)
                         completion(.success(account))
 
                     } catch {
                         AppLogger.error("Error fetching user information", log: AppLogger.auth, error: error)
-                        Telemetry.capture("account.signin_failed", properties: ["reason": "viewer_fetch"])
+                        Telemetry.capture(.accountSigninFailed, properties: ["reason": "viewer_fetch"])
                         completion(.failure(error))
                     }
 
                 case .failure(let error):
-                    Telemetry.capture("account.signin_failed", properties: ["reason": Self.reasonTag(for: error)])
+                    Telemetry.capture(.accountSigninFailed, properties: ["reason": Self.reasonTag(for: error)])
                     completion(.failure(error))
                 }
             }

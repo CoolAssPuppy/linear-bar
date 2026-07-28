@@ -32,7 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popoverManager.setup()
         NSApp.setActivationPolicy(.accessory)
 
-        Telemetry.capture("app.launched")
+        Telemetry.capture(.appLaunched)
         reportUpdateInstalledIfNeeded()
 
         tokenScheduler.onValidationComplete = { [weak self] in
@@ -192,7 +192,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popoverManager.close()
         } else if let button = menuBarManager.statusItem?.button {
             popoverManager.show(relativeTo: button)
-            Telemetry.capture("menu.opened")
+            Telemetry.capture(.menuOpened)
         }
     }
 
@@ -209,7 +209,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         defaults.set(current, forKey: key)
 
         guard let previous, !previous.isEmpty, previous != current else { return }
-        Telemetry.capture("update.installed", properties: ["from": previous, "to": current])
+        Telemetry.capture(.updateInstalled, properties: ["from": previous, "to": current])
     }
 
     // MARK: - Main window + Settings drawer
