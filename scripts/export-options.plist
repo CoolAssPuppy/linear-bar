@@ -6,8 +6,28 @@
     <string>developer-id</string>
     <key>teamID</key>
     <string>955GSY56UT</string>
+    <!--
+    Manual, not automatic. Automatic signing only considers Xcode-managed
+    profiles, and it can only refresh them when Xcode has an Apple ID signed
+    in under Settings > Accounts. This machine does not, so export failed with
+    "No Accounts" once the Developer ID certificate was reissued in April 2026
+    and the cached Xcode-managed profile went stale.
+
+    "LinearBar Developer ID 2026" is a Developer ID profile created directly
+    against the App Store Connect API, carrying the current certificate and
+    the iCloud KVS entitlement the app needs. If you later sign Xcode into the
+    Apple ID for team 955GSY56UT, you can drop the three keys below and go
+    back to automatic.
+    -->
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>Developer ID Application</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.strategicnerds.LinearBarApp</key>
+        <string>LinearBar Developer ID 2026</string>
+    </dict>
     <key>uploadSymbols</key>
     <false/>
     <key>destination</key>

@@ -26,7 +26,13 @@ VERSION="${2:?Usage: $0 <path-to-Linear-Bar.app> <version> <notarytool-profile>}
 NOTARY_PROFILE="${3:?Usage: $0 <path-to-Linear-Bar.app> <version> <notarytool-profile>}"
 
 SIGN_UPDATE="${SPARKLE_SIGN_UPDATE:-$HOME/bin/sparkle/sign_update}"
-SPARKLE_KEY_ACCOUNT="${SPARKLE_KEY_ACCOUNT:-com.strategicnerds.LinearBarApp}"
+# Linear Bar and Mail Notifier share one Sparkle EdDSA key pair, and the
+# keychain item holding it is named for Mail Notifier. Linear Bar's
+# SUPublicEDKey (pySvjKDODAzK9Eiao1Cxni5AW6+rlLGUFOWAnaoAlfw=) is that pair's
+# public half, so this is the only key that produces updates existing installs
+# will accept. There is no keychain item under com.strategicnerds.LinearBarApp;
+# the old default here silently pointed at nothing.
+SPARKLE_KEY_ACCOUNT="${SPARKLE_KEY_ACCOUNT:-com.strategicnerds.MailNotifierApp}"
 
 BACKGROUND="$REPO_ROOT/dmg-assets/background.tiff"
 VOLUME_ICON="$REPO_ROOT/dmg-assets/VolumeIcon.icns"
