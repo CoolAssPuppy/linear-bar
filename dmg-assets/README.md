@@ -1,6 +1,6 @@
 # DMG assets
 
-The release flow builds a styled DMG via `create-dmg`. It expects two files in this folder:
+The release flow builds a styled DMG via `dmgbuild`. It expects two files in this folder:
 
 - **`background.tiff`** — the DMG window background. Required. Created by combining the 1x and 2x PNGs:
   ```bash

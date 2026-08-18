@@ -3,11 +3,19 @@
 ## Release 2.2.10
 
 - [x] Review the final diff for credentials and generated files.
-- [ ] Commit the completed fixes on a release branch.
-- [ ] Merge the release branch into main.
-- [ ] Run the signed and notarized 2.2.10 release with “Bug fixes”.
-- [ ] Verify the live DMG and Sparkle feed.
-- [ ] Commit the version and appcast changes.
+- [x] Commit the completed fixes on a release branch.
+- [x] Merge the release branch into main.
+- [x] Run the signed and notarized 2.2.10 release with “Bug fixes”.
+- [x] Verify the live DMG and Sparkle feed.
+- [x] Commit the version and appcast changes.
+
+## Corrected DMG release
+
+- [x] Replace Finder automation with a pinned Finder-free DMG builder.
+- [x] Verify the standard background and Finder layout before upload.
+- [x] Release 2.2.11 as build 30 with “Bug fixes”.
+- [x] Verify the live DMG and Sparkle feed.
+- [x] Commit the corrected release files on main.
 
 ## Inbox notification links
 

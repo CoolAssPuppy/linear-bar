@@ -14,7 +14,7 @@
 # Prerequisites:
 #   - notarytool keychain profile "agent-server" (see SPARKLE.md)
 #   - Sparkle sign_update at ~/bin/sparkle/sign_update
-#   - create-dmg installed (brew install create-dmg)
+#   - dmgbuild 1.6.7 installed (uv tool install dmgbuild==1.6.7)
 #   - doppler CLI logged in with access to the agent-server/prd config
 #     (provides CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, R2_BUCKET_NAME, R2_PUBLIC_BASE_URL)
 #   - wrangler available (npm i -g wrangler) or npx on PATH
@@ -55,7 +55,7 @@ fi
 #----------------------------------------------------------------------
 # Preflight
 #----------------------------------------------------------------------
-for tool in xcodebuild xcodegen create-dmg doppler python3 "$SPARKLE_SIGN_UPDATE"; do
+for tool in xcodebuild xcodegen dmgbuild doppler python3 "$SPARKLE_SIGN_UPDATE"; do
   if ! command -v "$tool" >/dev/null 2>&1 && [ ! -x "$tool" ]; then
     echo "Error: required tool not found: $tool"
     exit 1

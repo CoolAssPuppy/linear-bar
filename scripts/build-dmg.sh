@@ -5,7 +5,7 @@
 # Prerequisites:
 #   1. Xcode Archive + Developer ID export of "Linear Bar.app" (the .app
 #      must already be signed with Developer ID and notarized+stapled).
-#   2. `brew install create-dmg`
+#   2. `uv tool install dmgbuild==1.6.7`
 #   3. Background TIFF at dmg-assets/background.tiff (see dmg-assets/README.md).
 #   4. A `notarytool` keychain profile stored via:
 #        xcrun notarytool store-credentials <profile-name> --apple-id ... --team-id ... --password ...
@@ -21,6 +21,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPTS="$REPO_ROOT/scripts"
 APP_PATH="${1:?Usage: $0 <path-to-Linear-Bar.app> <version> <notarytool-profile>}"
 VERSION="${2:?Usage: $0 <path-to-Linear-Bar.app> <version> <notarytool-profile>}"
 NOTARY_PROFILE="${3:?Usage: $0 <path-to-Linear-Bar.app> <version> <notarytool-profile>}"
@@ -49,8 +50,8 @@ if [[ ! -f "$BACKGROUND" ]]; then
   exit 1
 fi
 
-if ! command -v create-dmg >/dev/null 2>&1; then
-  echo "Error: create-dmg not installed. Run: brew install create-dmg"
+if ! command -v dmgbuild >/dev/null 2>&1; then
+  echo "Error: dmgbuild not installed. Run: uv tool install dmgbuild==1.6.7"
   exit 1
 fi
 
@@ -69,28 +70,34 @@ echo "  Background: $BACKGROUND"
 echo "  Output:     $DMG_OUT"
 echo ""
 
-# Window is 600x400 (matches dmg-assets/background art at 600x400 @1x,
-# 1200x800 @2x). Icon centers are placed over the staggered tile
-# illustrations in the background — update both together if the art changes.
-VOLICON_ARGS=()
-if [[ -f "$VOLUME_ICON" ]]; then
-  VOLICON_ARGS=(--volicon "$VOLUME_ICON")
-fi
+# dmgbuild writes the Finder layout directly into .DS_Store. This keeps the
+# standard background and icon positions without Apple Events permission.
+dmgbuild \
+  -s "$SCRIPTS/dmg-settings.py" \
+  -D app="$APP_PATH" \
+  -D background="$BACKGROUND" \
+  -D volume_icon="$VOLUME_ICON" \
+  "Linear Bar" \
+  "$DMG_OUT"
 
-create-dmg \
-  --volname "Linear Bar" \
-  "${VOLICON_ARGS[@]}" \
-  --background "$BACKGROUND" \
-  --window-pos 200 120 \
-  --window-size 600 400 \
-  --icon-size 96 \
-  --icon "Linear Bar.app" 378 164 \
-  --app-drop-link 530 216 \
-  --hide-extension "Linear Bar.app" \
-  --no-internet-enable \
-  --hdiutil-quiet \
-  "$DMG_OUT" \
-  "$APP_PATH"
+VERIFY_MOUNT=$(mktemp -d)
+cleanup_mount() {
+  hdiutil detach "$VERIFY_MOUNT" -quiet 2>/dev/null || true
+  rmdir "$VERIFY_MOUNT" 2>/dev/null || true
+}
+trap cleanup_mount EXIT
+
+echo "Verifying DMG contents and Finder layout..."
+hdiutil attach "$DMG_OUT" -readonly -nobrowse -mountpoint "$VERIFY_MOUNT" -quiet
+[[ -d "$VERIFY_MOUNT/Linear Bar.app" ]]
+[[ -L "$VERIFY_MOUNT/Applications" ]]
+[[ -f "$VERIFY_MOUNT/.DS_Store" ]]
+BACKGROUND_NAME=".$(basename "$BACKGROUND")"
+[[ -f "$VERIFY_MOUNT/$BACKGROUND_NAME" ]]
+cmp -s "$BACKGROUND" "$VERIFY_MOUNT/$BACKGROUND_NAME"
+strings "$VERIFY_MOUNT/.DS_Store" | grep -Fq "$BACKGROUND_NAME"
+cleanup_mount
+trap - EXIT
 
 echo ""
 echo "DMG built: $DMG_OUT"
