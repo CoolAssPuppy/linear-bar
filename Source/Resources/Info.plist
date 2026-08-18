@@ -28,8 +28,6 @@
 	<string>public.app-category.developer-tools</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>${MACOSX_DEPLOYMENT_TARGET}</string>
-	<key>LSMultipleInstancesProhibited</key>
-	<true/>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
@@ -43,6 +41,8 @@
 	<key>SUPublicEDKey</key>
 	<string>pySvjKDODAzK9Eiao1Cxni5AW6+rlLGUFOWAnaoAlfw=</string>
 	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUScheduledCheckInterval</key>
 	<integer>86400</integer>

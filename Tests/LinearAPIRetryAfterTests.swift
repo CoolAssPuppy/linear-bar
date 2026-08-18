@@ -31,6 +31,20 @@ final class LinearAPIRetryAfterTests: XCTestCase {
         XCTAssertNil(LinearAPI.retryAfterDelay(from: invalid))
     }
 
+    func testGraphQLErrorRecognizesLinearRateLimitCode() throws {
+        let payload = #"{"message":"Rate limit exceeded","extensions":{"code":"RATELIMITED"}}"#
+        let error = try JSONDecoder().decode(GraphQLError.self, from: Data(payload.utf8))
+
+        XCTAssertTrue(error.isRateLimited)
+    }
+
+    func testGraphQLErrorWithoutRateLimitCodeIsNotRateLimited() throws {
+        let payload = #"{"message":"Invalid input","extensions":{"code":"INPUT_ERROR"}}"#
+        let error = try JSONDecoder().decode(GraphQLError.self, from: Data(payload.utf8))
+
+        XCTAssertFalse(error.isRateLimited)
+    }
+
     private func makeResponse(headers: [String: String]) throws -> HTTPURLResponse {
         guard let response = HTTPURLResponse(
             url: SafeExternalURL.mustParse("https://api.linear.app/graphql"),

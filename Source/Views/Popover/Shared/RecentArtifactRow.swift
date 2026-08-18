@@ -1,8 +1,5 @@
 import SwiftUI
 
-/// Single row used by the Recent tab. Accepts any of the three Linear
-/// artifact types and routes the leading glyph accordingly — state circle
-/// for issues, colored square for projects, outlined diamond for initiatives.
 struct RecentArtifactRow: View {
     let item: RecentArtifact
 
@@ -12,11 +9,8 @@ struct RecentArtifactRow: View {
     var body: some View {
         Button(action: openInLinear) {
             HStack(spacing: 10) {
-                leadingGlyph
-                    .frame(width: 14, alignment: .center)
-
+                leadingGlyph.frame(width: 14, alignment: .center)
                 IssueIdentifierLabel(identifier: leadingLabel)
-                RowCopyLinkButton(url: item.url, label: leadingLabel, isRowHovered: isHovered)
 
                 Text(item.title)
                     .font(.system(size: 12, weight: .medium))
@@ -25,7 +19,12 @@ struct RecentArtifactRow: View {
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                trailing
+                if let updatedAt = item.updatedAt {
+                    Text(RelativeTimeFormatter.shortLabel(for: updatedAt))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(theme.tertiary)
+                        .fixedSize()
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
@@ -34,6 +33,9 @@ struct RecentArtifactRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .contextMenu {
+            Button("Copy link") { NSPasteboard.copyString(item.url) }
+        }
     }
 
     @ViewBuilder
@@ -56,28 +58,11 @@ struct RecentArtifactRow: View {
         }
     }
 
-    private var trailing: some View {
-        HStack(spacing: 5) {
-            Text(actorInitials)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(theme.muted)
-            Text(RelativeTimeFormatter.shortLabel(for: item.updatedAt ?? Date()))
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(theme.tertiary)
-        }
-        .fixedSize()
-    }
-
-    private var actorInitials: String {
-        PersonName.initials(from: item.leadLabel)
-    }
-
     private func openInLinear() {
         _ = SafeExternalURL.openLinearURL(from: item.url)
     }
 }
 
-/// Tagged union covering the three artifact types the Recent tab mixes.
 enum RecentArtifact: Identifiable {
     case issue(Issue)
     case project(Project)
@@ -115,20 +100,6 @@ enum RecentArtifact: Identifiable {
         }
     }
 
-    /// Used for the trailing initials column. Issues surface their
-    /// assignee; projects and initiatives surface their lead.
-    var leadLabel: String? {
-        switch self {
-        case .issue(let issue):           return issue.assignee?.name
-        case .project(let project):       return project.lead?.name
-        case .initiative:                 return nil
-        }
-    }
-
-    /// Team scoping. Issues carry a single team id; projects can span
-    /// multiple teams; initiatives derive their teams from the projects
-    /// they group. The artifact matches a scope if the scope's team id
-    /// appears anywhere in that surface area.
     func matches(teamId: String) -> Bool {
         switch self {
         case .issue(let issue):           return issue.team?.id == teamId

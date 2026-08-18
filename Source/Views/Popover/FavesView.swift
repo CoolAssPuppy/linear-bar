@@ -176,8 +176,6 @@ private struct FavoriteRow: View {
                     IssueIdentifierLabel(identifier: "FAV")
                 }
 
-                RowCopyLinkButton(url: url, label: copyLabel, isRowHovered: isHovered)
-
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(theme.foreground)
@@ -199,6 +197,11 @@ private struct FavoriteRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .contextMenu {
+            if let url {
+                Button("Copy link") { NSPasteboard.copyString(url) }
+            }
+        }
     }
 
     @ViewBuilder
@@ -219,13 +222,6 @@ private struct FavoriteRow: View {
             ?? favorite.project?.name
             ?? favorite.customView?.name
             ?? ""
-    }
-
-    /// Tooltip label for the copy-link button. Issues read better as
-    /// their identifier ("DEBR-145"); projects/views/folders fall back
-    /// to their display name.
-    private var copyLabel: String {
-        favorite.issue?.identifier ?? title
     }
 
     private var url: String? {

@@ -7,7 +7,6 @@ extension AppSettings {
     /// is off so the user can keep settings device-local if they want.
     static let iCloudPreferenceKeys = [
         "refreshInterval",
-        "launchAtLogin",
         "defaultTab",
         "showCompletedItems",
         "showCanceledItems",
@@ -132,9 +131,6 @@ extension AppSettings {
         if keys.contains("refreshInterval") {
             let raw = UserDefaults.standard.string(forKey: "refreshInterval") ?? RefreshInterval.fifteenMinutes.rawValue
             refreshInterval = RefreshInterval(rawValue: raw) ?? .fifteenMinutes
-        }
-        if keys.contains("launchAtLogin") {
-            launchAtLogin = UserDefaults.standard.bool(forKey: "launchAtLogin")
         }
         if keys.contains("defaultTab") {
             let raw = UserDefaults.standard.string(forKey: "defaultTab") ?? DefaultTab.inbox.rawValue

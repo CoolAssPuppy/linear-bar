@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import KeyboardShortcuts
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -26,10 +27,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        setupCrashHandling()
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return
+        }
+
+        LoginItemController.migrateLegacyPreference()
         Telemetry.setup()
         menuBarManager.setup(target: self, action: #selector(menuBarButtonClicked))
         popoverManager.setup()
+        KeyboardShortcuts.onKeyUp(for: .toggleLinearBar) { [weak self] in
+            Task { @MainActor in self?.menuBarButtonClicked() }
+        }
         NSApp.setActivationPolicy(.accessory)
 
         Telemetry.capture(.appLaunched)
@@ -122,57 +130,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         // swiftlint:disable:next notification_center_detachment
         NotificationCenter.default.removeObserver(self)
-    }
-
-    // MARK: - Crash Handling
-
-    private func setupCrashHandling() {
-        NSSetUncaughtExceptionHandler { exception in
-            // NSSetUncaughtExceptionHandler runs on a regular thread (not
-            // inside a signal handler), so OSLog is safe to call here.
-            AppLogger.fault("Uncaught exception: \(exception.name.rawValue) - \(exception.reason ?? "unknown")")
-            AppLogger.fault("Stack trace: \(exception.callStackSymbols.joined(separator: "\n"))")
-        }
-
-        // Raw POSIX signal handlers run in async-signal context: almost no
-        // Foundation/OSLog APIs are safe to call from here because they can
-        // malloc, take locks, or call back into the signalled thread and
-        // deadlock. Instead, write a short marker to a fixed path using only
-        // async-signal-safe syscalls (open/write/close), then re-raise the
-        // default handler so the process still dumps and terminates.
-        signal(SIGABRT, AppDelegate.handleFatalSignal)
-        signal(SIGSEGV, AppDelegate.handleFatalSignal)
-    }
-
-    /// C function pointer handler (must be @convention(c), no captures).
-    /// Must only call async-signal-safe functions. See sigaction(2) on macOS:
-    /// https://man7.org/linux/man-pages/man7/signal-safety.7.html — on Darwin,
-    /// open(2), write(2), close(2), signal(2) and raise(3) are safe.
-    /// OSLog is NOT safe (it can allocate and take locks).
-    private static let handleFatalSignal: @convention(c) (Int32) -> Void = { signalNumber in
-        // String literals passed to C functions as `UnsafePointer<CChar>` are
-        // null-terminated automatically by the Swift compiler, which makes this
-        // the simplest safe way to call open(2) from a signal handler.
-        let fd = open("/tmp/linearbar-last-crash", O_WRONLY | O_CREAT | O_TRUNC, 0o644)
-        if fd >= 0 {
-            let message: StaticString
-            switch signalNumber {
-            case SIGABRT: message = "linearbar-crash-SIGABRT\n"
-            case SIGSEGV: message = "linearbar-crash-SIGSEGV\n"
-            default:      message = "linearbar-crash-UNKNOWN\n"
-            }
-            message.withUTF8Buffer { buf in
-                if let base = buf.baseAddress {
-                    _ = write(fd, base, buf.count)
-                }
-            }
-            _ = close(fd)
-        }
-
-        // Re-raise with the default handler so the process terminates and the
-        // OS can still produce a crash report.
-        signal(signalNumber, SIG_DFL)
-        raise(signalNumber)
     }
 
     @objc private func handleWake(_ notification: Notification) {

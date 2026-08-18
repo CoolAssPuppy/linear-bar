@@ -1,6 +1,8 @@
 # Linear Bar 2.0 handoff
 
-Pick up here. Everything below is current as of the last commit on `newui`.
+> Historical document. The current implementation, verification results, and remaining work are documented in `README.md`, `TECH_DEBT_AUDIT.md`, and `tasks/todo.md`.
+
+This file records an older `newui` snapshot. Do not use it as the current work list.
 
 ## Where we are
 

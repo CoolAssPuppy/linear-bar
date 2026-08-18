@@ -39,6 +39,9 @@ extension LinearAPI {
               readAt
               archivedAt
               snoozedUntilAt
+              title
+              subtitle
+              url
               actor {
                 id
                 name

@@ -9,33 +9,39 @@ import XCTest
 @MainActor
 final class MenuBarManagerTests: XCTestCase {
 
-    override func setUp() async throws {
-        try await super.setUp()
-        // Tests read `AppSettings.shared.accounts` to check auth state;
-        // reset it to empty so "needsAuth" only fires when we set it.
-        AppSettings.shared.accounts = []
-    }
-
     func testResolvesQuietByDefault() {
-        let manager = MenuBarManager()
+        let manager = makeManager()
         XCTAssertEqual(manager.currentState(), .quiet)
     }
 
     func testUnreadOverridesQuiet() {
-        let manager = MenuBarManager()
+        let manager = makeManager()
         manager.unreadCount = 5
         XCTAssertEqual(manager.currentState(), .unread(count: 5))
     }
 
+    func testUnreadSettingCanHideTheCount() {
+        let suiteName = "MenuBarManagerTests.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            XCTFail("Could not create test preferences")
+            return
+        }
+        defaults.set(false, forKey: "showUnreadCount")
+        let manager = MenuBarManager(defaults: defaults, hasAuthIssues: { false })
+        manager.unreadCount = 5
+
+        XCTAssertEqual(manager.currentState(), .quiet)
+    }
+
     func testUrgentWinsOverUnread() {
-        let manager = MenuBarManager()
+        let manager = makeManager()
         manager.unreadCount = 5
         manager.hasUrgentAlerts = true
         XCTAssertEqual(manager.currentState(), .urgent(count: 5))
     }
 
     func testSyncingWinsOverUrgent() {
-        let manager = MenuBarManager()
+        let manager = makeManager()
         manager.unreadCount = 5
         manager.hasUrgentAlerts = true
         manager.isSyncing = true
@@ -43,11 +49,15 @@ final class MenuBarManagerTests: XCTestCase {
     }
 
     func testOfflineWinsOverEverything() {
-        let manager = MenuBarManager()
+        let manager = makeManager()
         manager.unreadCount = 5
         manager.hasUrgentAlerts = true
         manager.isSyncing = true
         manager.isOffline = true
         XCTAssertEqual(manager.currentState(), .offline)
+    }
+
+    private func makeManager() -> MenuBarManager {
+        MenuBarManager(defaults: .standard, hasAuthIssues: { false })
     }
 }

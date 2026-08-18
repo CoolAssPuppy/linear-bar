@@ -2,19 +2,11 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Fetches issues the viewer has touched recently — assigned plus created.
-    /// Used by the Recent tab.
-    ///
-    /// Earlier attempts used a root `issues(filter: { or: [...] })` query to
-    /// merge assignee / creator / subscribers on the server, but the filter
-    /// shape rejected on at least one workspace tested. Issuing the two
-    /// documented per-user connections (`viewer.assignedIssues`,
-    /// `viewer.createdIssues`) in a single GraphQL operation and merging
-    /// client-side is bulletproof and cheap (one request, one response).
-    func fetchTouchedIssues(
+    /// Fetches the issues most recently updated in the current workspace.
+    /// The result is independent of assignment, creation, and subscription.
+    func fetchRecentlyUpdatedIssues(
         accessToken: String,
         accountEmail: String? = nil,
-        since: String = "P2W",
         limit: Int = 50
     ) async throws -> [Issue] {
         if TestDataProvider.isUITesting {
@@ -22,14 +14,9 @@ extension LinearAPI {
         }
 
         let query = """
-        query FetchRecentTouchedIssues($first: Int!) {
-          viewer {
-            assignedIssues(first: $first, orderBy: updatedAt) {
-              nodes { \(LinearGQL.issueCompactFields) }
-            }
-            createdIssues(first: $first, orderBy: updatedAt) {
-              nodes { \(LinearGQL.issueCompactFields) }
-            }
+        query FetchRecentlyUpdatedIssues($first: Int!) {
+          issues(first: $first, orderBy: updatedAt) {
+            nodes { \(LinearGQL.issueCompactFields) }
           }
         }
         """
@@ -37,12 +24,11 @@ extension LinearAPI {
         let variables: [String: Any] = ["first": min(limit, 50)]
 
         struct Response: Decodable {
-            struct ViewerData: Decodable {
-                struct Conn: Decodable { let nodes: [Issue] }
-                let assignedIssues: Conn
-                let createdIssues: Conn
+            struct Connection: Decodable {
+                let nodes: [Issue]
             }
-            let viewer: ViewerData
+
+            let issues: Connection
         }
 
         let response: GraphQLResponse<Response> = try await execute(
@@ -55,16 +41,6 @@ extension LinearAPI {
         guard let data = response.data else {
             throw LinearError.invalidResponse
         }
-
-        // Merge, dedupe on id, keep the most recent version of each issue,
-        // sort by updatedAt.
-        var byId: [String: Issue] = [:]
-        for issue in data.viewer.assignedIssues.nodes + data.viewer.createdIssues.nodes {
-            byId[issue.id] = issue
-        }
-
-        return byId.values.sorted {
-            ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast)
-        }
+        return data.issues.nodes
     }
 }

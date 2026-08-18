@@ -42,7 +42,6 @@ final class UnreadInboxStore: ObservableObject {
     private init() {}
 
     deinit {
-        // swiftlint:disable:next notification_center_detachment
         NotificationCenter.default.removeObserver(self)
     }
 

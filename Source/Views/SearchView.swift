@@ -225,8 +225,6 @@ private struct SearchResultRow: View {
                     Spacer().frame(width: 70)
                 }
 
-                RowCopyLinkButton(url: item.url, label: copyLabel, isRowHovered: isHovered)
-
                 Text(item.title)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(theme.foreground)
@@ -241,11 +239,9 @@ private struct SearchResultRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
-    }
-
-    private var copyLabel: String {
-        if let issue = item as? Issue { return issue.identifier }
-        return item.title
+        .contextMenu {
+            Button("Copy link") { NSPasteboard.copyString(item.url) }
+        }
     }
 
     @ViewBuilder

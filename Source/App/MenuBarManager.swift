@@ -17,6 +17,21 @@ class MenuBarManager {
     /// publisher keeps emitting; cancelled in `applicationWillTerminate` via
     /// `tearDown()`.
     private var unreadCancellable: AnyCancellable?
+    private var settingsCancellable: AnyCancellable?
+    private let defaults: UserDefaults
+    private let hasAuthIssues: () -> Bool
+
+    init() {
+        defaults = .standard
+        hasAuthIssues = {
+            AppSettings.shared.accounts.contains { $0.authStatus != .valid }
+        }
+    }
+
+    init(defaults: UserDefaults, hasAuthIssues: @escaping () -> Bool) {
+        self.defaults = defaults
+        self.hasAuthIssues = hasAuthIssues
+    }
 
     var isSyncing: Bool = false {
         didSet { if isSyncing != oldValue { updateIcon() } }
@@ -52,11 +67,21 @@ class MenuBarManager {
             .sink { [weak self] count in
                 self?.unreadCount = count
             }
+
+        settingsCancellable = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateIcon() }
     }
 
     func tearDown() {
         unreadCancellable?.cancel()
         unreadCancellable = nil
+        settingsCancellable?.cancel()
+        settingsCancellable = nil
+        if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+            self.statusItem = nil
+        }
     }
 
     func updateIcon() {
@@ -88,13 +113,17 @@ class MenuBarManager {
             return .offline
         }
 
-        let hasAuthIssues = AppSettings.shared.accounts.contains { $0.authStatus != .valid }
-        if hasAuthIssues {
+        if hasAuthIssues() {
             return .needsAuth
         }
 
         if isSyncing {
             return .syncing
+        }
+
+        guard defaults.object(forKey: "showUnreadCount") == nil
+                || defaults.bool(forKey: "showUnreadCount") else {
+            return .quiet
         }
 
         if hasUrgentAlerts && unreadCount > 0 {

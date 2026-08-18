@@ -1,7 +1,6 @@
 import Foundation
 import AppKit
 import AuthenticationServices
-import Security
 import os.log
 
 /// Represents a pair of access and refresh tokens
@@ -20,7 +19,6 @@ class LinearAuthService: NSObject {
     // Credentials are stored in LinearAuthSecrets.swift (gitignored)
     // Copy LinearAuthSecrets.swift.template to LinearAuthSecrets.swift and add your credentials
     let clientId = LinearAuthSecrets.clientId
-    let clientSecret = LinearAuthSecrets.clientSecret
     let callbackURLScheme = "linearbar"
     let redirectURI = "linearbar://oauth/callback"
     private let authorizationURL = SafeExternalURL.mustParse("https://linear.app/oauth/authorize")
@@ -34,25 +32,13 @@ class LinearAuthService: NSObject {
     /// there's no race between the callback handler reading it and a
     /// concurrent authorize() overwriting it.
     @MainActor private var pendingAuthState: String?
+    @MainActor private var pendingCodeVerifier: String?
 
     private override init() {
         super.init()
     }
 
     // MARK: - Public Methods
-
-    /// Generates a cryptographically-secure random OAuth state token.
-    /// 32 bytes of entropy, base64url-encoded (no padding). Matches
-    /// what `SecRandomCopyBytes` guarantees: CSPRNG-quality randomness.
-    private static func generateOAuthState() -> String {
-        var bytes = [UInt8](repeating: 0, count: 32)
-        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-        return Data(bytes)
-            .base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
-    }
 
     /// Initiates the OAuth flow using ASWebAuthenticationSession
     @MainActor
@@ -68,10 +54,20 @@ class LinearAuthService: NSObject {
             existing.cancel()
             authSession = nil
             pendingAuthState = nil
+            pendingCodeVerifier = nil
         }
 
-        let state = Self.generateOAuthState()
+        let state: String
+        let codeVerifier: String
+        do {
+            state = try OAuthPKCE.generateState()
+            codeVerifier = try OAuthPKCE.generateVerifier()
+        } catch {
+            completion(.failure(error))
+            return
+        }
         pendingAuthState = state
+        pendingCodeVerifier = codeVerifier
 
         guard var components = URLComponents(url: authorizationURL, resolvingAgainstBaseURL: false) else {
             completion(.failure(NSError(domain: "LinearAuthService", code: -1,
@@ -83,7 +79,9 @@ class LinearAuthService: NSObject {
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "scope", value: "read"),
-            URLQueryItem(name: "state", value: state)
+            URLQueryItem(name: "state", value: state),
+            URLQueryItem(name: "code_challenge", value: OAuthPKCE.challenge(for: codeVerifier)),
+            URLQueryItem(name: "code_challenge_method", value: "S256")
         ]
 
         guard let authURL = components.url else {
@@ -108,6 +106,8 @@ class LinearAuthService: NSObject {
         self.authSession = session
 
         if !session.start() {
+            pendingAuthState = nil
+            pendingCodeVerifier = nil
             AppLogger.error("Failed to start ASWebAuthenticationSession", log: AppLogger.auth)
             completion(.failure(NSError(domain: "LinearAuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to start authentication session"])))
         }
@@ -120,6 +120,10 @@ class LinearAuthService: NSObject {
         completion: @escaping (Result<TokenPair, Error>) -> Void
     ) {
         self.authSession = nil
+        defer {
+            pendingAuthState = nil
+            pendingCodeVerifier = nil
+        }
 
         if let error = error as? ASWebAuthenticationSessionError {
             switch error.code {
@@ -178,22 +182,21 @@ class LinearAuthService: NSObject {
         // the callback did not originate from our own authorize() call.
         let returnedState = queryItems.first(where: { $0.name == "state" })?.value
         let expected = pendingAuthState
-        pendingAuthState = nil
+        let codeVerifier = pendingCodeVerifier
 
         guard let expected = expected,
               let returnedState = returnedState,
-              returnedState == expected else {
+              returnedState == expected,
+              let codeVerifier else {
             AppLogger.error("OAuth state mismatch or missing; rejecting callback", log: AppLogger.auth)
             Telemetry.capture(.accountSigninFailed, properties: ["reason": "oauth_state"])
             completion(.failure(NSError(domain: "LinearAuthService", code: -3, userInfo: [NSLocalizedDescriptionKey: "OAuth state verification failed"])))
             return
         }
 
-        AppLogger.debug("Received authorization code: \(code.prefix(20))...", log: AppLogger.auth)
-
         Task {
             do {
-                let tokenPair = try await exchangeCodeForToken(code: code)
+                let tokenPair = try await exchangeCodeForToken(code: code, codeVerifier: codeVerifier)
                 completion(.success(tokenPair))
             } catch {
                 completion(.failure(error))

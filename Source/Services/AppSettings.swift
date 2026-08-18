@@ -25,12 +25,6 @@ class AppSettings: ObservableObject {
         }
     }
 
-    @Published var launchAtLogin: Bool {
-        didSet {
-            saveSetting(launchAtLogin, forKey: "launchAtLogin")
-        }
-    }
-
     @Published var defaultTab: DefaultTab {
         didSet {
             saveSetting(defaultTab.rawValue, forKey: "defaultTab")
@@ -102,10 +96,6 @@ class AppSettings: ObservableObject {
             ?? UserDefaults.standard.string(forKey: "refreshInterval")
             ?? RefreshInterval.fifteenMinutes.rawValue
         self.refreshInterval = RefreshInterval(rawValue: refreshRaw) ?? .fifteenMinutes
-
-        self.launchAtLogin = iCloudStore.object(forKey: "launchAtLogin") as? Bool
-            ?? UserDefaults.standard.object(forKey: "launchAtLogin") as? Bool
-            ?? false
 
         let defaultTabRaw = iCloudStore.string(forKey: "defaultTab")
             ?? UserDefaults.standard.string(forKey: "defaultTab")
@@ -251,7 +241,6 @@ class AppSettings: ObservableObject {
     /// devices pick up this machine's state immediately.
     func pushAllSettingsToiCloud() {
         iCloudStore.set(refreshInterval.rawValue, forKey: "refreshInterval")
-        iCloudStore.set(launchAtLogin, forKey: "launchAtLogin")
         iCloudStore.set(defaultTab.rawValue, forKey: "defaultTab")
         iCloudStore.set(showCompletedItems, forKey: "showCompletedItems")
         iCloudStore.set(showCanceledItems, forKey: "showCanceledItems")

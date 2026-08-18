@@ -68,6 +68,11 @@ enum PlanetGlyph {
 
     // MARK: - SVG sources
 
+    private static let planetBodyPath =
+        "M49 36a2 2 0 0 1 0-4h11a27.85 27.85 0 0 0 -.3-4h-17.7a2 2 0 0 1 0-4h8a2 2 0 0 0 0-4h-16" +
+        "a2 2 0 0 1 0-4h5a4 4 0 0 1 0-8h7.43a28 28 0 1 0 0 48h-5.43a2 2 0 0 1 0-4h5a2 2 0 0 0 0-4h-12" +
+        "a2 2 0 0 1 0-4h15a4 4 0 0 0 0-8z"
+
     /// Monochrome — only the primary planet body renders. The secondary
     /// paths (back curve and back-ring slivers) are intentionally
     /// omitted so the menu bar silhouette stays crisp; in template mode
@@ -75,7 +80,7 @@ enum PlanetGlyph {
     /// the icon into a featureless blob.
     private static let templateSVG = """
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="black">
-      <path d="M49 36a2 2 0 0 1 0-4h11a27.85 27.85 0 0 0 -.3-4h-17.7a2 2 0 0 1 0-4h8a2 2 0 0 0 0-4h-16a2 2 0 0 1 0-4h5a4 4 0 0 1 0-8h7.43a28 28 0 1 0 0 48h-5.43a2 2 0 0 1 0-4h5a2 2 0 0 0 0-4h-12a2 2 0 0 1 0-4h15a4 4 0 0 0 0-8z"/>
+      <path d="\(planetBodyPath)"/>
     </svg>
     """
 
@@ -87,7 +92,7 @@ enum PlanetGlyph {
     private static let brandedSVG = """
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
       <path d="M32 4a28 28 0 0 1 0 56" fill="#C2410C"/>
-      <path d="M49 36a2 2 0 0 1 0-4h11a27.85 27.85 0 0 0 -.3-4h-17.7a2 2 0 0 1 0-4h8a2 2 0 0 0 0-4h-16a2 2 0 0 1 0-4h5a4 4 0 0 1 0-8h7.43a28 28 0 1 0 0 48h-5.43a2 2 0 0 1 0-4h5a2 2 0 0 0 0-4h-12a2 2 0 0 1 0-4h15a4 4 0 0 0 0-8z" fill="#FDB817"/>
+      <path d="\(planetBodyPath)" fill="#FDB817"/>
       <g fill="#C2410C">
         <path d="M19 48a1 1 0 0 1 -1 1h-8.24a22.35 22.35 0 0 1 -1.39-2h9.63a1 1 0 0 1 1 1z"/>
         <path d="M18 33h-4a1 1 0 0 1 0-2h4a1 1 0 0 1 0 2z"/>

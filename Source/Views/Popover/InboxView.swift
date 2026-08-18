@@ -212,22 +212,15 @@ private struct NotificationRow: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Text(notification.actor?.label ?? "Linear")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(notification.isUrgent ? theme.destructive : theme.foreground)
-                Text(notification.reasonPhrase)
-                    .font(.system(size: 12))
-                    .foregroundStyle(theme.muted)
-                    .lineLimit(1)
-            }
+            Text(notification.presentationTitle)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(notification.isUrgent ? theme.destructive : theme.foreground)
+                .lineLimit(1)
+                .truncationMode(.tail)
 
             HStack(spacing: 6) {
                 if let identifier = notification.issue?.identifier {
-                    IssueIdentifierLabel(identifier: identifier,
-                                         url: notification.issue?.url,
-                                         width: nil,
-                                         showsCopyButton: true)
+                    IssueIdentifierLabel(identifier: identifier, width: nil)
                 } else if let project = notification.project {
                     ProjectGlyph(color: project.color)
                     Text(project.name)
@@ -238,20 +231,13 @@ private struct NotificationRow: View {
                     InitiativeGlyph()
                 }
 
-                Text(targetTitle)
+                Text(notification.presentationSubtitle)
                     .font(.system(size: 11))
                     .foregroundStyle(theme.foregroundSoft)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
         }
-    }
-
-    private var targetTitle: String {
-        notification.issue?.title
-            ?? notification.project?.name
-            ?? notification.document?.title
-            ?? ""
     }
 
     private func projectLabelColor(_ hex: String?) -> Color {

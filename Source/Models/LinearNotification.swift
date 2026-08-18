@@ -23,6 +23,55 @@ struct LinearNotification: Identifiable, Codable, Hashable {
     let project: NotificationProjectTarget?
     let document: NotificationDocumentTarget?
 
+    // Linear supplies these presentation fields on the shared Notification
+    // interface, including notification types without a queryable target object.
+    let title: String?
+    let subtitle: String?
+    let url: String?
+
+    init(
+        id: String,
+        type: String,
+        createdAt: Date?,
+        readAt: Date?,
+        archivedAt: Date?,
+        snoozedUntilAt: Date?,
+        actor: NotificationActor?,
+        issue: NotificationIssueTarget?,
+        project: NotificationProjectTarget?,
+        document: NotificationDocumentTarget?,
+        title: String? = nil,
+        subtitle: String? = nil,
+        url: String? = nil
+    ) {
+        self.id = id
+        self.type = type
+        self.createdAt = createdAt
+        self.readAt = readAt
+        self.archivedAt = archivedAt
+        self.snoozedUntilAt = snoozedUntilAt
+        self.actor = actor
+        self.issue = issue
+        self.project = project
+        self.document = document
+        self.title = title
+        self.subtitle = subtitle
+        self.url = url
+    }
+
+    var presentationTitle: String {
+        nonEmpty(title)
+            ?? nonEmpty(issue?.title)
+            ?? nonEmpty(project?.name)
+            ?? nonEmpty(document?.title)
+            ?? "Linear notification"
+    }
+
+    var presentationSubtitle: String {
+        nonEmpty(subtitle)
+            ?? "\(actor?.label ?? "Linear") \(reasonPhrase)"
+    }
+
     /// Short verb phrase describing the notification reason. Rendered to the
     /// right of the actor's name in the inbox row.
     var reasonPhrase: String {
@@ -65,10 +114,18 @@ struct LinearNotification: Identifiable, Codable, Hashable {
     /// URL to open in Linear when the row is clicked. Falls back to the target
     /// object's URL if the notification itself doesn't expose one.
     var targetURL: URL? {
-        if let urlString = issue?.url ?? project?.url ?? document?.url {
+        if let urlString = url ?? issue?.url ?? project?.url ?? document?.url {
             return SafeExternalURL.linearURL(from: urlString)
         }
         return nil
+    }
+
+    private func nonEmpty(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else {
+            return nil
+        }
+        return value
     }
 }
 

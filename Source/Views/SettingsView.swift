@@ -17,7 +17,7 @@ extension KeyboardShortcuts.Name {
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
     @StateObject private var updater = UpdaterManager.shared
-    @AppStorage("launchAtLogin") private var launchAtLogin = false
+    @StateObject private var loginItem = LoginItemController()
     @AppStorage("showUnreadCount") private var showUnreadCount = true
     @State private var telemetryOptIn: Bool = Telemetry.isOptedIn
 
@@ -53,7 +53,10 @@ struct SettingsView: View {
                     "Launch at login",
                     description: "Start Menu Bar for Linear when you log in."
                 ) {
-                    Toggle("", isOn: $launchAtLogin)
+                    Toggle("", isOn: Binding(
+                        get: { loginItem.isEnabled },
+                        set: { loginItem.setEnabled($0) }
+                    ))
                         .labelsHidden()
                         .toggleStyle(.switch)
                         .controlSize(.small)
@@ -110,8 +113,8 @@ struct SettingsView: View {
                 AppRowDivider().padding(.vertical, 10)
 
                 AppSettingRow(
-                    "Send anonymous usage data",
-                    description: "Help improve Menu Bar for Linear."
+                    "Send anonymous diagnostics",
+                    description: "Share usage events and crash reports. Issue text, URLs, names, and email addresses are excluded."
                 ) {
                     Toggle("", isOn: Binding(
                         get: { telemetryOptIn },
@@ -126,6 +129,17 @@ struct SettingsView: View {
                     .tint(theme.primary)
                 }
             }
+        }
+        .alert(
+            "Launch at Login",
+            isPresented: Binding(
+                get: { loginItem.errorMessage != nil },
+                set: { if !$0 { loginItem.clearError() } }
+            )
+        ) {
+            Button("OK", role: .cancel) { loginItem.clearError() }
+        } message: {
+            Text(loginItem.errorMessage ?? "")
         }
     }
 
@@ -213,7 +227,7 @@ struct SettingsView: View {
                             .foregroundStyle(theme.muted)
                     ),
                     title: "bugs@strategicnerds.com",
-                    url: "mailto:bugs@strategicnerds.com"
+                    url: SafeExternalURL.mustParse("mailto:bugs@strategicnerds.com")
                 )
                 contactRow(
                     iconView: AnyView(
@@ -225,7 +239,7 @@ struct SettingsView: View {
                             .foregroundStyle(theme.muted)
                     ),
                     title: "coolasspuppy/linear-bar",
-                    url: "https://github.com/CoolAssPuppy/linear-bar"
+                    url: SafeExternalURL.mustParse("https://github.com/CoolAssPuppy/linear-bar")
                 )
                 contactRow(
                     iconView: AnyView(
@@ -234,7 +248,7 @@ struct SettingsView: View {
                             .foregroundStyle(theme.muted)
                     ),
                     title: "Buy me coffee",
-                    url: "https://venmo.com/u/coolasspuppy"
+                    url: SafeExternalURL.mustParse("https://venmo.com/u/coolasspuppy")
                 )
                 contactRow(
                     iconView: AnyView(
@@ -243,14 +257,14 @@ struct SettingsView: View {
                             .foregroundStyle(theme.muted)
                     ),
                     title: "Buy my book",
-                    url: "https://www.strategicnerds.com/picksandshovels"
+                    url: SafeExternalURL.mustParse("https://www.strategicnerds.com/picksandshovels")
                 )
             }
         }
     }
 
-    private func contactRow(iconView: AnyView, title: String, url: String) -> some View {
-        Link(destination: URL(string: url)!) {
+    private func contactRow(iconView: AnyView, title: String, url: URL) -> some View {
+        Link(destination: url) {
             HStack(spacing: 8) {
                 iconView
                     .frame(width: 16, alignment: .center)
