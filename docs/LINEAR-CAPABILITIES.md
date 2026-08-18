@@ -2,6 +2,8 @@
 
 A reference and design document for what we can build in a menu bar app, grounded in what the Linear GraphQL API actually exposes. Every field, query, and feature here is checked against the canonical schema at `linear/linear` on GitHub. When the developer docs and the schema disagree, the schema wins.
 
+Correction dated 2026-08-18: the public API has no connection for the private recently viewed list shown in Linear's clients. Assignment, creation, subscription, comments, and notifications can approximate personal activity. Recent uses workspace issues, projects, and initiatives ordered by `updatedAt`.
+
 Endpoint: `https://api.linear.app/graphql`. GraphQL only. No REST.
 
 ## How to read this doc
@@ -182,7 +184,7 @@ Three surfaces give you activity, and they're not interchangeable.
 
 ### Surface 1: The `issues` query with `isMe` filters
 
-For a Recent tab in the spirit of "anything I'm on," this is the cleanest single call:
+For a related-to-me view, this is the cleanest single call:
 
 ```graphql
 query Recent($since: DateTimeOrDuration!) {
@@ -217,7 +219,7 @@ query Recent($since: DateTimeOrDuration!) {
 }
 ```
 
-Pass `"P1W"` for `$since` and the server resolves it for you. This covers your "Recent tab" request directly. Linear auto-subscribes the assignee, creator, and anyone who comments, so in practice the four clauses above capture almost everything you'd call "touched."
+Pass `"P1W"` for `$since` and the server resolves it. Linear auto-subscribes the assignee, creator, and anyone who comments, so the four clauses capture most issues related to the viewer.
 
 ### Surface 2: The `notifications` query
 
@@ -254,11 +256,12 @@ Only useful when you're already on an issue. Not useful for a workspace-wide fee
 
 ### Which to use for Linear Bar
 
-- **"Recent" tab** = surface 1. Answers "what issues have I been near recently."
-- **"Inbox" tab** (new) = surface 2. Answers "what does Linear think I should look at." This is probably more valuable than Recent for day-to-day use.
-- **Menu bar badge** = `notificationsUnreadCount` (one integer, trivial cost).
+- **Recent tab** uses workspace issues, projects, and initiatives ordered by `updatedAt`.
+- **Related activity preset** can use surface 1, with a name that states what it returns.
+- **Inbox tab** uses surface 2.
+- **Menu bar badge** uses `notificationsUnreadCount`.
 
-I'd recommend adding Inbox as a primary tab and keeping Recent as a secondary view.
+The app must not label surface 1 as viewed history. It is a collection of related issues ordered by their latest update.
 
 ## Part D: Metrics that fit in a popover
 
@@ -333,7 +336,7 @@ Exceeding the hourly budget returns HTTP 400 with `extensions.code = "RATELIMITE
 
 **Webhooks.** The supported real-time path. POST to a public HTTPS endpoint with HMAC-SHA256 signature. Requires infrastructure we don't want to run for a desktop app.
 
-**Polling.** What we'll do. `issues(orderBy: updatedAt, filter: { updatedAt: { gt: <lastSync> } })` every 30-60 seconds. `notifications` on the same cadence. Heavy rollups (cycles, projects) on a 5-10 minute timer. Well within rate budget for a single user.
+**Polling.** A desktop-only client cannot receive Linear webhooks without a public service. Poll only while useful, use a five-minute background interval, refresh visible content on demand, and stop work when the app is inactive. Keep cursors and timestamps so each request asks for a small result set.
 
 ### Gotchas
 
@@ -386,7 +389,7 @@ These five are all cheap queries, all fit a 360px-wide popover, and together the
 
 - **Inbox** (new, primary). Notifications. Replaces the current Favorites-first experience.
 - **My Issues** (new). `viewer.assignedIssues` with a small focus-mode toggle.
-- **Recent** (your ask). The four-way `isMe` filter query from Part C, ordered by `updatedAt`.
+- **Recent**. Workspace issues, projects, and initiatives ordered by `updatedAt`, with team, type, and Time filters.
 - **Dashboard** (new). Cycles + project health + milestones + stale projects. Probably collapsible sections.
 - **Search**. Keep the existing `searchIssues` flow. Maybe add `semanticSearch` for a natural-language mode later.
 - **Favorites**. Demote to a settings-level thing or a sidebar. Not a top-level tab.

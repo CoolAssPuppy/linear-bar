@@ -7,6 +7,11 @@ import AppKit
 enum SafeExternalURL {
     private static let linearHosts: Set<String> = ["linear.app", "www.linear.app"]
     private static let allowedSchemes: Set<String> = ["https"]
+    private static let pathSegmentCharacters: CharacterSet = {
+        var characters = CharacterSet.urlPathAllowed
+        characters.remove(charactersIn: "/?#")
+        return characters
+    }()
 
     /// Parses and validates a Linear web URL provided by API payloads.
     static func linearURL(from raw: String) -> URL? {
@@ -28,7 +33,7 @@ enum SafeExternalURL {
     static func linearURL(orgSlug: String, pathComponents: [String]) -> URL? {
         let allComponents = [orgSlug] + pathComponents
         let encodedPath = allComponents
-            .map { $0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "" }
+            .map { $0.addingPercentEncoding(withAllowedCharacters: pathSegmentCharacters) ?? "" }
             .joined(separator: "/")
 
         var components = URLComponents()

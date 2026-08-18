@@ -28,10 +28,11 @@ extension LinearAuthService {
 
 
     /// Exchanges an authorization code for an access token
-    func exchangeCodeForToken(code: String) async throws -> TokenPair {
+    func exchangeCodeForToken(code: String, codeVerifier: String) async throws -> TokenPair {
         let request = buildTokenRequest(grantType: "authorization_code", extraParams: [
             URLQueryItem(name: "code", value: code),
-            URLQueryItem(name: "redirect_uri", value: redirectURI)
+            URLQueryItem(name: "redirect_uri", value: redirectURI),
+            URLQueryItem(name: "code_verifier", value: codeVerifier)
         ])
 
         AppLogger.info("Exchanging code for token...", log: AppLogger.auth)
@@ -111,8 +112,7 @@ extension LinearAuthService {
         var components = URLComponents()
         components.queryItems = [
             URLQueryItem(name: "grant_type", value: grantType),
-            URLQueryItem(name: "client_id", value: clientId),
-            URLQueryItem(name: "client_secret", value: clientSecret)
+            URLQueryItem(name: "client_id", value: clientId)
         ] + extraParams
 
         request.httpBody = components.percentEncodedQuery?.data(using: .utf8)

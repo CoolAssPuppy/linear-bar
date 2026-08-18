@@ -12,10 +12,12 @@ protocol LinearItem: Identifiable, Hashable {
     var itemType: LinearItemType { get }
 }
 
-enum LinearItemType: String {
+enum LinearItemType: String, Codable {
     case issue
     case project
     case initiative
+    case document
+    case view
 }
 
 // MARK: - Issue
@@ -242,6 +244,15 @@ struct GraphQLResponse<T: Decodable>: Decodable {
 
 struct GraphQLError: Decodable {
     let message: String
+    let extensions: Extensions?
+
+    struct Extensions: Decodable {
+        let code: String?
+    }
+
+    var isRateLimited: Bool {
+        extensions?.code == "RATELIMITED"
+    }
 }
 
 // MARK: - Shared date parsing

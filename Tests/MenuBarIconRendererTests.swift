@@ -33,19 +33,15 @@ final class MenuBarIconRendererTests: XCTestCase {
         XCTAssertFalse(three === four)
     }
 
-    func testAllStatesRenderAtExpectedSize() {
-        let states: [MenuBarIconState] = [
-            .quiet,
-            .unread(count: 1),
-            .urgent(count: 1),
-            .syncing,
-            .needsAuth,
-            .offline
-        ]
+    func testAllStatesUseMenuBarHeightAndCountsHaveRoom() {
+        let states: [MenuBarIconState] = [.quiet, .unread(count: 1), .urgent(count: 1), .syncing, .needsAuth, .offline]
         for state in states {
             let size = MenuBarIconRenderer.image(for: state).size
-            XCTAssertEqual(size.width, 22, "state \(state)")
             XCTAssertEqual(size.height, 18, "state \(state)")
         }
+
+        let quietWidth = MenuBarIconRenderer.image(for: .quiet).size.width
+        XCTAssertGreaterThan(MenuBarIconRenderer.image(for: .unread(count: 1)).size.width, quietWidth)
+        XCTAssertGreaterThan(MenuBarIconRenderer.image(for: .urgent(count: 1)).size.width, quietWidth)
     }
 }

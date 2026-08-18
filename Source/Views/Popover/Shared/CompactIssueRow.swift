@@ -59,7 +59,6 @@ struct CompactIssueRow: View {
             HStack(spacing: 10) {
                 IssueStateCircle(state: state)
                 IssueIdentifierLabel(identifier: identifier)
-                RowCopyLinkButton(url: url, label: identifier, isRowHovered: isHovered)
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(theme.foreground)
@@ -75,6 +74,9 @@ struct CompactIssueRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .contextMenu {
+            Button("Copy link") { NSPasteboard.copyString(url) }
+        }
     }
 
     @ViewBuilder

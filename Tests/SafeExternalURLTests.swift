@@ -31,6 +31,18 @@ final class SafeExternalURLTests: XCTestCase {
         XCTAssertTrue(value.contains("new%3Ffoo=bar%23frag"))
     }
 
+    func testLinearPathBuilderDoesNotAllowSegmentsToAddPathLevels() {
+        let built = SafeExternalURL.linearURL(
+            orgSlug: "acme/admin",
+            pathComponents: ["issue", "ENG-1/../../settings"]
+        )
+
+        XCTAssertEqual(
+            built?.absoluteString,
+            "https://linear.app/acme%2Fadmin/issue/ENG-1%2F..%2F..%2Fsettings"
+        )
+    }
+
     func testHTTPSURLAllowsRemoteHttpsOnly() {
         XCTAssertNotNil(SafeExternalURL.httpsURL(from: "https://cdn.linear.app/avatar.png"))
         XCTAssertNil(SafeExternalURL.httpsURL(from: "http://cdn.linear.app/avatar.png"))
