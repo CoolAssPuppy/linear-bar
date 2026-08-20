@@ -77,7 +77,8 @@ struct MenuBarView: View {
     /// the badge (no zero-state rendering).
     private func badge(for tab: Tab) -> Int? {
         guard tab == .inbox else { return nil }
-        return inboxStore.total > 0 ? inboxStore.total : nil
+        let count = inboxStore.count(forEmail: appSettings.primaryValidAccount?.email)
+        return count > 0 ? count : nil
     }
 
     // MARK: - Content

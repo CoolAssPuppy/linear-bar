@@ -16,9 +16,12 @@ final class UnreadInboxStore: ObservableObject {
     /// Sum of unread Inbox counts across all opted-in workspaces.
     @Published private(set) var total: Int = 0
 
-    /// Per-account most-recent count, keyed by email. Useful for debugging
-    /// and surfacing per-workspace badges later.
+    /// Per-account most-recent count, keyed by email.
     @Published private(set) var perAccount: [String: Int] = [:]
+
+    func count(forEmail email: String?) -> Int {
+        InboxCount.badge(total: total, perAccount: perAccount, currentEmail: email)
+    }
 
     private var pollTimer: Timer?
     private var inFlight: Task<Void, Never>?
@@ -93,15 +96,15 @@ final class UnreadInboxStore: ObservableObject {
 
     func refresh() {
         let snapshot = AppSettings.shared.accounts.filter {
-            $0.isEnabled && $0.authStatus == .valid && $0.showUnreadInMenuBar
+            $0.isEnabled && $0.authStatus == .valid
         }
-
-        // Drop accounts that just had their toggle flipped off so the per-
-        // account map doesn't keep stale numbers and contribute orphan
-        // counts on the next aggregation.
-        let allowed = Set(snapshot.map { $0.email })
+        let menuBarEmails = Set(snapshot.filter(\.showUnreadInMenuBar).map(\.email))
+        let allowed = Set(snapshot.map(\.email))
         perAccount = perAccount.filter { allowed.contains($0.key) }
-        total = perAccount.values.reduce(0, +)
+        total = perAccount
+            .filter { menuBarEmails.contains($0.key) }
+            .values
+            .reduce(0, +)
 
         guard !snapshot.isEmpty else {
             total = 0
@@ -142,7 +145,10 @@ final class UnreadInboxStore: ObservableObject {
 
                 if Task.isCancelled { return }
                 perAccount = fresh
-                total = fresh.values.reduce(0, +)
+                total = fresh
+                    .filter { menuBarEmails.contains($0.key) }
+                    .values
+                    .reduce(0, +)
             }
         }
     }

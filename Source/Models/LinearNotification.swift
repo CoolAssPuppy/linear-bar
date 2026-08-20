@@ -29,6 +29,10 @@ struct LinearNotification: Identifiable, Codable, Hashable {
     let subtitle: String?
     let url: String?
 
+    /// Linear groups inbox rows that share this key. Missing on older fixtures.
+    let groupingKey: String?
+    let groupingPriority: Double?
+
     init(
         id: String,
         type: String,
@@ -42,7 +46,9 @@ struct LinearNotification: Identifiable, Codable, Hashable {
         document: NotificationDocumentTarget?,
         title: String? = nil,
         subtitle: String? = nil,
-        url: String? = nil
+        url: String? = nil,
+        groupingKey: String? = nil,
+        groupingPriority: Double? = nil
     ) {
         self.id = id
         self.type = type
@@ -57,6 +63,8 @@ struct LinearNotification: Identifiable, Codable, Hashable {
         self.title = title
         self.subtitle = subtitle
         self.url = url
+        self.groupingKey = groupingKey
+        self.groupingPriority = groupingPriority
     }
 
     var presentationTitle: String {

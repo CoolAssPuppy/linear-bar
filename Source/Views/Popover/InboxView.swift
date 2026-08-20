@@ -10,6 +10,7 @@ struct InboxView: View {
     @State private var errorMessage: String?
     @State private var hasLoadedOnce = false
     @State private var loadTask: Task<Void, Never>?
+    @ObservedObject private var inboxStore = UnreadInboxStore.shared
 
     @Environment(\.theme) private var theme
 
@@ -64,10 +65,12 @@ struct InboxView: View {
     }
 
     private var unreadLabel: String {
-        let unread = notifications.filter { $0.readAt == nil }.count
-        if unread == 0 { return "No unread" }
-        if unread == 1 { return "1 unread" }
-        return "\(unread) unread"
+        let email = AppSettings.shared.primaryValidAccount?.email
+        let unread = inboxStore.count(forEmail: email)
+        let visible = unread > 0 ? unread : InboxCount.unread(in: notifications)
+        if visible == 0 { return "No unread" }
+        if visible == 1 { return "1 unread" }
+        return "\(visible) unread"
     }
 
     // MARK: - Content

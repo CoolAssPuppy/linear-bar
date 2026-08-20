@@ -2,43 +2,117 @@ import Foundation
 
 extension LinearAPI {
 
-    /// Page size for the Inbox tab. 50 fits the visible popover and leaves
-    /// room for client-side unread filtering (Linear's server-side
-    /// `NotificationFilter` input has drifted historically — see below).
     private static let notificationsPageSize = 50
+    private static let maxInboxPages = 8
 
-    /// Fetches the viewer's unread notifications for the Inbox tab.
-    ///
-    /// Linear's `notifications` connection returns polymorphic subtypes;
-    /// this query pulls the common base fields plus the two subtypes we
-    /// display (IssueNotification, ProjectNotification). The
-    /// DocumentNotification subtype is intentionally omitted — its schema
-    /// shape has changed historically and a missing subtype here would
-    /// reject the whole query.
-    ///
-    /// Unread filtering happens client-side. Server-side
-    /// `filter: { readAt: { null: true } }` 400'd on at least one
-    /// workspace; doing it in Swift costs one boolean check per node and
-    /// is immune to future filter-shape drift.
     func fetchUnreadNotifications(
         accessToken: String,
         accountEmail: String? = nil,
         limit: Int = 50
     ) async throws -> [LinearNotification] {
         if TestDataProvider.isUITesting {
-            return TestDataProvider.getUnreadNotifications()
+            return InboxCount.inboxItems(in: TestDataProvider.getUnreadNotifications())
         }
 
-        let query = """
-        query FetchInbox($first: Int!) {
-          notifications(first: $first) {
-            nodes {
+        var collected: [LinearNotification] = []
+        var after: String?
+        for _ in 0..<Self.maxInboxPages {
+            let page = try await fetchNotificationPage(
+                accessToken: accessToken,
+                accountEmail: accountEmail,
+                after: after
+            )
+            collected.append(contentsOf: page.nodes)
+            let inbox = InboxCount.inboxItems(in: collected)
+            if inbox.count >= limit || !page.hasNextPage {
+                return Array(inbox.prefix(limit))
+            }
+            after = page.endCursor
+        }
+        return Array(InboxCount.inboxItems(in: collected).prefix(limit))
+    }
+
+    func fetchUnreadNotificationCount(
+        accessToken: String,
+        accountEmail: String? = nil
+    ) async throws -> Int {
+        if TestDataProvider.isUITesting {
+            return InboxCount.unread(in: TestDataProvider.getUnreadNotifications())
+        }
+
+        var collected: [LinearNotification] = []
+        var after: String?
+        var complete = false
+        for _ in 0..<Self.maxInboxPages {
+            let page = try await fetchNotificationPage(
+                accessToken: accessToken,
+                accountEmail: accountEmail,
+                after: after,
+                fieldsOnly: true
+            )
+            collected.append(contentsOf: page.nodes)
+            complete = !page.hasNextPage
+            if complete { break }
+            after = page.endCursor
+        }
+
+        let computed = InboxCount.unread(in: collected)
+        if complete { return computed }
+
+        // Incomplete scan: Linear's scalar is the full unread total.
+        return max(computed, try await fetchNotificationsUnreadCountScalar(
+            accessToken: accessToken,
+            accountEmail: accountEmail
+        ))
+    }
+
+    private func fetchNotificationsUnreadCountScalar(
+        accessToken: String,
+        accountEmail: String?
+    ) async throws -> Int {
+        let query = "query FetchUnreadCount { notificationsUnreadCount }"
+        struct Response: Decodable { let notificationsUnreadCount: Int }
+        let response: GraphQLResponse<Response> = try await execute(
+            query: query,
+            accessToken: accessToken,
+            accountEmail: accountEmail
+        )
+        guard let data = response.data else { throw LinearError.invalidResponse }
+        return data.notificationsUnreadCount
+    }
+
+    private struct NotificationPage {
+        let nodes: [LinearNotification]
+        let hasNextPage: Bool
+        let endCursor: String?
+    }
+
+    private func fetchNotificationPage(
+        accessToken: String,
+        accountEmail: String?,
+        after: String?,
+        fieldsOnly: Bool = false
+    ) async throws -> NotificationPage {
+        let nodeFields = fieldsOnly
+            ? """
               id
               type
               createdAt
               readAt
               archivedAt
               snoozedUntilAt
+              groupingKey
+              groupingPriority
+              """
+            : """
+              id
+              type
+              createdAt
+              readAt
+              archivedAt
+              snoozedUntilAt
+              groupingKey
+              groupingPriority
               title
               subtitle
               url
@@ -65,15 +139,31 @@ extension LinearAPI {
                   color
                 }
               }
+              """
+
+        let query = """
+        query FetchInbox($first: Int!, $after: String) {
+          notifications(first: $first, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              \(nodeFields)
             }
           }
         }
         """
 
-        let variables: [String: Any] = ["first": min(limit, Self.notificationsPageSize)]
+        var variables: [String: Any] = ["first": Self.notificationsPageSize]
+        if let after { variables["after"] = after }
 
         struct Response: Decodable {
-            struct NotificationsData: Decodable { let nodes: [LinearNotification] }
+            struct PageInfo: Decodable {
+                let hasNextPage: Bool
+                let endCursor: String?
+            }
+            struct NotificationsData: Decodable {
+                let nodes: [LinearNotification]
+                let pageInfo: PageInfo
+            }
             let notifications: NotificationsData
         }
 
@@ -85,39 +175,10 @@ extension LinearAPI {
         )
 
         guard let data = response.data else { throw LinearError.invalidResponse }
-        // Linear's web Inbox filters by `archivedAt == nil`, not `readAt`.
-        // A read-but-not-archived notification should still appear in the
-        // app's Inbox to match what the user sees on linear.app. We also
-        // hide notifications that are currently snoozed into the future.
-        let now = Date()
-        return data.notifications.nodes.filter { notif in
-            guard notif.archivedAt == nil else { return false }
-            if let snoozedUntil = notif.snoozedUntilAt, snoozedUntil > now { return false }
-            return true
-        }
-    }
-
-    /// Fetches the total unread notification count. Cheap scalar — drives
-    /// the menu bar badge number.
-    func fetchUnreadNotificationCount(
-        accessToken: String,
-        accountEmail: String? = nil
-    ) async throws -> Int {
-        if TestDataProvider.isUITesting {
-            return TestDataProvider.getUnreadNotifications().count
-        }
-
-        let query = "query FetchUnreadCount { notificationsUnreadCount }"
-
-        struct Response: Decodable { let notificationsUnreadCount: Int }
-
-        let response: GraphQLResponse<Response> = try await execute(
-            query: query,
-            accessToken: accessToken,
-            accountEmail: accountEmail
+        return NotificationPage(
+            nodes: data.notifications.nodes,
+            hasNextPage: data.notifications.pageInfo.hasNextPage,
+            endCursor: data.notifications.pageInfo.endCursor
         )
-
-        guard let data = response.data else { throw LinearError.invalidResponse }
-        return data.notificationsUnreadCount
     }
 }
