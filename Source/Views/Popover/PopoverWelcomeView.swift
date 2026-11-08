@@ -17,9 +17,6 @@ struct PopoverWelcomeView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 22)
 
-            perks
-                .padding(.horizontal, 18)
-
             Spacer(minLength: 0)
 
             footer
@@ -84,52 +81,6 @@ struct PopoverWelcomeView: View {
             )
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - Perks
-
-    private var perks: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            perkRow(
-                icon: "tray",
-                tint: theme.primary,
-                title: "Inbox that never pings your phone",
-                subtitle: "Mentions, reviews, SLA alerts and project updates in one quiet list."
-            )
-            perkRow(
-                icon: "waveform.path.ecg",
-                tint: theme.success,
-                title: "Cycle burndowns and project health",
-                subtitle: "See where every team is without opening Linear."
-            )
-        }
-    }
-
-    private func perkRow(icon: String, tint: Color, title: String, subtitle: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(tint.opacity(0.15))
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(tint.opacity(0.35), lineWidth: 1)
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(tint)
-            }
-            .frame(width: 28, height: 28)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.foreground)
-                Text(subtitle)
-                    .font(.system(size: 10))
-                    .foregroundStyle(theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-        }
     }
 
     // MARK: - Footer

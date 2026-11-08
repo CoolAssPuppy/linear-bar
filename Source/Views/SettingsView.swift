@@ -12,7 +12,7 @@ extension KeyboardShortcuts.Name {
     static let toggleLinearBar = Self("toggleLinearBar")
 }
 
-/// Content of the Settings drawer (two-column card grid).
+/// Content of the Settings drawer.
 ///
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
@@ -24,24 +24,17 @@ struct SettingsView: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 14) {
-                VStack(spacing: 14) {
-                    generalCard
-                    keyboardCard
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack(spacing: 14) {
-                    updatesCard
-                    contactCard
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
-            .padding(.bottom, 14)
+        VStack(spacing: 14) {
+            generalCard
+            appearanceCard
+            keyboardCard
+            updatesCard
+            contactCard
         }
+        .frame(maxWidth: 620)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 22)
+        .padding(.vertical, 18)
     }
 
     // MARK: - General
@@ -58,6 +51,7 @@ struct SettingsView: View {
                         set: { loginItem.setEnabled($0) }
                     ))
                         .labelsHidden()
+                        .accessibilityLabel("Launch at login")
                         .toggleStyle(.switch)
                         .controlSize(.small)
                         .tint(theme.primary)
@@ -71,6 +65,7 @@ struct SettingsView: View {
                 ) {
                     Toggle("", isOn: $showUnreadCount)
                         .labelsHidden()
+                        .accessibilityLabel("Show unread count in menu bar")
                         .toggleStyle(.switch)
                         .controlSize(.small)
                         .tint(theme.primary)
@@ -92,6 +87,7 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.menu)
                     .appBoxedPicker()
+                    .accessibilityLabel("Default tab")
                 }
 
                 AppRowDivider().padding(.vertical, 10)
@@ -105,6 +101,7 @@ struct SettingsView: View {
                         set: { settings.iCloudSyncEnabled = $0 }
                     ))
                     .labelsHidden()
+                    .accessibilityLabel("Sync settings to iCloud")
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .tint(theme.primary)
@@ -124,6 +121,7 @@ struct SettingsView: View {
                         }
                     ))
                     .labelsHidden()
+                    .accessibilityLabel("Send anonymous diagnostics")
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .tint(theme.primary)
@@ -141,6 +139,15 @@ struct SettingsView: View {
         } message: {
             Text(loginItem.errorMessage ?? "")
         }
+    }
+
+    private var appearanceCard: some View {
+        AppCard("Appearance") {
+            AppSettingRow("Theme") {
+                ThemeSelector()
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
     }
 
     // MARK: - Keyboard
@@ -184,6 +191,7 @@ struct SettingsView: View {
                 AppSettingRow("Automatically check for updates", description: nil) {
                     Toggle("", isOn: $updater.automaticallyChecksForUpdates)
                         .labelsHidden()
+                        .accessibilityLabel("Automatically check for updates")
                         .toggleStyle(.switch)
                         .controlSize(.small)
                         .tint(theme.primary)
@@ -278,6 +286,97 @@ struct SettingsView: View {
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+    }
+}
+
+private struct ThemeSelector: View {
+    @ObservedObject private var store = ThemeStore.shared
+    @Environment(\.theme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isExpanded = false
+    @FocusState private var focusedTheme: AppTheme?
+    @Namespace private var circleNamespace
+
+    private var selectionAnimation: Animation? {
+        reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.72)
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(store.current.label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(theme.foreground)
+                .lineLimit(1)
+                .frame(width: 75, alignment: .trailing)
+
+            HStack(spacing: 3) {
+                if isExpanded {
+                    ForEach(AppTheme.allCases.filter { $0 != store.current }) { option in
+                        Button {
+                            withAnimation(selectionAnimation) {
+                                store.current = option
+                                isExpanded = false
+                            }
+                        } label: {
+                            themeCircle(for: option)
+                                .matchedGeometryEffect(id: option.id, in: circleNamespace)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(width: 20, height: 24)
+                        .focusable()
+                        .focused($focusedTheme, equals: option)
+                        .accessibilityLabel("Use \(option.label) theme")
+                        .help(option.label)
+                    }
+                }
+
+                Button {
+                    withAnimation(selectionAnimation) { isExpanded.toggle() }
+                } label: {
+                    themeCircle(for: store.current)
+                        .matchedGeometryEffect(id: store.current.id, in: circleNamespace)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 24, height: 24)
+                .focusable()
+                .focused($focusedTheme, equals: store.current)
+                .accessibilityLabel(isExpanded ? "Hide theme choices" : "Show theme choices")
+                .accessibilityValue(store.current.label)
+                .accessibilityHint("Current theme")
+                .help(isExpanded ? "Hide themes" : "Choose theme")
+            }
+        }
+        .frame(width: 320, alignment: .trailing)
+        .clipped()
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(selectionAnimation) { isExpanded = hovering }
+        }
+    }
+
+    @ViewBuilder
+    private func themeCircle(for option: AppTheme) -> some View {
+        Group {
+            if option == .system {
+                Circle()
+                    .fill(.white)
+                    .overlay(alignment: .trailing) {
+                        Rectangle().fill(.black).frame(width: 6)
+                    }
+                    .clipShape(Circle())
+            } else {
+                Circle().fill(option.palette.primary)
+            }
+        }
+        .frame(width: 12, height: 12)
+        .overlay(Circle().strokeBorder(theme.foreground.opacity(0.7), lineWidth: 1))
+        .overlay {
+            if focusedTheme == option {
+                Circle()
+                    .strokeBorder(theme.foreground, lineWidth: 1.5)
+                    .frame(width: 20, height: 20)
+            }
+        }
     }
 }
 

@@ -1,5 +1,38 @@
 # Linear Bar reliability and codebase work
 
+## UI cleanup (cleanup-ui)
+
+### Theme selector follow-up
+- [x] Replace the Appearance Picker with a compact theme name and color control that expands left on hover or click.
+- [x] Keep each theme keyboard and VoiceOver accessible, and honor Reduce Motion.
+- [x] Coordinate Xcode and live UI checks with the parent agent. Swift parsing and strict lint pass with zero violations.
+
+No new isolated test is needed for this view-only interaction; verify it in the running Settings UI with mouse, keyboard, VoiceOver, and Reduce Motion.
+
+### Release 2.3.0 plan
+- [x] Run the complete local gate on the final UI source: tests, strict lint, Debug build, Release analysis, and live selector review.
+- [x] Check signing, notarization, Sparkle, Doppler, and R2 prerequisites; compare local and live appcast versions.
+- [x] Run `scripts/release.sh 2.3.0 "<li>Some UI cleanup.</li>"` after verification and release coordination.
+- [x] Verify signed artifacts and the live appcast.
+- [x] Commit the final source, version, and appcast changes, fast forward main, and push once.
+
+Preflight: `agent-server` notary profile and Developer ID identity are available. The Sparkle keychain account exists, and Linear Bar's shipped public key matches Mail Notifier's. R2 credentials are in `linear-bar/prd`; the release script now uses that project. Archive, signature, and upload results are recorded below.
+
+The current UI source passed 67 hosted tests, strict lint with zero violations, Debug build, and Release analysis on 2026-11-08. The user reviewed the UI and authorized release. Rerun the complete gate after any release-source edits before committing.
+
+Release review: the final 2.3.0/build 32 files passed 67 hosted tests (`/tmp/linear-bar-release-final-test.log`, xcresult in `/tmp/linear-bar-ui-final-signed-derived/Logs/Test`), strict lint with zero violations (`/tmp/linear-bar-release-final-lint.log`), a Debug build (`/tmp/linear-bar-release-final-build.log`), and Release analysis (`/tmp/linear-bar-release-final-analyze.log`). The exported app and DMG pass signature and notarization checks. The live shortlink appcast shows 2.3.0/build 32 with `<li>Some UI cleanup.</li>`. Its R2 DMG returns 200 and 4,895,626 bytes, matching the local file.
+
+### Plan
+- [x] Simplify the popover footer while keeping refresh, window, Settings, theme, and Quit available.
+- [x] Make Settings a single-column list and move theme choices there.
+- [x] Reduce repeated first-run decoration and copy in the popover and main window.
+- [x] Check keyboard labels and review the diff for behavior changes.
+- [x] Inspect the changed UI in the running app and save screenshots.
+
+### Review
+- `xcodebuild test` passed 67 tests, SwiftLint found zero violations, the Debug build passed, and Release static analysis passed. Logs are in `/tmp/linear-bar-cleanup-{test,lint,build,analyze}.log`.
+- Main window, Settings, and dropdown content screenshots are in `/Users/prashant/.codex/visualizations/2026/11/08/01a1b9c1-dfc3-7aa1-8a2e-b771e8dc5c85/screenshots`. The dropdown uses a temporary preview window with fictional test data; direct menu bar placement still needs checking. Preview code was removed, the normal build passed, and the installed app and saved settings were restored.
+
 ## Release 2.2.10
 
 - [x] Review the final diff for credentials and generated files.

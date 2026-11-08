@@ -16,8 +16,6 @@ struct LinearWelcomeView: View {
             Spacer(minLength: 0)
 
             VStack(spacing: 28) {
-                heroBadge
-
                 VStack(spacing: 10) {
                     Text("Welcome to Menu Bar for Linear")
                         .font(.system(size: 28, weight: .semibold))
@@ -52,18 +50,6 @@ struct LinearWelcomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.background)
-    }
-
-    private var heroBadge: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(hex: "#FDB817").opacity(0.08))
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Color(hex: "#FDB817").opacity(0.25), lineWidth: 1)
-
-            CheckmarkBrandMark(size: 80, glyphSize: 40)
-        }
-        .frame(width: 96, height: 96)
     }
 
     private var trustSignals: some View {

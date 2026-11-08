@@ -4,34 +4,9 @@ Linear Bar uses the [Sparkle 2](https://sparkle-project.org/) framework for auto
 
 ## Keys
 
-Sparkle signs every update DMG with an Ed25519 key pair. The public key lives in `Source/Resources/Info.plist` under `SUPublicEDKey`. The private key lives in macOS Keychain under the account name `com.strategicnerds.LinearBarApp`, and is backed up to Doppler.
+Sparkle signs every update DMG with an Ed25519 key pair. The public key lives in `Source/Resources/Info.plist` under `SUPublicEDKey`. Existing Linear Bar releases use the same public key as Mail Notifier, and `scripts/build-dmg.sh` signs with the keychain account `com.strategicnerds.MailNotifierApp`. Verify that account is available before release. Creating a new Linear Bar key would make updates fail for existing installs.
 
-**Generating the keys (run once):**
-
-```bash
-# Locate Sparkle's generate_keys after an Xcode build has resolved packages:
-~/Library/Developer/Xcode/DerivedData/LinearBar-*/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account com.strategicnerds.LinearBarApp
-```
-
-This stores the private key in Keychain and prints the public key. Paste that public key into `Source/Resources/Info.plist` as the value of `SUPublicEDKey`.
-
-**Back up the private key to Doppler:**
-
-```bash
-~/Library/Developer/Xcode/DerivedData/LinearBar-*/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account com.strategicnerds.LinearBarApp -p > /tmp/sparkle_private.pem
-doppler secrets set SPARKLE_PRIVATE_KEY_LINEARBAR --project agent-server --config prd < /tmp/sparkle_private.pem
-rm -P /tmp/sparkle_private.pem
-```
-
-**Restoring on a new machine:**
-
-```bash
-doppler secrets get SPARKLE_PRIVATE_KEY_LINEARBAR --project agent-server --config prd --plain > /tmp/sparkle_private.pem
-~/Library/Developer/Xcode/DerivedData/LinearBar-*/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account com.strategicnerds.LinearBarApp -f /tmp/sparkle_private.pem
-rm -P /tmp/sparkle_private.pem
-```
-
-**Losing the private key permanently strands every installed copy.** Sparkle does not support key rotation. Do not lose it.
+The signing key must remain available on every release machine. Verify the signed DMG against the public key in the shipped app before publishing the appcast.
 
 ## Feed URL
 

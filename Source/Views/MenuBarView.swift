@@ -616,7 +616,7 @@ struct WorkspaceLogo: View {
                 Image(nsImage: nsImage)
                     .resizable()
                     .interpolation(.high)
-                    .aspectRatio(contentMode: .fill)
+                    .scaledToFill()
                     .frame(width: size, height: size)
                     .clipped()
             } else {
@@ -702,94 +702,23 @@ private struct BottomBar: View {
 
             Spacer(minLength: 0)
 
-            ThemeStrip()
-
-            Spacer(minLength: 0)
-
-            AppIconButton(systemName: "power", help: "Quit Menu Bar for Linear", action: onQuit)
+            Menu {
+                Button("Quit Menu Bar for Linear", action: onQuit)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.muted)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("More options")
+            .accessibilityLabel("More options")
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
         .background(theme.surface)
-    }
-}
-
-// MARK: - Theme strip
-
-private struct ThemeStrip: View {
-    @ObservedObject private var store = ThemeStore.shared
-    @Environment(\.theme) private var theme
-    @State private var isExpanded = false
-
-    private static let bouncy: Animation = .spring(response: 0.35, dampingFraction: 0.6)
-    private static let dotSize: CGFloat = 10
-
-    var body: some View {
-        HStack(spacing: isExpanded ? 6 : 0) {
-            ForEach(AppTheme.allCases) { option in
-                let palette = option.palette
-                let isActive = store.current == option
-                let show = isExpanded || isActive
-
-                Button {
-                    withAnimation(Self.bouncy) {
-                        store.current = option
-                        isExpanded = false
-                    }
-                } label: {
-                    ZStack {
-                        dotFill(for: option, palette: palette)
-                        if isActive {
-                            Circle()
-                                .stroke(theme.foreground.opacity(0.9), lineWidth: 1.5)
-                                .padding(-2.5)
-                        }
-                    }
-                    .frame(width: Self.dotSize, height: Self.dotSize)
-                    .scaleEffect(show ? 1 : 0.01)
-                    .opacity(show ? 1 : 0)
-                }
-                .buttonStyle(.plain)
-                .frame(width: show ? Self.dotSize : 0)
-                .clipped()
-                .help(option.label)
-            }
-        }
-        .padding(.horizontal, isExpanded ? 9 : 6)
-        .padding(.vertical, 5)
-        .background(Capsule().fill(theme.card))
-        .overlay(Capsule().strokeBorder(theme.border, lineWidth: 1))
-        .animation(Self.bouncy, value: isExpanded)
-        .onHover { hovering in
-            withAnimation(Self.bouncy) {
-                isExpanded = hovering
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func dotFill(for option: AppTheme, palette: ThemePalette) -> some View {
-        if option == .system {
-            ZStack {
-                Circle().fill(Color.white)
-                Circle()
-                    .fill(Color.black)
-                    .mask(
-                        Rectangle()
-                            .frame(width: Self.dotSize, height: Self.dotSize)
-                            .offset(x: Self.dotSize / 2)
-                    )
-            }
-        } else {
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [palette.primary, palette.primaryDeep],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        }
     }
 }
 

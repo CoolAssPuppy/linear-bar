@@ -257,7 +257,7 @@ struct AppProviderChoiceCard: View {
                             )
                         Image(assetName)
                             .resizable()
-                            .aspectRatio(contentMode: .fit)
+                            .scaledToFit()
                             .frame(width: 26, height: 26)
                     }
                     .frame(width: 44, height: 44)

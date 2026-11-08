@@ -8,6 +8,24 @@
     <description>Linear Bar updates</description>
     <language>en</language>
     <item>
+      <title>Version 2.3.0</title>
+      <pubDate>Sun, 08 Nov 2026 07:50:11 +0000</pubDate>
+      <sparkle:version>32</sparkle:version>
+      <sparkle:shortVersionString>2.3.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <ul>
+          <li>Some UI cleanup.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://pub-9c8d72fe664b4ce18aac0d718b4e0346.r2.dev/apps/linear-bar/LinearBar-2.3.0.dmg"
+        sparkle:edSignature="P1zTsRydKQxP6pO9AX0xZSocT1lGWeSd7JIgIvNJ1dbKsXoH0rW+sfeHafAlaTS8tsU30q0/iRlWJ0G6izZXCw=="
+        length="4895626"
+        type="application/x-apple-diskimage" />
+    </item>
+
+    <item>
       <title>Version 2.2.12</title>
       <pubDate>Thu, 20 Aug 2026 12:01:32 +0000</pubDate>
       <sparkle:version>31</sparkle:version>
