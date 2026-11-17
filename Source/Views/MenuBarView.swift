@@ -702,19 +702,7 @@ private struct BottomBar: View {
 
             Spacer(minLength: 0)
 
-            Menu {
-                Button("Quit Menu Bar for Linear", action: onQuit)
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.muted)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .help("More options")
-            .accessibilityLabel("More options")
+            AppIconButton(systemName: "power", help: "Quit Menu Bar for Linear", action: onQuit)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
