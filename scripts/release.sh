@@ -12,7 +12,7 @@
 #   7. Verifies everything is live
 #
 # Prerequisites:
-#   - notarytool keychain profile "agent-server" (see SPARKLE.md)
+#   - NOTARY_APPLE_ID in the environment (see SPARKLE.md)
 #   - Sparkle sign_update at ~/bin/sparkle/sign_update
 #   - dmgbuild 1.6.7 installed (uv tool install dmgbuild==1.6.7)
 #   - doppler CLI logged in with access to the linear-bar/prd config
@@ -67,9 +67,23 @@ if ! "${WRANGLER[@]}" --version >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
-  echo "Error: notarytool profile '$NOTARY_PROFILE' not found or invalid."
-  echo "Run: xcrun notarytool store-credentials \"$NOTARY_PROFILE\" --apple-id ... --team-id ... --password ..."
+# Notary auth. The app-specific password comes from Doppler and the Apple ID
+# from the environment. A stored keychain profile is the fallback.
+NOTARY_TEAM_ID="${NOTARY_TEAM_ID:-955GSY56UT}"
+if [ -z "${NOTARY_PASSWORD:-}" ]; then
+  NOTARY_PASSWORD="$(doppler secrets get SPARKLE_APP_SPECIFIC_PASSWORD \
+    --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" --plain 2>/dev/null || true)"
+fi
+if [ -n "$NOTARY_PASSWORD" ] && [ -n "${NOTARY_APPLE_ID:-}" ]; then
+  NOTARY_AUTH=(--apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD")
+  export NOTARY_APPLE_ID NOTARY_TEAM_ID NOTARY_PASSWORD
+else
+  unset NOTARY_PASSWORD
+  NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
+fi
+if ! xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1; then
+  echo "Error: notary credentials missing or rejected."
+  echo "Set NOTARY_APPLE_ID, and SPARKLE_APP_SPECIFIC_PASSWORD in Doppler $DOPPLER_PROJECT/$DOPPLER_CONFIG."
   exit 1
 fi
 
@@ -167,7 +181,7 @@ fi
 echo "==> Notarizing .app (takes a few minutes)"
 APP_ZIP="$EXPORT_DIR/LinearBar.app.zip"
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$APP_ZIP"
-xcrun notarytool submit "$APP_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+xcrun notarytool submit "$APP_ZIP" "${NOTARY_AUTH[@]}" --wait
 rm -f "$APP_ZIP"
 
 echo "==> Stapling .app"
@@ -201,10 +215,10 @@ CLOUDFLARE_ACCOUNT_ID=$(doppler secrets get CLOUDFLARE_ACCOUNT_ID \
 R2_BUCKET=$(doppler secrets get R2_BUCKET_NAME \
   --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" --plain 2>/dev/null || echo "strategic-nerds-downloads")
 R2_PUBLIC_BASE=$(doppler secrets get R2_PUBLIC_BASE_URL \
-  --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" --plain 2>/dev/null || echo "https://downloads.strategicnerds.com")
+  --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" --plain 2>/dev/null || true)
 
-if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-  echo "Error: missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID in Doppler $DOPPLER_PROJECT/$DOPPLER_CONFIG"
+if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$R2_PUBLIC_BASE" ]; then
+  echo "Error: missing CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, or R2_PUBLIC_BASE_URL in Doppler $DOPPLER_PROJECT/$DOPPLER_CONFIG"
   exit 1
 fi
 

@@ -10,15 +10,15 @@ The signing key must remain available on every release machine. Verify the signe
 
 ## Feed URL
 
-The app points at a Dub shortlink (`https://coolasspuppy.com/linear-bar-updates`) which redirects to the live R2 URL (`https://downloads.strategicnerds.com/apps/linear-bar/appcast.xml`). The shortlink lets us repoint the feed without shipping a new build.
+The app points at a Dub shortlink (`https://coolasspuppy.com/linear-bar-updates`) which redirects to the live R2 URL (`https://pub-9c8d72fe664b4ce18aac0d718b4e0346.r2.dev/apps/linear-bar/appcast.xml`). The shortlink lets us repoint the feed without shipping a new build.
 
 Configure the Dub shortlink once:
 1. Sign in to https://dub.co
-2. Create a link with slug `linear-bar-updates` pointing to `https://downloads.strategicnerds.com/apps/linear-bar/appcast.xml`
+2. Create a link with slug `linear-bar-updates` pointing to `https://pub-9c8d72fe664b4ce18aac0d718b4e0346.r2.dev/apps/linear-bar/appcast.xml`
 
 ## Notarization
 
-The release script assumes a `notarytool` keychain profile named `agent-server`. Create it once:
+The release script uses `NOTARY_APPLE_ID` from the environment and `SPARKLE_APP_SPECIFIC_PASSWORD` from Doppler. Without both, it falls back to a `notarytool` keychain profile named `agent-server`. Create it once:
 
 ```bash
 xcrun notarytool store-credentials "agent-server" \
